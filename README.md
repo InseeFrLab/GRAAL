@@ -1,5 +1,18 @@
 # codif-ape-graph-rag
 
+Create a .env file that should have those:
+
+URL_EMBEDDING_API=****
+EMBEDDING_MODEL = ****
+GENERATION_MODEL = ****
+URL_LLM_API = ********
+
+LANGFUSE_PUBLIC_KEY=****
+LANGFUSE_SECRET_KEY=****
+LANGFUSE_HOST=****
+OPENAI_API_KEY=****
+MLFLOW_TRACKING_URI=****
+
 
 ## Local run 🏛️
 You need to install to first install [**uv**](https://github.com/astral-sh/uv), using for instance `pip install uv` if applicable.

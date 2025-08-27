@@ -6,7 +6,11 @@ import httpx
 from dotenv import load_dotenv
 from langfuse.openai import AsyncOpenAI
 
-from constants.llm import URL_LLM_API
+load_dotenv()
+
+if os.environ.get("URL_LLM_API") is None:
+    raise ValueError("URL_LLM_API environment variable must be set.")
+URL_LLM_API = os.environ.get("URL_LLM_API")
 
 
 def setup_langfuse():
@@ -41,3 +45,9 @@ async def get_llm_client():
         yield client
     finally:
         await client.close()
+
+
+def sync_get_llm_client():
+    setup_langfuse()
+    client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"), base_url=URL_LLM_API, timeout=httpx.Timeout(1 * 60 * 60))
+    return client
