@@ -11,22 +11,26 @@ import datetime
 import logging
 import os
 import time
+from math import ceil
 from typing import List
 
 import httpx
 import humanize
 import mlflow
 import pandas as pd
+from dotenv import load_dotenv
+from tqdm import tqdm
 
 from evaluation.args_parser import parse_args
 from evaluation.data import get_all_levels, load_test_data, process_response, save_predictions
 from utils.data import get_df_naf
 from utils.logging import configure_logging
 
+load_dotenv()
 configure_logging()
 logger = logging.getLogger(__name__)
 
-API_URL = "https://codification-ape-graph-rag-api.lab.sspcloud.fr"
+API_URL = "http://localhost:5000"
 TIMEOUT = 3600
 
 
@@ -36,28 +40,38 @@ async def evaluate_method(
     queries: List[str],
     df_naf: pd.DataFrame,
     ground_truth: pd.DataFrame,
+    batch_size: int = 10,  # Add batch_size parameter
 ) -> pd.DataFrame:
     try:
         logger.info(f"🚀 Starting evaluation for '{method}'")
 
         start_time = time.time()
-        response = await client.post(
-            f"{API_URL}/{method}/batch",
-            json={"queries": queries},
-        )
+        num_batches = ceil(len(queries) / batch_size)
+        all_preds = pd.DataFrame(columns=["code_ape"])  # Initialize an empty DataFrame
+
+        for i in tqdm(range(num_batches)):
+            batch_queries = queries[i * batch_size : (i + 1) * batch_size]
+            response = await client.post(
+                f"{API_URL}/{method}/batch",
+                json={"queries": batch_queries},
+            )
+            response.raise_for_status()
+            batch_preds = process_response(response.json())
+            all_preds = pd.concat([all_preds, batch_preds], ignore_index=True)  # Concatenate batch_preds
+
         end_time = time.time()
         elapsed_seconds = end_time - start_time
         elapsed_td = datetime.timedelta(seconds=elapsed_seconds)
 
-        response.raise_for_status()
-        preds = process_response(response.json())
-        preds_levels = get_all_levels(preds, df_naf, "code_ape")
-        save_predictions(preds, method)
+        preds_levels = get_all_levels(all_preds, df_naf, "code_ape")
+        save_predictions(all_preds, method)
 
         with mlflow.start_run():
             mlflow.log_param("method", method)
-            mlflow.log_param("num_samples", len(preds))
+            mlflow.log_param("num_samples", len(all_preds))
             mlflow.log_param("elapsed_time", humanize.precisedelta(elapsed_td))
+            mlflow.log_param("embedding_model", os.environ["EMBEDDING_MODEL"])
+            mlflow.log_param("generation_model", os.environ["GENERATION_MODEL"])
 
             accs = (preds_levels == ground_truth).mean()
             for lvl, acc in enumerate(accs, 1):
