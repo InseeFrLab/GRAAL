@@ -14,12 +14,12 @@ class HierarchicalNavigator:
         """Navigate up the hierarchy"""
         if levels == 1:
             query = """
-            MATCH (node {code: $node_code})<-[:HAS_CHILD]-(parent)
-            RETURN parent
+            MATCH (node {CODE: $node_code})<-[:HAS_CHILD]-(PARENT_CODE)
+            RETURN PARENT_CODE
             """
         else:
             query = """
-            MATCH (node {{code: $node_code}})<-[:HAS_HILD*{levels}]-(ancestor)
+            MATCH (node {{CODE: $node_code}})<-[:HAS_HILD*{levels}]-(ancestor)
             RETURN ancestor
             """.format(levels=levels)
 
@@ -34,12 +34,12 @@ class HierarchicalNavigator:
         """Navigate down the hierarchy"""
         if levels == 1:
             query = """
-            MATCH (node {code: $node_code})-[:HAS_CHILD]->(child)
+            MATCH (node {CODE: $node_code})-[:HAS_CHILD]->(child)
             RETURN child
             """
         else:
             query = """
-            MATCH (node {{code: $node_code}})-[:HAS_CHILD*{levels}]->(descendant)
+            MATCH (node {{CODE: $node_code}})-[:HAS_CHILD*{levels}]->(descendant)
             RETURN descendant
             """.format(levels=levels)
 
@@ -48,7 +48,7 @@ class HierarchicalNavigator:
     def get_current_node(self) -> dict:
         """Get information about the current node"""
         query = """
-        MATCH (node {code: $node_code})
+        MATCH (node {CODE: $node_code})
         RETURN node
         """
         return self.graph.query(query, params={"node_code": self.node_code})
@@ -56,7 +56,7 @@ class HierarchicalNavigator:
     def go_down(self, node: str) -> dict:
         """Go down to the target node"""
         query = """
-        MATCH (node {code: $node_code})
+        MATCH (node {CODE: $node_code})
         RETURN node
         """
         result = self.graph.query(query, params={"node_code": self.node_code})

@@ -1,10 +1,11 @@
 import os
 
 from dotenv import load_dotenv
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.prompts import ChatPromptTemplate
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
+from typing import Dict, Any
 
 from build_graph_db import setup_graph
 from hierarchical_navigator import HierarchicalNavigator
@@ -19,7 +20,7 @@ navigator = HierarchicalNavigator(graph)
 
 # --- Tool definitions ---
 @tool
-def go_up() -> dict:
+def go_up() -> Dict[str, Any]:
     """
     Retrieve node Returns JSON list of {code, level, title, notice, score}.
     """
@@ -27,7 +28,7 @@ def go_up() -> dict:
 
 
 @tool
-def go_down(node: str) -> dict:
+def go_down(node: str) -> Dict[str, Any]:
     """
     Retrieve children of a parent code.
     Returns JSON list of {code, level, title, notice, score}.
@@ -36,7 +37,7 @@ def go_down(node: str) -> dict:
 
 
 @tool
-def get_current_node() -> dict:
+def get_current_node() -> Dict[str, Any]:
     """
     Get information about the current node
     """
@@ -44,7 +45,7 @@ def get_current_node() -> dict:
 
 
 @tool
-def get_children() -> dict:
+def get_children() -> Dict[str, Any]:
     """
     Get information about the children
     """
@@ -52,7 +53,7 @@ def get_children() -> dict:
 
 
 llm = ChatOpenAI(
-    model="mistralai/Mistral-Small-24B-Instruct-2501",
+    model=os.environ["GENERATION_MODEL"],
     temperature=0,
     openai_api_base=os.environ["URL_LLM_API"],
     openai_api_key=os.environ["OPENAI_API_KEY"],
@@ -76,7 +77,7 @@ Retournez votre réponse finale sous forme de JSON : {{"best_code": ..., "path":
 
 
 tools = [go_up, go_down, get_current_node, get_children]
-agent = create_openai_functions_agent(llm, tools, prompt)
+agent = create_tool_calling_agent(llm, tools, prompt)
 executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 
