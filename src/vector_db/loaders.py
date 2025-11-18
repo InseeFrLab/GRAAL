@@ -44,9 +44,24 @@ def create_vector_db(docs, embedding_model, clean_previous: bool = True) -> Neo4
         logger.info("🧹 Cleaning previous vector DB. Running command " + command)
         execute_cypher_command(command)
 
+        command = "MATCH (n) DETACH DELETE n"
+        logger.info("🧹 Cleaning previous vector DB. Running command " + command)
+        execute_cypher_command(command)
+
     return Neo4jVector.from_documents(
         docs, embedding_model, url=NEO4J_URL, username=NEO4J_USERNAME, password=NEO4J_PWD, ids=[f"{i}" for i in range(len(docs))]
     )
+
+
+def create_root_node():
+    logger.info("Creating a root node")
+    command = """
+        MERGE (root {CODE: 'root', LEVEL: 0})
+        WITH root
+        MATCH (n WHERE n.LEVEL = 1)
+        MERGE (root)-[:HAS_CHILD]->(n)
+    """
+    execute_cypher_command(command)
 
 
 def setup_graph() -> Neo4jGraph:
