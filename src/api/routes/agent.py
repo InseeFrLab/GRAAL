@@ -1,5 +1,5 @@
 from api.routes.common import build_classification_router
-from classify.agent import 
+from classify.agentic import AgentClassifier
 
 router = build_classification_router(
     prefix="/agent",
