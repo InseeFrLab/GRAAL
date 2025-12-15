@@ -1,13 +1,15 @@
 import os
 
 from dotenv import load_dotenv
+
+os.chdir("codif-ape-graph-rag")
 from agents import Agent, Runner
 from pydantic import BaseModel, Field
 from typing import Literal
 
-from judge import judge_no_agentic_prompt
-from llm.client import sync_get_llm_client
-from tools import graph, tools
+from src.judge import judge_no_agentic_prompt
+from src.llm.client import sync_get_llm_client
+from src.tools import graph, tools
 
 
 client = sync_get_llm_client()
