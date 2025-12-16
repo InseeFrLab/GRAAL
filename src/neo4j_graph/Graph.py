@@ -29,8 +29,14 @@ def _unfreeze_list_of_dicts(
 
 
 class Graph:
-    def __init__(self, graph: Neo4jGraph):
-        self.graph = graph
+    def __init__(self):
+        self.graph = Neo4jGraph(
+            url=NEO4J_URL,
+            username=NEO4J_USERNAME,
+            password=NEO4J_PWD,
+            enhanced_schema=True,
+            )
+
 
     # ------------------------------------------------------------------
     # Cache management
