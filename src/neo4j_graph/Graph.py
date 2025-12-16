@@ -1,33 +1,56 @@
 import logging
-import os
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 from functools import lru_cache
+
 from langchain_neo4j import Neo4jGraph
 from agents import function_tool
 
 logger = logging.getLogger(__name__)
-CACHE_SIZE = os.getenv("GRAPH_CACHE_SIZE", 1000)
+
+
+def _freeze_dict(d: Dict[str, Any]) -> Tuple[Tuple[str, Any], ...]:
+    """Convert dict to immutable tuple for caching."""
+    return tuple(d.items())
+
+
+def _freeze_list_of_dicts(lst: List[Dict[str, Any]]) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
+    """Convert list[dict] to immutable structure for caching."""
+    return tuple(_freeze_dict(d) for d in lst)
+
+
+def _unfreeze_dict(t: Tuple[Tuple[str, Any], ...]) -> Dict[str, Any]:
+    return dict(t)
+
+
+def _unfreeze_list_of_dicts(
+    t: Tuple[Tuple[Tuple[str, Any], ...], ...]
+) -> List[Dict[str, Any]]:
+    return [dict(d) for d in t]
 
 
 class Graph:
     def __init__(self, graph: Neo4jGraph):
         self.graph = graph
 
-    @function_tool
-    @lru_cache(maxsize=CACHE_SIZE)
-    def get_code_information(self, code: str) -> Dict[str, Any]:
-        """
-        Get comprehensive information about a code node.
+    # ------------------------------------------------------------------
+    # Cache management
+    # ------------------------------------------------------------------
 
-        Args:
-            code: The code to look up (e.g., "10.71", "C")
+    def clear_caches(self) -> None:
+        """Clear all internal caches (call on data reload)."""
+        self._cached_get_code_information.cache_clear()
+        self._cached_get_children.cache_clear()
+        self._cached_get_descendants.cache_clear()
+        self._cached_get_siblings.cache_clear()
+        self._cached_get_parent.cache_clear()
+        self._cached_search_codes.cache_clear()
 
-        Returns:
-            Dictionary with:
-            - code, level, name
-            - description, includes, excludes
-            - parent_code, children_codes, children_count
-        """
+    # ------------------------------------------------------------------
+    # get_code_information
+    # ------------------------------------------------------------------
+
+    @lru_cache(maxsize=10_000)
+    def _cached_get_code_information(self, code: str) -> Tuple[Tuple[str, Any], ...]:
         query = """
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
@@ -45,26 +68,24 @@ class Graph:
                children_codes,
                size(children_codes) as children_count
         """
-        
         result = self.graph.query(query, params={"code": code})
-        
-        if result:
-            return result[0]
-        
-        return {"error": f"Code {code} not found"}
+        if not result:
+            return ()
+        return _freeze_dict(result[0])
 
     @function_tool
-    @lru_cache(maxsize=CACHE_SIZE)
-    def get_children(self, code: str) -> Tuple[Dict[str, Any], ...]:
-        """
-        Get all direct children of a code.
+    def get_code_information(self, code: str) -> Dict[str, Any]:
+        data = self._cached_get_code_information(code)
+        return _unfreeze_dict(data) if data else {"error": f"Code {code} not found"}
 
-        Args:
-            code: The parent code (e.g., "10", "C")
+    # ------------------------------------------------------------------
+    # get_children
+    # ------------------------------------------------------------------
 
-        Returns:
-            Tuple of child nodes with code, level, name, description, includes, excludes
-        """
+    @lru_cache(maxsize=10_000)
+    def _cached_get_children(
+        self, code: str
+    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node {CODE: $code})-[:HAS_CHILD]->(child)
         RETURN child.CODE as code,
@@ -75,24 +96,21 @@ class Graph:
                child.Excludes as excludes
         ORDER BY child.CODE
         """
-        
         result = self.graph.query(query, params={"code": code})
-        # Convert to tuple for hashability
-        return tuple(result)
+        return _freeze_list_of_dicts(result)
 
     @function_tool
-    @lru_cache(maxsize=CACHE_SIZE)
-    def get_descendants(self, code: str, levels: int = 2) -> Tuple[Dict[str, Any], ...]:
-        """
-        Get descendants of a code at a specific depth.
+    def get_children(self, code: str) -> List[Dict[str, Any]]:
+        return _unfreeze_list_of_dicts(self._cached_get_children(code))
 
-        Args:
-            code: The ancestor code
-            levels: How many levels down to traverse (default: 2)
+    # ------------------------------------------------------------------
+    # get_descendants
+    # ------------------------------------------------------------------
 
-        Returns:
-            Tuple of descendant nodes with their information
-        """
+    @lru_cache(maxsize=10_000)
+    def _cached_get_descendants(
+        self, code: str, levels: int
+    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = f"""
         MATCH (node {{CODE: $code}})-[:HAS_CHILD*{levels}]->(descendant)
         RETURN descendant.CODE as code,
@@ -103,23 +121,23 @@ class Graph:
                descendant.Excludes as excludes
         ORDER BY descendant.CODE
         """
-        
         result = self.graph.query(query, params={"code": code})
-        # Convert to tuple for hashability
-        return tuple(result)
+        return _freeze_list_of_dicts(result)
 
     @function_tool
-    @lru_cache(maxsize=CACHE_SIZE)
-    def get_siblings(self, code: str) -> Tuple[Dict[str, Any], ...]:
-        """
-        Get all sibling nodes (other children of this code's parent).
+    def get_descendants(self, code: str, levels: int = 2) -> List[Dict[str, Any]]:
+        return _unfreeze_list_of_dicts(
+            self._cached_get_descendants(code, levels)
+        )
 
-        Args:
-            code: The code whose siblings to find
+    # ------------------------------------------------------------------
+    # get_siblings
+    # ------------------------------------------------------------------
 
-        Returns:
-            Tuple of sibling nodes with their information
-        """
+    @lru_cache(maxsize=10_000)
+    def _cached_get_siblings(
+        self, code: str
+    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
         MATCH (parent)-[:HAS_CHILD]->(sibling)
@@ -132,23 +150,21 @@ class Graph:
                sibling.Excludes as excludes
         ORDER BY sibling.CODE
         """
-        
         result = self.graph.query(query, params={"code": code})
-        # Convert to tuple for hashability
-        return tuple(result)
+        return _freeze_list_of_dicts(result)
 
     @function_tool
-    @lru_cache(maxsize=CACHE_SIZE)
-    def get_parent(self, code: str) -> Optional[Dict[str, Any]]:
-        """
-        Get the parent of a code.
+    def get_siblings(self, code: str) -> List[Dict[str, Any]]:
+        return _unfreeze_list_of_dicts(self._cached_get_siblings(code))
 
-        Args:
-            code: The child code
+    # ------------------------------------------------------------------
+    # get_parent
+    # ------------------------------------------------------------------
 
-        Returns:
-            Parent node information or None if no parent exists
-        """
+    @lru_cache(maxsize=10_000)
+    def _cached_get_parent(
+        self, code: str
+    ) -> Tuple[Tuple[str, Any], ...]:
         query = """
         MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
         RETURN parent.CODE as code,
@@ -156,23 +172,24 @@ class Graph:
                parent.NAME as name,
                parent.text as description
         """
-        
         result = self.graph.query(query, params={"code": code})
-        
-        return result[0] if result else None
+        if not result:
+            return ()
+        return _freeze_dict(result[0])
 
     @function_tool
-    @lru_cache(maxsize=CACHE_SIZE)
-    def search_codes(self, search_term: str) -> Tuple[Dict[str, Any], ...]:
-        """
-        Search for codes by name or description.
+    def get_parent(self, code: str) -> Optional[Dict[str, Any]]:
+        data = self._cached_get_parent(code)
+        return _unfreeze_dict(data) if data else None
 
-        Args:
-            search_term: Text to search for
+    # ------------------------------------------------------------------
+    # search_codes
+    # ------------------------------------------------------------------
 
-        Returns:
-            Tuple of matching codes with their information
-        """
+    @lru_cache(maxsize=5_000)
+    def _cached_search_codes(
+        self, search_term: str
+    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node)
         WHERE toLower(node.NAME) CONTAINS toLower($search_term)
@@ -184,28 +201,11 @@ class Graph:
         ORDER BY node.LEVEL, node.CODE
         LIMIT 20
         """
-        
         result = self.graph.query(query, params={"search_term": search_term})
-        # Convert to tuple for hashability
-        return tuple(result)
-    
-    def clear_cache(self):
-        """Clear all cached query results"""
-        self.get_code_information.cache_clear()
-        self.get_children.cache_clear()
-        self.get_descendants.cache_clear()
-        self.get_siblings.cache_clear()
-        self.get_parent.cache_clear()
-        self.search_codes.cache_clear()
-        logger.info("Cache cleared")
-    
-    def get_cache_info(self) -> Dict[str, Any]:
-        """Get cache statistics for all cached methods"""
-        return {
-            "get_code_info": self.get_code_information.cache_info()._asdict(),
-            "get_children": self.get_children.cache_info()._asdict(),
-            "get_descendants": self.get_descendants.cache_info()._asdict(),
-            "get_siblings": self.get_siblings.cache_info()._asdict(),
-            "get_parent": self.get_parent.cache_info()._asdict(),
-            "search_codes": self.search_codes.cache_info()._asdict(),
-        }
+        return _freeze_list_of_dicts(result)
+
+    @function_tool
+    def search_codes(self, search_term: str) -> List[Dict[str, Any]]:
+        return _unfreeze_list_of_dicts(
+            self._cached_search_codes(search_term)
+        )
