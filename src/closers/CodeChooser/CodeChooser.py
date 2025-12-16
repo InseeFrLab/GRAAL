@@ -10,6 +10,7 @@ from typing import Literal
 from src.judge import judge_no_agentic_prompt
 from src.llm.client import sync_get_llm_client
 from src.tools import graph, tools
+from src.closers import Closer
 
 
 client = sync_get_llm_client()
@@ -24,14 +25,15 @@ class CodeChoice(BaseModel):
         return self.model_dump_json()
 
 class CodeChooser(Closer):
-    def __init__(self, tools, num_choices: int = 2):
+    def __init__(self, graph, num_choices: int = 2):
         
+        self.graph = graph
         self.agent = Agent(
             name = "Code Chooser Agent",
             instructions="""
-You are an expert in choosing the most appropriate code for a given activity based on provided options.
+                Tu es un agent spécialisé dans le choix du code le plus approprié pour une activité donnée parmi plusieurs options.
             """,
-            tools=tools,
+            tools=self.graph.tools,
             model=os.environ["GENERATION_MODEL"],
             model_settings={
                 "temperature": 0,
