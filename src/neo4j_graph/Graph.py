@@ -3,17 +3,18 @@ from typing import Dict, Any, List, Optional
 from langchain_neo4j import Neo4jGraph
 from langchain.tools import tool
 
-
 from neo4j.CachedNeo4j import CachedNeo4jQuery
+from neo4j.Node import Node
 
 logger = logging.getLogger(__name__)
 
 # TODO: Manage the object graph, setup graph necessary
 # TODO: Create Node Class
 
+
 class Graph:
     def __init__(self, graph: Neo4jGraph, cache_size: int = 1000):
-        self.cached_graph = CachedNeo4jQuery(graph, cache_size)
+        self.graph = graph
 
     @tool
     def get_node_information(node: Node) -> str:
@@ -71,7 +72,7 @@ class Graph:
 
 
     @tool
-    def get_children() -> str:
+    def get_children(node: Node) -> str:
         """
         Get all direct children of the current node with their detailed information.
 
@@ -82,12 +83,36 @@ class Graph:
 
         Use this tool to explore what options are available at the next level down.
         """
-        result = navigator.get_children()
+        if levels == 1:
+            query = """
+            MATCH (node {CODE: $node_code})-[:HAS_CHILD]->(child)
+            RETURN child.CODE as code,
+                   child.LEVEL as level,
+                   child.NAME as name,
+                   child.text as description,
+                   child.Includes as includes,
+                   child.Excludes as excludes
+            ORDER BY child.CODE
+            """
+        else:
+            query = """
+            MATCH (node {{CODE: $node_code}})-[:HAS_CHILD*{levels}]->(descendant)
+            RETURN descendant.CODE as code,
+                   descendant.LEVEL as level,
+                   descendant.NAME as name,
+                   descendant.text as description,
+                   descendant.Includes as includes,
+                   descendant.Excludes as excludes
+            ORDER BY descendant.CODE
+            """.format(levels=levels)
+        
+        result = self.cached_graph.query(query, params={"node_code": node_code})
+        
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
     @tool
-    def get_siblings() -> str:
+    def get_siblings(code: str) -> str:
         """
         Get all sibling nodes (other children of the current node's parent).
 
