@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any, List, Optional, Tuple
+from pydantic import BaseModel
 from functools import lru_cache
 
 from langchain_neo4j import Neo4jGraph
@@ -28,12 +29,93 @@ def _unfreeze_list_of_dicts(
     return [dict(d) for d in t]
 
 
+def make_tools(graph):
+
+    @function_tool
+    def get_code_information(code: str) -> Dict[str, Any]:
+        """
+        Retourne les informations complètes d'un code NACE.
+        
+        Args:
+            code: Code NACE (ex: "62.01", "J", "62")
+        
+        Returns:
+            Dictionnaire avec code, level, name, description, includes, includes_also,
+            excludes, implementation_rule, parent_code, children_codes, children_count
+        """
+        data = graph._cached_get_code_information(code)
+        return _unfreeze_dict(data) if data else {"error": f"Code {code} not found"}
+
+    @function_tool
+    def get_children(code: str) -> List[Dict[str, Any]]:
+        """
+        Retourne les enfants directs d'un code (niveau N+1).
+        
+        Args:
+            code: Code parent
+        
+        Returns:
+            Liste des codes enfants avec code, level, name, description, includes, excludes
+        """
+        return _unfreeze_list_of_dicts(graph._cached_get_children(code))
+
+    @function_tool
+    def get_descendants(code: str, levels: int = 2) -> List[Dict[str, Any]]:
+        """
+        Retourne les descendants d'un code jusqu'à N niveaux de profondeur.
+        
+        Args:
+            code: Code de départ
+            levels: Nombre de niveaux à descendre (défaut: 2, recommandé: ≤3)
+        
+        Returns:
+            Liste de tous les descendants jusqu'au niveau spécifié
+        """
+        return _unfreeze_list_of_dicts(
+            graph._cached_get_descendants(code, levels)
+        )
+    
+    @function_tool
+    def get_siblings(code: str) -> List[Dict[str, Any]]:
+        """
+        Retourne les codes au même niveau hiérarchique (même parent).
+        
+        Args:
+            code: Code dont on cherche les siblings
+        
+        Returns:
+            Liste des codes siblings (excluant le code d'origine)
+        """
+        return _unfreeze_list_of_dicts(graph._cached_get_siblings(code))
+
+    @function_tool
+    def get_parent(code: str) -> Optional[Dict[str, Any]]:
+        """
+        Retourne le parent direct d'un code (niveau N-1).
+        
+        Args:
+            code: Code dont on cherche le parent
+        
+        Returns:
+            Dictionnaire du parent ou None si pas de parent
+        """
+        data = graph._cached_get_parent(code)
+        return _unfreeze_dict(data) if data else None
+    
+    return get_code_information, get_children, get_descendants, get_siblings, get_parent
+
+class Neo4JConfig(BaseModel):
+    url: str
+    username: str
+    password: str
+
+
 class Graph:
-    def __init__(self):
+    def __init__(self, neo4j_config: Neo4JConfig) -> None:
         self.graph = Neo4jGraph(
-            url=NEO4J_URL,
-            username=NEO4J_USERNAME,
-            password=NEO4J_PWD,
+            url=neo4j_config.url,
+            username=neo4j_config.username,
+            password=neo4j_config.password,
             enhanced_schema=True,
             )
 
@@ -79,21 +161,6 @@ class Graph:
             return ()
         return _freeze_dict(result[0])
 
-    @function_tool
-    def get_code_information(self, code: str) -> Dict[str, Any]:
-        """
-        Retourne les informations complètes d'un code NACE.
-        
-        Args:
-            code: Code NACE (ex: "62.01", "J", "62")
-        
-        Returns:
-            Dictionnaire avec code, level, name, description, includes, includes_also,
-            excludes, implementation_rule, parent_code, children_codes, children_count
-        """
-        data = self._cached_get_code_information(code)
-        return _unfreeze_dict(data) if data else {"error": f"Code {code} not found"}
-
     # ------------------------------------------------------------------
     # get_children
     # ------------------------------------------------------------------
@@ -114,19 +181,6 @@ class Graph:
         """
         result = self.graph.query(query, params={"code": code})
         return _freeze_list_of_dicts(result)
-
-    @function_tool
-    def get_children(self, code: str) -> List[Dict[str, Any]]:
-        """
-        Retourne les enfants directs d'un code (niveau N+1).
-        
-        Args:
-            code: Code parent
-        
-        Returns:
-            Liste des codes enfants avec code, level, name, description, includes, excludes
-        """
-        return _unfreeze_list_of_dicts(self._cached_get_children(code))
 
     # ------------------------------------------------------------------
     # get_descendants
@@ -149,21 +203,7 @@ class Graph:
         result = self.graph.query(query, params={"code": code})
         return _freeze_list_of_dicts(result)
 
-    @function_tool
-    def get_descendants(self, code: str, levels: int = 2) -> List[Dict[str, Any]]:
-        """
-        Retourne les descendants d'un code jusqu'à N niveaux de profondeur.
-        
-        Args:
-            code: Code de départ
-            levels: Nombre de niveaux à descendre (défaut: 2, recommandé: ≤3)
-        
-        Returns:
-            Liste de tous les descendants jusqu'au niveau spécifié
-        """
-        return _unfreeze_list_of_dicts(
-            self._cached_get_descendants(code, levels)
-        )
+    
 
     # ------------------------------------------------------------------
     # get_siblings
@@ -187,20 +227,6 @@ class Graph:
         """
         result = self.graph.query(query, params={"code": code})
         return _freeze_list_of_dicts(result)
-
-    @function_tool
-    def get_siblings(self, code: str) -> List[Dict[str, Any]]:
-        """
-        Retourne les codes au même niveau hiérarchique (même parent).
-        
-        Args:
-            code: Code dont on cherche les siblings
-        
-        Returns:
-            Liste des codes siblings (excluant le code d'origine)
-        """
-        return _unfreeze_list_of_dicts(self._cached_get_siblings(code))
-
     # ------------------------------------------------------------------
     # get_parent
     # ------------------------------------------------------------------
@@ -220,20 +246,6 @@ class Graph:
         if not result:
             return ()
         return _freeze_dict(result[0])
-
-    @function_tool
-    def get_parent(self, code: str) -> Optional[Dict[str, Any]]:
-        """
-        Retourne le parent direct d'un code (niveau N-1).
-        
-        Args:
-            code: Code dont on cherche le parent
-        
-        Returns:
-            Dictionnaire du parent ou None si pas de parent
-        """
-        data = self._cached_get_parent(code)
-        return _unfreeze_dict(data) if data else None
 
     # ------------------------------------------------------------------
     # search_codes
@@ -256,29 +268,3 @@ class Graph:
         """
         result = self.graph.query(query, params={"search_term": search_term})
         return _freeze_list_of_dicts(result)
-
-    @function_tool
-    def search_codes(self, search_term: str) -> List[Dict[str, Any]]:
-        """
-        Recherche des codes par mots-clés dans name et description.
-        
-        Args:
-            search_term: Terme à rechercher (insensible à la casse)
-        
-        Returns:
-            Maximum 20 résultats triés par level puis code
-        """
-        return _unfreeze_list_of_dicts(
-            self._cached_search_codes(search_term)
-        )
-
-    def get_tools(self):
-        """Return the tools associated with the graph."""
-        return [
-            self.get_code_information,
-            self.get_children,
-            self.get_descendants,
-            self.get_siblings,
-            self.get_parent,
-            self.search_codes,
-        ]
