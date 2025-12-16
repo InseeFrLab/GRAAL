@@ -22,7 +22,7 @@ class MatchVerifier(Closer):
             instructions="""
                 Tu es un agent spécialisé dans la vérification de la validité d'une correspondance entre un libellé textuel et le code qui lui a été associé.
             """,
-            tools=self.graph.tools,
+            tools=self.graph.get_tools(),
             model=os.environ["GENERATION_MODEL"],
             model_settings={
                 "temperature": 0,

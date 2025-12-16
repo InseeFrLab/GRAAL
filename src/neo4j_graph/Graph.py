@@ -271,3 +271,14 @@ class Graph:
         return _unfreeze_list_of_dicts(
             self._cached_search_codes(search_term)
         )
+
+    def get_tools(self):
+        """Return the tools associated with the graph."""
+        return [
+            self.get_code_information,
+            self.get_children,
+            self.get_descendants,
+            self.get_siblings,
+            self.get_parent,
+            self.search_codes,
+        ]

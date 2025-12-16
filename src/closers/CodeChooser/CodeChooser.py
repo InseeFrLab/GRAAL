@@ -2,14 +2,11 @@ import os
 
 from dotenv import load_dotenv
 
-os.chdir("codif-ape-graph-rag")
 from agents import Agent, Runner
 from pydantic import BaseModel, Field
 from typing import Literal
 
-from src.judge import judge_no_agentic_prompt
 from src.llm.client import sync_get_llm_client
-from src.tools import graph, tools
 from src.closers import Closer
 
 
@@ -33,7 +30,7 @@ class CodeChooser(Closer):
             instructions="""
                 Tu es un agent spécialisé dans le choix du code le plus approprié pour une activité donnée parmi plusieurs options.
             """,
-            tools=self.graph.tools,
+            tools=self.graph.get_tools(),
             model=os.environ["GENERATION_MODEL"],
             model_settings={
                 "temperature": 0,
