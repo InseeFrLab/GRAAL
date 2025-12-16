@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from agents import Agent, Runner
 from src.tools import graph, tools
 
+
 class MatchVerificationResult(BaseModel):
     is_match: bool = Field(description="Indicates whether the match is valid or not")
     confidence: float = Field(description="Confidence level of the verification, between 0 and 1", ge=0, le=1)
