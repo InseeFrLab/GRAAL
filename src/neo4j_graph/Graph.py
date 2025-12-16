@@ -1,37 +1,35 @@
 import logging
-from typing import Dict, Any, List, Optional
+import os
+from typing import Dict, Any, Optional, Tuple
+from functools import lru_cache
 from langchain_neo4j import Neo4jGraph
-from langchain.tools import tool
-
-from neo4j.CachedNeo4j import CachedNeo4jQuery
-from neo4j.Node import Node
+from agents import function_tool
 
 logger = logging.getLogger(__name__)
-
-# TODO: Manage the object graph, setup graph necessary
-# TODO: Create Node Class
+CACHE_SIZE = os.getenv("GRAPH_CACHE_SIZE", 1000)
 
 
 class Graph:
-    def __init__(self, graph: Neo4jGraph, cache_size: int = 1000):
+    def __init__(self, graph: Neo4jGraph):
         self.graph = graph
 
-    @tool
-    def get_node_information(node: Node) -> str:
+    @function_tool
+    @lru_cache(maxsize=CACHE_SIZE)
+    def get_code_information(self, code: str) -> Dict[str, Any]:
         """
-        Get comprehensive information about a node.
+        Get comprehensive information about a code node.
 
-        Returns detailed information including:
-        - Code, level, and name
-        - Full description and classification rules
-        - What this code includes and excludes
-        - Parent code and children count
-        - Navigation history
+        Args:
+            code: The code to look up (e.g., "10.71", "C")
 
-        Use this tool first to understand where you are in the hierarchy.
+        Returns:
+            Dictionary with:
+            - code, level, name
+            - description, includes, excludes
+            - parent_code, children_codes, children_count
         """
         query = """
-        MATCH (node {CODE: $node_code})
+        MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
         WITH node, parent, collect(child.CODE) as children_codes
@@ -47,134 +45,167 @@ class Graph:
                children_codes,
                size(children_codes) as children_count
         """
-        result = self.cached_graph.query(query)
-        node_info = result[0] if result else None
         
-        if node_info:
-            return {
-                "code": node_info["code"],
-                "level": node_info["level"],
-                "name": node_info["name"],
-                "description": node_info["description"],
-                "includes": node_info["includes"],
-                "includes_also": node_info["includes_also"],
-                "excludes": node_info["excludes"],
-                "implementation_rule": node_info["implementation_rule"],
-                "parent_code": node_info["parent_code"],
-                "children_codes": node_info["children_codes"],
-                "children_count": node_info["children_count"],
-                "navigation_history": self.history[-5:]  # Last 5 steps
-            }
+        result = self.graph.query(query, params={"code": code})
         
-        return {"error": f"Node {self.node_code} not found"}
-    
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-    @tool
-    def get_children(node: Node) -> str:
-        """
-        Get all direct children of the current node with their detailed information.
-
-        Returns:
-        - List of all child nodes with codes, names, and descriptions
-        - What each child includes/excludes
-        - Whether each child is a final classification code
-
-        Use this tool to explore what options are available at the next level down.
-        """
-        if levels == 1:
-            query = """
-            MATCH (node {CODE: $node_code})-[:HAS_CHILD]->(child)
-            RETURN child.CODE as code,
-                   child.LEVEL as level,
-                   child.NAME as name,
-                   child.text as description,
-                   child.Includes as includes,
-                   child.Excludes as excludes
-            ORDER BY child.CODE
-            """
-        else:
-            query = """
-            MATCH (node {{CODE: $node_code}})-[:HAS_CHILD*{levels}]->(descendant)
-            RETURN descendant.CODE as code,
-                   descendant.LEVEL as level,
-                   descendant.NAME as name,
-                   descendant.text as description,
-                   descendant.Includes as includes,
-                   descendant.Excludes as excludes
-            ORDER BY descendant.CODE
-            """.format(levels=levels)
+        if result:
+            return result[0]
         
-        result = self.cached_graph.query(query, params={"node_code": node_code})
-        
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return {"error": f"Code {code} not found"}
 
-
-    @tool
-    def get_siblings(code: str) -> str:
+    @function_tool
+    @lru_cache(maxsize=CACHE_SIZE)
+    def get_children(self, code: str) -> Tuple[Dict[str, Any], ...]:
         """
-        Get all sibling nodes (other children of the current node's parent).
-
-        This helps you explore alternatives at the same level of the hierarchy.
-        Useful when the current branch doesn't seem to fit the activity being classified.
-
-        Returns:
-        - List of sibling nodes with codes, names, and descriptions
-        - What each sibling includes/excludes
-        """
-        result = navigator.get_siblings()
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-    @tool
-    def get_context_summary() -> str:
-        """
-        Get a comprehensive overview of your current position in the hierarchy.
-
-        This is the most useful tool for understanding the full context:
-        - Where you are (current node details)
-        - Where you can go (children count)
-        - Alternative options (siblings count)
-        - Navigation path taken so far
-        - Whether you can go deeper or if this is a final node
-
-        Use this tool when you need to make a decision about navigation direction.
-        """
-        result = navigator.get_context_summary()
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-    @tool
-    def go_down(node_code: str) -> str:
-        """
-        Navigate down to a specific child node.
+        Get all direct children of a code.
 
         Args:
-            node_code: The CODE of the child node to navigate to (e.g., "10.71", "C")
+            code: The parent code (e.g., "10", "C")
 
         Returns:
-            Success/failure information and details about the new current node.
-
-        Only call this after using get_children() to see available options.
-        The node_code must be a direct child of the current node.
+            Tuple of child nodes with code, level, name, description, includes, excludes
         """
-        result = navigator.go_down(node_code)
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-    @tool
-    def go_up() -> str:
+        query = """
+        MATCH (node {CODE: $code})-[:HAS_CHILD]->(child)
+        RETURN child.CODE as code,
+               child.LEVEL as level,
+               child.NAME as name,
+               child.text as description,
+               child.Includes as includes,
+               child.Excludes as excludes
+        ORDER BY child.CODE
         """
-        Navigate up one level to the parent node.
+        
+        result = self.graph.query(query, params={"code": code})
+        # Convert to tuple for hashability
+        return tuple(result)
 
-        Use this tool when:
-        - You want to backtrack and explore a different branch
-        - The current branch doesn't match the activity
-        - You want to reconsider your navigation choices
+    @function_tool
+    @lru_cache(maxsize=CACHE_SIZE)
+    def get_descendants(self, code: str, levels: int = 2) -> Tuple[Dict[str, Any], ...]:
+        """
+        Get descendants of a code at a specific depth.
+
+        Args:
+            code: The ancestor code
+            levels: How many levels down to traverse (default: 2)
 
         Returns:
-            Information about the parent node and new current position.
+            Tuple of descendant nodes with their information
         """
-        result = navigator.go_up()
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        query = f"""
+        MATCH (node {{CODE: $code}})-[:HAS_CHILD*{levels}]->(descendant)
+        RETURN descendant.CODE as code,
+               descendant.LEVEL as level,
+               descendant.NAME as name,
+               descendant.text as description,
+               descendant.Includes as includes,
+               descendant.Excludes as excludes
+        ORDER BY descendant.CODE
+        """
+        
+        result = self.graph.query(query, params={"code": code})
+        # Convert to tuple for hashability
+        return tuple(result)
+
+    @function_tool
+    @lru_cache(maxsize=CACHE_SIZE)
+    def get_siblings(self, code: str) -> Tuple[Dict[str, Any], ...]:
+        """
+        Get all sibling nodes (other children of this code's parent).
+
+        Args:
+            code: The code whose siblings to find
+
+        Returns:
+            Tuple of sibling nodes with their information
+        """
+        query = """
+        MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
+        MATCH (parent)-[:HAS_CHILD]->(sibling)
+        WHERE sibling.CODE <> $code
+        RETURN sibling.CODE as code,
+               sibling.LEVEL as level,
+               sibling.NAME as name,
+               sibling.text as description,
+               sibling.Includes as includes,
+               sibling.Excludes as excludes
+        ORDER BY sibling.CODE
+        """
+        
+        result = self.graph.query(query, params={"code": code})
+        # Convert to tuple for hashability
+        return tuple(result)
+
+    @function_tool
+    @lru_cache(maxsize=CACHE_SIZE)
+    def get_parent(self, code: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the parent of a code.
+
+        Args:
+            code: The child code
+
+        Returns:
+            Parent node information or None if no parent exists
+        """
+        query = """
+        MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
+        RETURN parent.CODE as code,
+               parent.LEVEL as level,
+               parent.NAME as name,
+               parent.text as description
+        """
+        
+        result = self.graph.query(query, params={"code": code})
+        
+        return result[0] if result else None
+
+    @function_tool
+    @lru_cache(maxsize=CACHE_SIZE)
+    def search_codes(self, search_term: str) -> Tuple[Dict[str, Any], ...]:
+        """
+        Search for codes by name or description.
+
+        Args:
+            search_term: Text to search for
+
+        Returns:
+            Tuple of matching codes with their information
+        """
+        query = """
+        MATCH (node)
+        WHERE toLower(node.NAME) CONTAINS toLower($search_term)
+           OR toLower(node.text) CONTAINS toLower($search_term)
+        RETURN node.CODE as code,
+               node.LEVEL as level,
+               node.NAME as name,
+               node.text as description
+        ORDER BY node.LEVEL, node.CODE
+        LIMIT 20
+        """
+        
+        result = self.graph.query(query, params={"search_term": search_term})
+        # Convert to tuple for hashability
+        return tuple(result)
+    
+    def clear_cache(self):
+        """Clear all cached query results"""
+        self.get_code_information.cache_clear()
+        self.get_children.cache_clear()
+        self.get_descendants.cache_clear()
+        self.get_siblings.cache_clear()
+        self.get_parent.cache_clear()
+        self.search_codes.cache_clear()
+        logger.info("Cache cleared")
+    
+    def get_cache_info(self) -> Dict[str, Any]:
+        """Get cache statistics for all cached methods"""
+        return {
+            "get_code_info": self.get_code_information.cache_info()._asdict(),
+            "get_children": self.get_children.cache_info()._asdict(),
+            "get_descendants": self.get_descendants.cache_info()._asdict(),
+            "get_siblings": self.get_siblings.cache_info()._asdict(),
+            "get_parent": self.get_parent.cache_info()._asdict(),
+            "search_codes": self.search_codes.cache_info()._asdict(),
+        }
