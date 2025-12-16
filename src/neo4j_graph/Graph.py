@@ -75,6 +75,16 @@ class Graph:
 
     @function_tool
     def get_code_information(self, code: str) -> Dict[str, Any]:
+        """
+        Retourne les informations complètes d'un code NACE.
+        
+        Args:
+            code: Code NACE (ex: "62.01", "J", "62")
+        
+        Returns:
+            Dictionnaire avec code, level, name, description, includes, includes_also,
+            excludes, implementation_rule, parent_code, children_codes, children_count
+        """
         data = self._cached_get_code_information(code)
         return _unfreeze_dict(data) if data else {"error": f"Code {code} not found"}
 
@@ -101,6 +111,15 @@ class Graph:
 
     @function_tool
     def get_children(self, code: str) -> List[Dict[str, Any]]:
+        """
+        Retourne les enfants directs d'un code (niveau N+1).
+        
+        Args:
+            code: Code parent
+        
+        Returns:
+            Liste des codes enfants avec code, level, name, description, includes, excludes
+        """
         return _unfreeze_list_of_dicts(self._cached_get_children(code))
 
     # ------------------------------------------------------------------
@@ -126,6 +145,16 @@ class Graph:
 
     @function_tool
     def get_descendants(self, code: str, levels: int = 2) -> List[Dict[str, Any]]:
+        """
+        Retourne les descendants d'un code jusqu'à N niveaux de profondeur.
+        
+        Args:
+            code: Code de départ
+            levels: Nombre de niveaux à descendre (défaut: 2, recommandé: ≤3)
+        
+        Returns:
+            Liste de tous les descendants jusqu'au niveau spécifié
+        """
         return _unfreeze_list_of_dicts(
             self._cached_get_descendants(code, levels)
         )
@@ -155,6 +184,15 @@ class Graph:
 
     @function_tool
     def get_siblings(self, code: str) -> List[Dict[str, Any]]:
+        """
+        Retourne les codes au même niveau hiérarchique (même parent).
+        
+        Args:
+            code: Code dont on cherche les siblings
+        
+        Returns:
+            Liste des codes siblings (excluant le code d'origine)
+        """
         return _unfreeze_list_of_dicts(self._cached_get_siblings(code))
 
     # ------------------------------------------------------------------
@@ -179,6 +217,15 @@ class Graph:
 
     @function_tool
     def get_parent(self, code: str) -> Optional[Dict[str, Any]]:
+        """
+        Retourne le parent direct d'un code (niveau N-1).
+        
+        Args:
+            code: Code dont on cherche le parent
+        
+        Returns:
+            Dictionnaire du parent ou None si pas de parent
+        """
         data = self._cached_get_parent(code)
         return _unfreeze_dict(data) if data else None
 
@@ -206,6 +253,15 @@ class Graph:
 
     @function_tool
     def search_codes(self, search_term: str) -> List[Dict[str, Any]]:
+        """
+        Recherche des codes par mots-clés dans name et description.
+        
+        Args:
+            search_term: Terme à rechercher (insensible à la casse)
+        
+        Returns:
+            Maximum 20 résultats triés par level puis code
+        """
         return _unfreeze_list_of_dicts(
             self._cached_search_codes(search_term)
         )
