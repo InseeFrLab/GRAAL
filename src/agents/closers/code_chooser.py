@@ -1,17 +1,10 @@
 import os
 
-from dotenv import load_dotenv
-
-from agents import Agent, Runner
+from agents import Runner
 from pydantic import BaseModel, Field
-from typing import Literal
 
-from src.llm.client import sync_get_llm_client
-from src.closers import Closer
-
-
-client = sync_get_llm_client()
-load_dotenv()
+from src.agents.base_agent import BaseAgent
+from src.neo4j_graph.Graph import Graph
 
 class CodeChoice(BaseModel):
     chosen_code: str = Field(description="Chosen code among the provided options")
@@ -21,39 +14,34 @@ class CodeChoice(BaseModel):
     def __str__(self):
         return self.model_dump_json()
 
-class CodeChooser(Closer):
-    def __init__(self, graph, num_choices: int = 2):
+
+class CodeChooser(BaseAgent):
+    def __init__(self, graph: Graph, num_choices: int = 2):
         
-        self.graph = graph
-        self.agent = Agent(
-            name = "Code Chooser Agent",
-            instructions="""
-                Tu es un agent spécialisé dans le choix du code le plus approprié pour une activité donnée parmi plusieurs options.
-            """,
-            tools=self.graph.get_tools(),
-            model=os.environ["GENERATION_MODEL"],
-            model_settings={
-                "temperature": 0,
-            },
-            output_type=CodeChoice
-        )
+        super().__init__(graph)
         self.num_choices = num_choices
     
-    def __call__(self, activity: str, codes:list[str]) -> str:
-        # --- Create agent ---
+    async def __call__(self, activity: str, codes: list[str]) -> str:
 
+        # We rewrite the base __call__ to add the num_choices check
         if self.num_choices != len(codes):
             raise ValueError(f"Expected {self.num_choices} codes, got {len(codes)}")
         
-        # Build the prompt
         prompt = self.build_prompt(activity, codes)
+        result = await Runner.run(self.agent, prompt)
         
-        # Run the agent with the prompt
-        runner = Runner(agent=self.agent)
-        result = runner.run(prompt)
-        
-        return result.output
-        
+        return result
+    
+    def get_agent_name(self) -> str:
+        return "Code Chooser Agent"
+
+    def get_instructions(self) -> str:
+        return """
+                Tu es un agent spécialisé dans le choix du code le plus approprié pour une activité donnée parmi plusieurs options.
+            """
+    def get_output_type(self):
+        return CodeChoice
+
     def build_prompt(self, activity: str, codes: list[str]) -> str:
         """
         Build a prompt for the agent to choose between codes.
