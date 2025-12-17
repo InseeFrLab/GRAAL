@@ -16,6 +16,7 @@ class MatchVerificationInput(BaseModel):
     activity: str = Field(description="The textual label of the activity to verify")
     proposed_code: str = Field(description="The code that has been associated with the activity")
     proposed_explanation: str = Field(description="The explanation provided for the proposed code")
+    proposed_confidence: float = Field(description="The confidence level of the proposed match, between 0 and 1", ge=0, le=1)
 
 class MatchVerifier(BaseAgent):
     def __init__(self, graph: Graph):
@@ -41,7 +42,7 @@ class MatchVerifier(BaseAgent):
 
         Activité : {match_verification_input.activity}
 
-        Code proposé : {match_verification_input.code}
+        Code proposé : {match_verification_input.proposed_code}
         Explication proposée : {match_verification_input.proposed_explanation}
 
         Réponds en fournissant :

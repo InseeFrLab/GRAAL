@@ -6,6 +6,7 @@ from functools import lru_cache
 from dotenv import load_dotenv
 from langchain_neo4j import Neo4jGraph, Neo4jVector
 from langchain_openai import OpenAIEmbeddings
+from openai import OpenAI
 from agents import function_tool
 
 logger = logging.getLogger(__name__)
@@ -105,7 +106,7 @@ def make_tools(graph):
         data = graph._cached_get_parent(code)
         return _unfreeze_dict(data) if data else None
     
-    return get_code_information, get_children, get_descendants, get_siblings, get_parent
+    return [get_code_information, get_children, get_descendants, get_siblings, get_parent]
 
 class Neo4JConfig(BaseModel):
     url: str
@@ -127,8 +128,8 @@ class Graph:
                 model=os.environ["EMBEDDING_MODEL"],
                 openai_api_base=os.environ["URL_EMBEDDING_API"],
                 openai_api_key=os.environ["OPENAI_API_KEY"],
-                tiktoken_enabled=False,
             )
+
         self.db = Neo4jVector.from_existing_graph(
                     graph=self.graph,
                     embedding=self.emb_model,
@@ -140,8 +141,8 @@ class Graph:
                     search_type="vector",
                 )
 
-    def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
-        retrieval = self.db.asimilarity_search(f"query : {activity}", k=top_k, filter={"FINAL": 1})
+    async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
+        retrieval = await self.db.asimilarity_search(f"query : {activity}", k=top_k, filter={"FINAL": 1})
         return [item.metadata["CODE"] for item in retrieval]
     # ------------------------------------------------------------------
     # Cache management
