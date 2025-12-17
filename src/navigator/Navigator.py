@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 from langchain_neo4j import Neo4jGraph
 from agents import function_tool
 
-from neo4j_graph.Graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
+from src.neo4j_graph.Graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
 
 logger = logging.getLogger(__name__)
 

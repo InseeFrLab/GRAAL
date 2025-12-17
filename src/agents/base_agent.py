@@ -25,6 +25,7 @@ set_default_openai_client(client=client, use_for_tracing=False)
 set_default_openai_api("chat_completions")
 set_tracing_disabled(True)
 
+
 class BaseAgent(ABC):
 
     def __init__(self, graph: Graph):

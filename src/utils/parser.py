@@ -17,7 +17,8 @@ def parse_args() -> argparse.Namespace:
         help="Classify with agentic method. Default query: 'Boulangerie'"
     )
     methods.add_argument(
-        "--agentic-rag", 
+        "--agentic-rag",
+        dest="agentic_rag", 
         type=str,
         nargs='?',
         const="Boulangerie",

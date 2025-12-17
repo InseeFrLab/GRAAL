@@ -12,7 +12,16 @@ class NavigatorAgenticClassifier(BaseClassifier):
     def get_agent_name(self) -> str:
         return "Navigator Agentic Classifier"
     
-    def build_prompt(self) -> str:
+    def build_prompt(self, query: str) -> str:
+        return f"""
+        Vous êtes un classificateur NACE.
+        
+        Activité à classifier : {query}
+        
+        Trouvez le code NACE le plus approprié.
+        """
+        
+    def get_instructions(self) -> str: 
         return """
             Vous êtes un expert en classification. Votre mission est de trouver le code de classification le plus spécifique et approprié pour une activité donnée.
 

@@ -1,9 +1,11 @@
 import logging
 import asyncio
+import sys
 
-from utils.logging import configure_logging
-from utils.parser import parse_args
-from classify.navigator import classify_navigator
+from src.utils.logging import configure_logging
+from src.utils.parser import parse_args
+from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
+from src.config import neo4j_config
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -12,8 +14,10 @@ logger = logging.getLogger(__name__)
 async def classify_navigator(query: str, experiment_name: str):
     """Classify using agentic method"""
     logger.info(f"Navigator classification: {query}")
-    # TODO: add the managemetn for exp_name
-    return classify_navigator(query)
+    # TODO: add the management for exp_name
+    classifier = NavigatorAgenticClassifier(neo4j_config)
+    result = await classifier(query)
+    return result
 
 
 async def classify_agentic_rag(query: str, experiment_name: str):
@@ -52,11 +56,11 @@ async def main():
         # Determine which method(s) to use
         methods_to_run = []
         
-        if args.agentic:
-            methods_to_run.append(("agentic", args.agentic, classify_navigator))
+        if args.navigator:
+            methods_to_run.append(("navigator", args.navigator, classify_navigator))
         
-        if args.flat_embeddings:
-            methods_to_run.append(("flat-embeddings", args.flat_embeddings, classify_agentic_rag))
+        if args.agentic_rag:
+            methods_to_run.append(("agentic-rag", args.agentic_rag, classify_agentic_rag))
         
         # No method specified
         if not methods_to_run:
