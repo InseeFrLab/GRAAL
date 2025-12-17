@@ -128,20 +128,7 @@ class Graph:
             password=neo4j_config.password,
             enhanced_schema=True,
             )
-
-    # ------------------------------------------------------------------
-    # Get tools 
-    # ------------------------------------------------------------------
-
-    def get_tools(self):
-        """
-        Retourne les tools de navigation spécifiques au Navigator.
-        
-        Returns:
-            Tuple des tools de navigation avec état
-        """
-        return make_tools(self)
-
+            
         self.emb_model = OpenAIEmbeddings(
                 model=os.environ["EMBEDDING_MODEL"],
                 openai_api_base=os.environ["URL_EMBEDDING_API"],
@@ -158,6 +145,19 @@ class Graph:
                     embedding_node_property="embedding",
                     search_type="vector",
                 )
+
+    # ------------------------------------------------------------------
+    # Get tools 
+    # ------------------------------------------------------------------
+
+    def get_tools(self):
+        """
+        Retourne les tools de navigation spécifiques au Navigator.
+        
+        Returns:
+            Tuple des tools de navigation avec état
+        """
+        return make_tools(self)
 
     async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
         retrieval = await self.db.asimilarity_search(f"query : {activity}", k=top_k, filter={"FINAL": 1})
