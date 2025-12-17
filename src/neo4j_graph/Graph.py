@@ -1,12 +1,15 @@
 import logging
+import os
 from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel
 from functools import lru_cache
-
-from langchain_neo4j import Neo4jGraph
+from dotenv import load_dotenv
+from langchain_neo4j import Neo4jGraph, Neo4jVector
+from langchain_openai import OpenAIEmbeddings
 from agents import function_tool
 
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 
 def _freeze_dict(d: Dict[str, Any]) -> Tuple[Tuple[str, Any], ...]:
@@ -139,6 +142,26 @@ class Graph:
         """
         return make_tools(self)
 
+        self.emb_model = OpenAIEmbeddings(
+                model=os.environ["EMBEDDING_MODEL"],
+                openai_api_base=os.environ["URL_EMBEDDING_API"],
+                openai_api_key=os.environ["OPENAI_API_KEY"],
+                tiktoken_enabled=False,
+            )
+        self.db = Neo4jVector.from_existing_graph(
+                    graph=self.graph,
+                    embedding=self.emb_model,
+                    index_name="id",
+                    node_label="Chunk",
+                    text_node_properties=["text"],
+                    keyword_index_name="text",
+                    embedding_node_property="embedding",
+                    search_type="vector",
+                )
+
+    def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
+        retrieval = self.db.asimilarity_search(f"query : {activity}", k=top_k, filter={"FINAL": 1})
+        return [item.metadata["CODE"] for item in retrieval]
     # ------------------------------------------------------------------
     # Cache management
     # ------------------------------------------------------------------
