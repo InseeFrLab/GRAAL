@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 
 from src.agents.base_agent import BaseAgent
 from src.agents.closers.match_verifier import MatchVerifier, MatchVerificationInput
+from src.agents.Text2Code.classifiers.base_classifier import BaseClassifier
+from src.neo4j_graph.Graph import Graph
 
 
 class Text2CodeOutput(BaseModel):
@@ -16,13 +18,12 @@ class Text2CodeOutput(BaseModel):
 
 
 class Text2CodeAgent():
-    def __init__(self, graph, classifier, verifier: bool= True):
-        super().__init__(graph)
+    def __init__(self, classifier: BaseClassifier, verifier: bool= True):
 
         self.classifier = classifier
 
         if verifier:
-            self.verifier = MatchVerifier(graph)
+            self.verifier = MatchVerifier(self.classifier.graph)
 
     def __call__(self, activity: str) -> Text2CodeOutput:
 
