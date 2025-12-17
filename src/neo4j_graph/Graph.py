@@ -106,13 +106,12 @@ def make_tools(graph):
         data = graph._cached_get_parent(code)
         return _unfreeze_dict(data) if data else None
     
-    return [(
+    return [
         get_code_information,
         get_children,
         get_descendants,
         get_siblings,
         get_parent]
-    )
 
 
 class Neo4JConfig(BaseModel):
