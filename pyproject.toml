@@ -1,0 +1,12 @@
+[project]
+name = "graal"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "langchain-neo4j>=0.6.0",
+    "langchain-openai>=1.1.4",
+    "openai-agents>=0.6.3",
+    "transformers>=4.57.3",
+]
