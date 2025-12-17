@@ -10,3 +10,13 @@ dependencies = [
     "openai-agents>=0.6.3",
     "transformers>=4.57.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "ruff>=0.14.9",
+]
+
+[tool.ruff]
+line-length = 100
+extend-include = ["*.ipynb"]

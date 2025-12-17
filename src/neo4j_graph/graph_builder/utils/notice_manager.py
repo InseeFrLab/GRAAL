@@ -1,8 +1,8 @@
 import logging
-import s3fs
-import pandas as pd
 import os
 
+import pandas as pd
+import s3fs
 
 logger = logging.getLogger(__name__)
 

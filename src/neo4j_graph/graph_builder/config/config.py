@@ -1,9 +1,10 @@
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# EMBED MANAGER 
+# EMBED MANAGER
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", None)
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", 32000))
 URL_EMBEDDING_API = "EMPTY"

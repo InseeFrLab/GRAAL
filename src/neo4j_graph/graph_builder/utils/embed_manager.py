@@ -2,6 +2,7 @@ import logging
 
 from langchain.text_splitter import TokenTextSplitter
 from langchain_openai import OpenAIEmbeddings
+
 from neo4j_graph.graph_builder.config import URL_EMBEDDING_API
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,9 @@ def truncate_docs_to_max_tokens(docs, max_tokens):
 
     return truncated_docs
 
+
 # TODO: Remove langchain depency
-# TODO: factorize embedder manager outside from the graph builder ? 
+# TODO: factorize embedder manager outside from the graph builder ?
 def get_embedding_model(model_name: str) -> OpenAIEmbeddings:
     """Initialize the embedding model."""
     return OpenAIEmbeddings(
