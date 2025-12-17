@@ -12,6 +12,11 @@ class MatchVerificationResult(BaseModel):
     def __str__(self):
         return self.model_dump_json()
 
+class MatchVerificationInput(BaseModel):
+    activity: str = Field(description="The textual label of the activity to verify")
+    proposed_code: str = Field(description="The code that has been associated with the activity")
+    proposed_explanation: str = Field(description="The explanation provided for the proposed code")
+
 class MatchVerifier(BaseAgent):
     def __init__(self, graph: Graph):
         super().__init__(graph)
@@ -27,16 +32,17 @@ class MatchVerifier(BaseAgent):
     def get_output_type(self):
         return MatchVerificationResult
     
-    def build_prompt(self, activity: str, code: str) -> str:
+    def build_prompt(self, match_verification_input: MatchVerificationInput) -> str:
         """
         Construire le prompt pour l'agent de vérification de correspondance.
         """
         prompt = f"""
         Vérifie si le code suivant correspond bien à l'activité décrite.
 
-        Activité : {activity}
+        Activité : {match_verification_input.activity}
 
-        Code proposé : {code}
+        Code proposé : {match_verification_input.code}
+        Explication proposée : {match_verification_input.proposed_explanation}
 
         Réponds en fournissant :
         1. Un booléen indiquant si la correspondance est valide.
