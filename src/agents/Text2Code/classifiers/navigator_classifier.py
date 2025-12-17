@@ -1,9 +1,8 @@
 from src.agents.Text2Code.classifiers.base_classifier import BaseClassifier
-from src.navigator.Navigator import Navigator
 
 
 class NavigatorAgenticClassifier(BaseClassifier):
-    def __init__(self, navigator: Navigator):
+    def __init__(self, navigator):
         super().__init__(navigator)
 
     def get_agent_name(self) -> str:

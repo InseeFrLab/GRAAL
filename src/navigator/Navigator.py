@@ -20,10 +20,11 @@ def make_tools(navigator):
         Returns:
             Informations complètes du noeud courant avec historique de navigation
         """
+        logger.info("Navigator: get_current_information called")
         data = navigator._cached_get_code_information(navigator.current_code)
-        return (
-            _unfreeze_dict(data) if data else {"error": f"Code {navigator.current_code} not found"}
-        )
+        if not data:
+            return {"error": f"Code {navigator.current_code} not found"}
+        return _unfreeze_dict(data)
 
     @function_tool
     def get_code_information(code: str) -> Dict[str, Any]:
@@ -36,8 +37,22 @@ def make_tools(navigator):
         Returns:
             Informations complètes du code
         """
+        logger.info("Navigator: get_code_information called")
+
         data = navigator._cached_get_code_information(code)
-        return _unfreeze_dict(data) if data else {"error": f"Code {code} not found"}
+
+        if not data:
+            return {"error": f"Code {code} not found"}
+
+        info = _unfreeze_dict(data)
+
+        return {
+            "code": info.get("code"),
+            "name": info.get("name"),
+            "level": info.get("level"),
+            "description": info.get("description", "")[:500],  # Limiter la taille
+            "children_count": info.get("children_count", 0),
+        }
 
     @function_tool
     def get_current_children() -> List[Dict[str, Any]]:
@@ -47,6 +62,7 @@ def make_tools(navigator):
         Returns:
             Liste des codes enfants du noeud courant
         """
+        logger.info("Navigator: get_current_children called")
         return _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
 
     @function_tool
@@ -57,6 +73,7 @@ def make_tools(navigator):
         Returns:
             Liste des siblings du noeud courant
         """
+        logger.info("Navigator: get_current_siblings called")
         return _unfreeze_list_of_dicts(navigator._cached_get_siblings(navigator.current_code))
 
     @function_tool
@@ -70,6 +87,7 @@ def make_tools(navigator):
         Returns:
             Liste de tous les descendants
         """
+        logger.info("Navigator: get_current_descendants called")
         return _unfreeze_list_of_dicts(
             navigator._cached_get_descendants(navigator.current_code, levels)
         )
@@ -82,6 +100,7 @@ def make_tools(navigator):
         Returns:
             Dictionnaire du parent ou None si pas de parent
         """
+        logger.info("Navigator: get_current_parent called")
         data = navigator._cached_get_parent(navigator.current_code)
         return _unfreeze_dict(data) if data else None
 
@@ -100,6 +119,7 @@ def make_tools(navigator):
         Returns:
             Résultat de la navigation avec informations du nouveau noeud
         """
+        logger.info("Navigator: navigate_to called")
         info = get_code_information(code)
 
         if "error" in info:
@@ -128,6 +148,8 @@ def make_tools(navigator):
         Returns:
             Résultat de la navigation avec informations du parent
         """
+        logger.info("Navigator: go_to_parent called")
+
         parent_info = get_current_parent()
 
         if parent_info is None:
@@ -160,6 +182,8 @@ def make_tools(navigator):
         Returns:
             Résultat de la navigation avec validation
         """
+        logger.info("Navigator: go_to_child called")
+
         children = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
         child_codes = [child["code"] for child in children]
 
@@ -191,6 +215,8 @@ def make_tools(navigator):
         Returns:
             Confirmation de la réinitialisation
         """
+        logger.info("Navigator: reset_to_root called")
+
         root = navigator.history[0]
         navigator.current_code = root
         navigator.history = [root]
@@ -214,7 +240,11 @@ def make_tools(navigator):
         Returns:
             Résumé avec noeud actuel, parent, enfants, siblings et chemin
         """
+        logger.info("Navigator: get_context_summary called")
+
         current = get_current_information()
+        if "error" in current:
+            return current
         children = get_current_children()
         siblings = get_current_siblings()
         parent = get_current_parent()
@@ -222,7 +252,7 @@ def make_tools(navigator):
         description = current.get("description", "")
         truncated_desc = description[:200] + "..." if len(description) > 200 else description
 
-        return {
+        result = {
             "current_node": {
                 "code": current.get("code"),
                 "name": current.get("name"),
@@ -235,6 +265,8 @@ def make_tools(navigator):
             "navigation_path": " → ".join(navigator.history[-5:]),
             "can_go_deeper": len(children) > 0,
         }
+        logger.info(result)
+        return result
 
     @function_tool
     def get_navigation_history() -> Dict[str, Any]:
@@ -244,6 +276,8 @@ def make_tools(navigator):
         Returns:
             Historique et position courante
         """
+        logger.info("Navigator: get_navigation_history called")
+
         return {
             "current_position": navigator.current_code,
             "full_history": navigator.history,
@@ -251,7 +285,7 @@ def make_tools(navigator):
             "navigation_depth": len(navigator.history),
         }
 
-    return (
+    return [
         get_current_information,
         get_code_information,
         get_current_children,
@@ -263,7 +297,7 @@ def make_tools(navigator):
         reset_to_root,
         get_context_summary,
         get_navigation_history,
-    )
+    ]
 
 
 class Navigator(Graph):

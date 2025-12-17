@@ -4,6 +4,7 @@ import sys
 
 from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
 from src.config import neo4j_config
+from src.navigator.Navigator import Navigator
 from src.utils.logging import configure_logging
 from src.utils.parser import parse_args
 
@@ -15,7 +16,8 @@ async def classify_navigator(query: str, experiment_name: str):
     """Classify using agentic method"""
     logger.info(f"Navigator classification: {query}")
     # TODO: add the management for exp_name
-    classifier = NavigatorAgenticClassifier(neo4j_config)
+    navigator = Navigator(neo4j_config)
+    classifier = NavigatorAgenticClassifier(navigator)
     result = await classifier(query)
     return result
 

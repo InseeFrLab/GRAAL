@@ -13,7 +13,7 @@ from agents import (
     set_tracing_disabled,
 )
 from agents.model_settings import ModelSettings
-from src.neo4j_graph.Graph import Graph, make_tools
+from src.neo4j_graph.Graph import Graph
 
 load_dotenv()
 client = AsyncOpenAI(
@@ -29,8 +29,7 @@ class BaseAgent(ABC):
     def __init__(self, graph: Graph):
         super().__init__()
         self.graph = graph
-        self.tools = make_tools(graph)
-
+        self.tools = self.graph.get_tools()
         self.output_type = self.get_output_type()
         self.instructions = self.get_instructions()
         self.agent = Agent(
