@@ -3,6 +3,7 @@ import asyncio
 
 from utils.logging import configure_logging
 from utils.parser import parse_args
+from classify.navigator import classify_navigator
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -11,14 +12,14 @@ logger = logging.getLogger(__name__)
 async def classify_navigator(query: str, experiment_name: str):
     """Classify using agentic method"""
     logger.info(f"Navigator classification: {query}")
-
-    return "10.71C"  # Example
+    # TODO: add the managemetn for exp_name
+    return classify_navigator(query)
 
 
 async def classify_agentic_rag(query: str, experiment_name: str):
     """Classify using flat embeddings"""
     logger.info(f"Flat embeddings classification: {query}")
-
+    
     return "10.71C"  
 
 

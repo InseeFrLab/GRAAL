@@ -102,7 +102,14 @@ def make_tools(graph):
         data = graph._cached_get_parent(code)
         return _unfreeze_dict(data) if data else None
     
-    return get_code_information, get_children, get_descendants, get_siblings, get_parent
+    return (
+        get_code_information,
+        get_children,
+        get_descendants,
+        get_siblings,
+        get_parent
+    )
+
 
 class Neo4JConfig(BaseModel):
     url: str
@@ -119,6 +126,18 @@ class Graph:
             enhanced_schema=True,
             )
 
+    # ------------------------------------------------------------------
+    # Get tools 
+    # ------------------------------------------------------------------
+
+    def get_tools(self):
+        """
+        Retourne les tools de navigation spécifiques au Navigator.
+        
+        Returns:
+            Tuple des tools de navigation avec état
+        """
+        return make_tools(self)
 
     # ------------------------------------------------------------------
     # Cache management
@@ -268,3 +287,4 @@ class Graph:
         """
         result = self.graph.query(query, params={"search_term": search_term})
         return _freeze_list_of_dicts(result)
+
