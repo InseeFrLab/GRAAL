@@ -1,19 +1,18 @@
 import os
-from dotenv import load_dotenv
 from abc import ABC, abstractmethod
+
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from pydantic import BaseModel
 
-from openai import AsyncOpenAI
 from agents import (
     Agent,
     Runner,
-    function_tool,
     set_default_openai_api,
     set_default_openai_client,
     set_tracing_disabled,
 )
 from agents.model_settings import ModelSettings
-
 from src.neo4j_graph.Graph import Graph, make_tools
 
 load_dotenv()
@@ -27,7 +26,6 @@ set_tracing_disabled(True)
 
 
 class BaseAgent(ABC):
-
     def __init__(self, graph: Graph):
         super().__init__()
         self.graph = graph
@@ -41,9 +39,9 @@ class BaseAgent(ABC):
             tools=self.tools,
             model=os.environ["GENERATION_MODEL"],
             model_settings=self.get_model_settings(),
-            output_type=self.output_type
+            output_type=self.output_type,
         )
-    
+
     @abstractmethod
     def get_agent_name(self) -> str:
         pass
@@ -64,7 +62,7 @@ class BaseAgent(ABC):
         prompt = self.build_prompt(*args, **kwargs)
         result = await Runner.run(self.agent, prompt)
         return result
-    
+
     def get_model_settings(self) -> ModelSettings:
         return ModelSettings(
             temperature=0,

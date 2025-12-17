@@ -1,17 +1,23 @@
 import logging
+
 from langchain_community.document_loaders import DataFrameLoader
 
-from utils.logging import configure_logging
-from neo4j_graph.graph_builder.config import EMBEDDING_MODEL, NOTICES_PATH, COLUMNS_TO_KEEP, MAX_TOKENS
-from neo4j_graph.graph_builder.utils.notice_manager import load_notices
-from neo4j_graph.graph_builder.utils.embed_manager import (
-    truncate_docs_to_max_tokens,
-    get_embedding_model,
-    create_vector_db, 
-    create_root_node, 
-    setup_graph, 
-    create_parent_child_relationships,
+from neo4j_graph.graph_builder.config import (
+    COLUMNS_TO_KEEP,
+    EMBEDDING_MODEL,
+    MAX_TOKENS,
+    NOTICES_PATH,
 )
+from neo4j_graph.graph_builder.utils.embed_manager import (
+    create_parent_child_relationships,
+    create_root_node,
+    create_vector_db,
+    get_embedding_model,
+    setup_graph,
+    truncate_docs_to_max_tokens,
+)
+from neo4j_graph.graph_builder.utils.notice_manager import load_notices
+from utils.logging import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)

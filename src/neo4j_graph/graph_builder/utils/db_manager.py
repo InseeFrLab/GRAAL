@@ -1,7 +1,9 @@
 import logging
+
 from langchain_neo4j import Neo4jGraph, Neo4jVector
 from neo4j import GraphDatabase
-from neo4j_graph.graph_builder.config import NEO4J_URL, NEO4J_USERNAME, NEO4J_PWD
+
+from neo4j_graph.graph_builder.config import NEO4J_PWD, NEO4J_URL, NEO4J_USERNAME
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +21,11 @@ def create_vector_db(docs, embedding_model, clean_previous: bool = True) -> Neo4
         execute_cypher_command(command)
 
     return Neo4jVector.from_documents(
-        docs, 
-        embedding_model, 
-        url=NEO4J_URL, 
-        username=NEO4J_USERNAME, 
-        password=NEO4J_PWD, 
+        docs,
+        embedding_model,
+        url=NEO4J_URL,
+        username=NEO4J_USERNAME,
+        password=NEO4J_PWD,
         ids=[f"{i}" for i in range(len(docs))],
     )
 
@@ -42,7 +44,7 @@ def create_root_node():
 def create_parent_child_relationships(graph: Neo4jGraph):
     logger.info("🔁 Creating HAS_CHILD relationships")
     graph.query(
-    """
+        """
     MATCH (child)
     WHERE child.PARENT_ID IS NOT NULL
     MATCH (parent {ID: child.PARENT_ID})

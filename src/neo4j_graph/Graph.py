@@ -1,11 +1,13 @@
 import logging
 import os
-from typing import Dict, Any, List, Optional, Tuple
-from pydantic import BaseModel
 from functools import lru_cache
+from typing import Any, Dict, List, Optional, Tuple
+
 from dotenv import load_dotenv
 from langchain_neo4j import Neo4jGraph, Neo4jVector
 from langchain_openai import OpenAIEmbeddings
+from pydantic import BaseModel
+
 from agents import function_tool
 
 logger = logging.getLogger(__name__)
@@ -26,22 +28,19 @@ def _unfreeze_dict(t: Tuple[Tuple[str, Any], ...]) -> Dict[str, Any]:
     return dict(t)
 
 
-def _unfreeze_list_of_dicts(
-    t: Tuple[Tuple[Tuple[str, Any], ...], ...]
-) -> List[Dict[str, Any]]:
+def _unfreeze_list_of_dicts(t: Tuple[Tuple[Tuple[str, Any], ...], ...]) -> List[Dict[str, Any]]:
     return [dict(d) for d in t]
 
 
 def make_tools(graph):
-
     @function_tool
     def get_code_information(code: str) -> Dict[str, Any]:
         """
         Retourne les informations complètes d'un code NACE.
-        
+
         Args:
             code: Code NACE (ex: "62.01", "J", "62")
-        
+
         Returns:
             Dictionnaire avec code, level, name, description, includes, includes_also,
             excludes, implementation_rule, parent_code, children_codes, children_count
@@ -53,10 +52,10 @@ def make_tools(graph):
     def get_children(code: str) -> List[Dict[str, Any]]:
         """
         Retourne les enfants directs d'un code (niveau N+1).
-        
+
         Args:
             code: Code parent
-        
+
         Returns:
             Liste des codes enfants avec code, level, name, description, includes, excludes
         """
@@ -66,26 +65,24 @@ def make_tools(graph):
     def get_descendants(code: str, levels: int = 2) -> List[Dict[str, Any]]:
         """
         Retourne les descendants d'un code jusqu'à N niveaux de profondeur.
-        
+
         Args:
             code: Code de départ
             levels: Nombre de niveaux à descendre (défaut: 2, recommandé: ≤3)
-        
+
         Returns:
             Liste de tous les descendants jusqu'au niveau spécifié
         """
-        return _unfreeze_list_of_dicts(
-            graph._cached_get_descendants(code, levels)
-        )
-    
+        return _unfreeze_list_of_dicts(graph._cached_get_descendants(code, levels))
+
     @function_tool
     def get_siblings(code: str) -> List[Dict[str, Any]]:
         """
         Retourne les codes au même niveau hiérarchique (même parent).
-        
+
         Args:
             code: Code dont on cherche les siblings
-        
+
         Returns:
             Liste des codes siblings (excluant le code d'origine)
         """
@@ -95,23 +92,17 @@ def make_tools(graph):
     def get_parent(code: str) -> Optional[Dict[str, Any]]:
         """
         Retourne le parent direct d'un code (niveau N-1).
-        
+
         Args:
             code: Code dont on cherche le parent
-        
+
         Returns:
             Dictionnaire du parent ou None si pas de parent
         """
         data = graph._cached_get_parent(code)
         return _unfreeze_dict(data) if data else None
-    
-    return (
-        get_code_information,
-        get_children,
-        get_descendants,
-        get_siblings,
-        get_parent
-    )
+
+    return [get_code_information, get_children, get_descendants, get_siblings, get_parent]
 
 
 class Neo4JConfig(BaseModel):
@@ -127,41 +118,44 @@ class Graph:
             username=neo4j_config.username,
             password=neo4j_config.password,
             enhanced_schema=True,
-            )
+        )
+
+        self.emb_model = OpenAIEmbeddings(
+            model=os.environ["EMBEDDING_MODEL"],
+            openai_api_base=os.environ["URL_EMBEDDING_API"],
+            openai_api_key=os.environ["OPENAI_API_KEY"],
+        )
+
+        self.db = Neo4jVector.from_existing_graph(
+            graph=self.graph,
+            embedding=self.emb_model,
+            index_name="id",
+            node_label="Chunk",
+            text_node_properties=["text"],
+            keyword_index_name="text",
+            embedding_node_property="embedding",
+            search_type="vector",
+        )
 
     # ------------------------------------------------------------------
-    # Get tools 
+    # Get tools
     # ------------------------------------------------------------------
 
     def get_tools(self):
         """
         Retourne les tools de navigation spécifiques au Navigator.
-        
+
         Returns:
             Tuple des tools de navigation avec état
         """
         return make_tools(self)
 
-        self.emb_model = OpenAIEmbeddings(
-                model=os.environ["EMBEDDING_MODEL"],
-                openai_api_base=os.environ["URL_EMBEDDING_API"],
-                openai_api_key=os.environ["OPENAI_API_KEY"],
-                tiktoken_enabled=False,
-            )
-        self.db = Neo4jVector.from_existing_graph(
-                    graph=self.graph,
-                    embedding=self.emb_model,
-                    index_name="id",
-                    node_label="Chunk",
-                    text_node_properties=["text"],
-                    keyword_index_name="text",
-                    embedding_node_property="embedding",
-                    search_type="vector",
-                )
-
-    def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
-        retrieval = self.db.asimilarity_search(f"query : {activity}", k=top_k, filter={"FINAL": 1})
+    async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
+        retrieval = await self.db.asimilarity_search(
+            f"query : {activity}", k=top_k, filter={"FINAL": 1}
+        )
         return [item.metadata["CODE"] for item in retrieval]
+
     # ------------------------------------------------------------------
     # Cache management
     # ------------------------------------------------------------------
@@ -208,9 +202,7 @@ class Graph:
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=10_000)
-    def _cached_get_children(
-        self, code: str
-    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
+    def _cached_get_children(self, code: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node {CODE: $code})-[:HAS_CHILD]->(child)
         RETURN child.CODE as code,
@@ -245,16 +237,12 @@ class Graph:
         result = self.graph.query(query, params={"code": code})
         return _freeze_list_of_dicts(result)
 
-    
-
     # ------------------------------------------------------------------
     # get_siblings
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=10_000)
-    def _cached_get_siblings(
-        self, code: str
-    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
+    def _cached_get_siblings(self, code: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
         MATCH (parent)-[:HAS_CHILD]->(sibling)
@@ -269,14 +257,13 @@ class Graph:
         """
         result = self.graph.query(query, params={"code": code})
         return _freeze_list_of_dicts(result)
+
     # ------------------------------------------------------------------
     # get_parent
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=10_000)
-    def _cached_get_parent(
-        self, code: str
-    ) -> Tuple[Tuple[str, Any], ...]:
+    def _cached_get_parent(self, code: str) -> Tuple[Tuple[str, Any], ...]:
         query = """
         MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
         RETURN parent.CODE as code,
@@ -294,9 +281,7 @@ class Graph:
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=5_000)
-    def _cached_search_codes(
-        self, search_term: str
-    ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
+    def _cached_search_codes(self, search_term: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node)
         WHERE toLower(node.NAME) CONTAINS toLower($search_term)
@@ -310,4 +295,3 @@ class Graph:
         """
         result = self.graph.query(query, params={"search_term": search_term})
         return _freeze_list_of_dicts(result)
-
