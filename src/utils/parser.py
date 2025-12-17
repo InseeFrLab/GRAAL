@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     )
     methods.add_argument(
         "--agentic-rag",
-        dest="agentic_rag", 
+        dest="agentic_rag",
         type=str,
         nargs="?",
         const="Boulangerie",

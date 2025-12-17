@@ -1,9 +1,6 @@
 from src.agents.Text2Code.classifiers.base_classifier import BaseClassifier
-from src.agents.base_agent import BaseAgent
-from src.agents.closers.code_chooser import CodeChooser
-from src.agents.closers.match_verifier import MatchVerificationInput
-
 from src.navigator.Navigator import Navigator
+
 
 class NavigatorAgenticClassifier(BaseClassifier):
     def __init__(self, navigator: Navigator):
@@ -11,17 +8,17 @@ class NavigatorAgenticClassifier(BaseClassifier):
 
     def get_agent_name(self) -> str:
         return "Navigator Agentic Classifier"
-    
+
     def build_prompt(self, query: str) -> str:
         return f"""
         Vous êtes un classificateur NACE.
-        
+
         Activité à classifier : {query}
-        
+
         Trouvez le code NACE le plus approprié.
         """
-        
-    def get_instructions(self) -> str: 
+
+    def get_instructions(self) -> str:
         return """
             Vous êtes un expert en classification. Votre mission est de trouver le code de classification le plus spécifique et approprié pour une activité donnée.
 
