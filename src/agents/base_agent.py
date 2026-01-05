@@ -1,8 +1,9 @@
+import logging
 import os
 from abc import ABC, abstractmethod
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from langfuse.openai import AsyncOpenAI
 from pydantic import BaseModel
 
 from agents import (
@@ -15,11 +16,15 @@ from agents import (
 from agents.model_settings import ModelSettings
 from src.neo4j_graph.graph import Graph
 
+logger = logging.getLogger(__name__)
+
 load_dotenv()
+
 client = AsyncOpenAI(
     base_url=os.environ["OPENAI_BASE_URL"],
     api_key=os.environ["OPENAI_API_KEY"],
 )
+
 set_default_openai_client(client=client, use_for_tracing=False)
 set_default_openai_api("chat_completions")
 set_tracing_disabled(True)
