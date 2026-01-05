@@ -3,6 +3,7 @@ import logging
 from src.agents.closers.code_chooser import CodeChooser
 from src.agents.closers.match_verifier import MatchVerificationInput
 from src.agents.Text2Code.classifiers.base_classifier import BaseClassifier
+from src.neo4j_graph.graph import Graph
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class AgenticRAGClassifier(BaseClassifier):
 
     """
 
-    def __init__(self, graph, top_k):
+    def __init__(self, graph: Graph, top_k):
         super().__init__(graph)
         self.top_k = top_k
         self.code_chooser = CodeChooser(graph, num_choices=top_k)
@@ -33,7 +34,7 @@ class AgenticRAGClassifier(BaseClassifier):
         code_choice_result = code_choice_result.final_output
         result = MatchVerificationInput(
             activity=activity,
-            proposed_code=code_choice_result.chosen_code,
+            code=code_choice_result.chosen_code,
             proposed_explanation=code_choice_result.explanation,
             proposed_confidence=code_choice_result.confidence,  # confidence from CodeChoice
         )
