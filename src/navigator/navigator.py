@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from agents import function_tool
-from src.neo4j_graph.Graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
+from src.neo4j_graph.graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
 
 logger = logging.getLogger(__name__)
 

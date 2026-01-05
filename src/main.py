@@ -4,7 +4,7 @@ import sys
 
 from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
 from src.config import neo4j_config
-from src.navigator.Navigator import Navigator
+from src.navigator.navigator import Navigator
 from src.utils.logging import configure_logging
 from src.utils.parser import parse_args
 

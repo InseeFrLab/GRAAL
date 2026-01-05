@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from src.agents.base_agent import BaseAgent
-from src.neo4j_graph.Graph import Graph
+from src.neo4j_graph.graph import Graph
 
 
 class MatchVerificationResult(BaseModel):

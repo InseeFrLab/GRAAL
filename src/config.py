@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from src.neo4j_graph.Graph import Neo4JConfig
+from src.neo4j_graph.graph import Neo4JConfig
 
 load_dotenv()
 

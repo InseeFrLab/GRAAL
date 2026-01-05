@@ -13,7 +13,7 @@ from agents import (
     set_tracing_disabled,
 )
 from agents.model_settings import ModelSettings
-from src.neo4j_graph.Graph import Graph
+from src.neo4j_graph.graph import Graph
 
 load_dotenv()
 client = AsyncOpenAI(
