@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pydantic import BaseModel
+import base64
 
 from agents import (
     Agent,
@@ -12,18 +13,26 @@ from agents import (
     set_default_openai_client,
     set_tracing_disabled,
 )
+
 from agents.model_settings import ModelSettings
 from src.neo4j_graph.graph import Graph
 
 load_dotenv()
+
+LANGFUSE_AUTH = base64.b64encode(
+    f"{os.environ['LANGFUSE_PUBLIC_KEY']}:{os.environ['LANGFUSE_SECRET_KEY']}".encode()
+).decode()
+os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = os.environ["LANGFUSE_BASE_URL"] + "/api/public/otel"
+os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"Authorization=Basic {LANGFUSE_AUTH}"
+
 client = AsyncOpenAI(
     base_url=os.environ["OPENAI_BASE_URL"],
     api_key=os.environ["OPENAI_API_KEY"],
 )
+
 set_default_openai_client(client=client, use_for_tracing=False)
 set_default_openai_api("chat_completions")
-set_tracing_disabled(True)
-
+#set_tracing_disabled(True)
 
 class BaseAgent(ABC):
     def __init__(self, graph: Graph):

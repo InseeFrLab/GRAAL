@@ -265,7 +265,7 @@ def make_tools(navigator):
             "navigation_path": " → ".join(navigator.history[-5:]),
             "can_go_deeper": len(children) > 0,
         }
-        logger.info(result)
+        logger.info("Navigator result for get_context_summary: {result}")
         return result
 
     @function_tool
