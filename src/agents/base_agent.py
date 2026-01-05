@@ -60,7 +60,7 @@ class BaseAgent(ABC):
     async def __call__(self, *args, **kwargs):
         prompt = self.build_prompt(*args, **kwargs)
         result = await Runner.run(self.agent, prompt)
-        return result
+        return result.final_output
 
     def get_model_settings(self) -> ModelSettings:
         return ModelSettings(
