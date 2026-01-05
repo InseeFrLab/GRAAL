@@ -1,10 +1,9 @@
 import os
 from abc import ABC, abstractmethod
-
+import logging
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from langfuse.openai import AsyncOpenAI
 from pydantic import BaseModel
-import base64
 
 from agents import (
     Agent,
@@ -17,13 +16,9 @@ from agents import (
 from agents.model_settings import ModelSettings
 from src.neo4j_graph.graph import Graph
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-LANGFUSE_AUTH = base64.b64encode(
-    f"{os.environ['LANGFUSE_PUBLIC_KEY']}:{os.environ['LANGFUSE_SECRET_KEY']}".encode()
-).decode()
-os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = os.environ["LANGFUSE_BASE_URL"] + "/api/public/otel"
-os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"Authorization=Basic {LANGFUSE_AUTH}"
+load_dotenv()
 
 client = AsyncOpenAI(
     base_url=os.environ["OPENAI_BASE_URL"],
@@ -32,7 +27,7 @@ client = AsyncOpenAI(
 
 set_default_openai_client(client=client, use_for_tracing=False)
 set_default_openai_api("chat_completions")
-#set_tracing_disabled(True)
+set_tracing_disabled(True)
 
 class BaseAgent(ABC):
     def __init__(self, graph: Graph):
@@ -69,6 +64,7 @@ class BaseAgent(ABC):
     async def __call__(self, *args, **kwargs):
         prompt = self.build_prompt(*args, **kwargs)
         result = await Runner.run(self.agent, prompt)
+
         return result
 
     def get_model_settings(self) -> ModelSettings:
