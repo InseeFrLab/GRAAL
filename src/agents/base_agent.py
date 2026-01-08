@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from langfuse.openai import AsyncOpenAI
 from pydantic import BaseModel
+from datetime import datetime
 
 from agents import (
     Agent,
@@ -18,7 +19,7 @@ from src.neo4j_graph.graph import Graph
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+load_dotenv(override=True)
 
 client = AsyncOpenAI(
     base_url=os.environ["OPENAI_BASE_URL"],
@@ -61,7 +62,7 @@ class BaseAgent(ABC):
     @abstractmethod
     def build_prompt(self, *args, **kwargs) -> str:
         pass
-
+    
     async def __call__(self, *args, **kwargs):
         prompt = self.build_prompt(*args, **kwargs)
         result = await Runner.run(self.agent, prompt)

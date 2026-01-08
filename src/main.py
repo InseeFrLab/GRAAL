@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import sys
+from langfuse import get_client, propagate_attributes, observe
+from datetime import datetime
 
 from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
 from src.config import neo4j_config
@@ -12,6 +14,7 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
+@observe
 async def classify_navigator(query: str, experiment_name: str):
     """Classify using agentic method"""
     logger.info(f"Navigator classification: {query}")
@@ -22,6 +25,7 @@ async def classify_navigator(query: str, experiment_name: str):
     return result
 
 
+@observe
 async def classify_agentic_rag(query: str, experiment_name: str):
     """Classify using flat embeddings"""
     logger.info(f"Flat embeddings classification: {query}")
@@ -29,6 +33,7 @@ async def classify_agentic_rag(query: str, experiment_name: str):
     return "10.71C"
 
 
+@observe
 async def process_batch_file(filepath: str, method_func, experiment_name: str):
     """Process a batch file with queries"""
     logger.info(f"Processing batch file: {filepath}")
@@ -112,5 +117,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    exit_code = asyncio.run(main())
-    sys.exit(exit_code)
+    langfuse = get_client()
+    session_id = f"base_agent_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+    with propagate_attributes(session_id=session_id):
+        exit_code = asyncio.run(main())
+        sys.exit(exit_code)

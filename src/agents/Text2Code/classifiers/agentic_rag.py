@@ -36,8 +36,8 @@ class AgenticRAGClassifier(BaseClassifier):
             activity=activity,
             code=code_choice_result.chosen_code,
             proposed_explanation=code_choice_result.explanation,
-            proposed_confidence=code_choice_result.confidence,  # confidence from CodeChoice
         )
+            proposed_confidence=code_choice_result.confidence,  # confidence from CodeChoice
 
         return result
 

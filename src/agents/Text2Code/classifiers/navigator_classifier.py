@@ -29,9 +29,9 @@ class NavigatorAgenticClassifier(BaseClassifier):
             - Utilisez get_current_node() pour voir les détails du nœud actuel
 
             2. EXPLORER LES OPTIONS
-            - Utilisez get_children() pour voir les options au niveau suivant
+            - Utilisez get_current_children() pour voir les options au niveau suivant
             - Lisez attentivement les descriptions, ce qui est INCLUS et EXCLU
-            - Utilisez get_siblings() si aucun enfant ne correspond bien
+            - Utilisez get_current_siblings() si aucun enfant ne correspond bien
 
             3. NAVIGUER INTELLIGEMMENT
             - Descendez avec go_down(code) vers le nœud le plus pertinent

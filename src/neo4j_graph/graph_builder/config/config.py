@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # EMBED MANAGER
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", None)

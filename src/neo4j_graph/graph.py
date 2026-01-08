@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from agents import function_tool
 
 logger = logging.getLogger(__name__)
-load_dotenv()
+load_dotenv(override=True)
 
 
 def _freeze_dict(d: Dict[str, Any]) -> Tuple[Tuple[str, Any], ...]:
