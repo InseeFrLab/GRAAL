@@ -1,0 +1,213 @@
+/*-- scss:defaults --*/
+
+// Couleurs INSEE
+$insee-blue: #003366;
+$insee-light-blue: #0066CC;
+$insee-gray: #666666;
+$insee-orange: #FF6B35;
+
+// Variables Quarto
+$presentation-heading-color: $insee-blue;
+$link-color: $insee-light-blue;
+$code-block-bg: #f8f9fa;
+$body-color: #333333;
+
+// Polices
+$presentation-font-size-root: 32px;
+$presentation-line-height: 1.5;
+$font-family-sans-serif: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+/*-- scss:rules --*/
+
+// Titres
+.reveal h1, 
+.reveal h2, 
+.reveal h3 {
+  color: $insee-blue;
+  font-weight: 600;
+}
+
+.reveal h1 {
+  font-size: 2.5em;
+}
+
+.reveal h2 {
+  font-size: 1.8em;
+  border-bottom: 2px solid $insee-light-blue;
+  padding-bottom: 0.3em;
+}
+
+// Slides
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slide-background {
+  background-color: #ffffff;
+}
+
+// Progress bar
+.reveal .progress {
+  color: $insee-light-blue;
+  height: 4px;
+}
+
+// Code blocks
+.reveal pre {
+  font-size: 0.7em;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  padding: 1em;
+  background-color: $code-block-bg;
+}
+
+.reveal pre code {
+  max-height: 500px;
+}
+
+// Tables
+.reveal table {
+  font-size: 0.8em;
+  margin: 1em auto;
+}
+
+.reveal table th {
+  background-color: $insee-blue;
+  color: white;
+  font-weight: 600;
+  padding: 0.5em;
+}
+
+.reveal table td {
+  padding: 0.5em;
+  border: 1px solid #ddd;
+}
+
+.reveal table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+// Listes
+.reveal ul {
+  display: block;
+  margin-left: 1em;
+}
+
+.reveal ol {
+  display: block;
+  margin-left: 1em;
+}
+
+// Callouts
+.callout {
+  margin: 1em 0;
+  padding: 1em;
+  border-radius: 5px;
+}
+
+.callout-note {
+  background-color: #e3f2fd;
+  border-left: 4px solid $insee-light-blue;
+}
+
+.callout-important {
+  background-color: #fff3e0;
+  border-left: 4px solid $insee-orange;
+}
+
+.callout-tip {
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
+}
+
+// Colonnes
+.columns {
+  display: flex;
+  gap: 2em;
+}
+
+.column {
+  flex: 1;
+}
+
+// Logo
+.reveal .slide-logo {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  max-height: 60px;
+  z-index: 1;
+}
+
+// Footer
+.reveal .footer {
+  position: absolute;
+  bottom: 1em;
+  left: 1em;
+  font-size: 0.5em;
+  color: $insee-gray;
+}
+
+// Fragments (animations)
+.reveal .fragment.fade-in {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.reveal .fragment.fade-in.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+// Centrer certains éléments
+.center {
+  text-align: center;
+}
+
+// Smaller text
+.smaller {
+  font-size: 0.8em;
+}
+
+// Pour les graphiques plotly
+.plotly {
+  margin: 0 auto;
+}
+
+// Mermaid diagrams
+.mermaid {
+  text-align: center;
+}
+
+// Notes du présentateur
+.reveal .notes {
+  font-size: 0.7em;
+}
+
+// Ajustements pour mobile
+@media screen and (max-width: 768px) {
+  .reveal h1 {
+    font-size: 1.8em;
+  }
+  
+  .reveal h2 {
+    font-size: 1.4em;
+  }
+  
+  .columns {
+    flex-direction: column;
+  }
+}
+
+/*-- scss:mixins --*/
+
+@mixin insee-gradient {
+  background: linear-gradient(135deg, $insee-blue 0%, $insee-light-blue 100%);
+  color: white;
+}
+
+/*-- scss:functions --*/
+
+@function lighten-color($color, $amount) {
+  @return lighten($color, $amount);
+}
