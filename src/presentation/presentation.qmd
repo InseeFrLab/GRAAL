@@ -233,7 +233,7 @@ graph TD
 ::::
 
 ## Utilisation du graph comme support pour des agents
-
+<!-- TODO: Gérer les outils présents dans le code, il manque toute la partie navigation --> 
 On définit un ensemble d'outil afin qu'un agent puisse parcourir le graph : 
 - Des outils se renseigner sur le graph: 
     - get_code_information
