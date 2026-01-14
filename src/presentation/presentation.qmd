@@ -46,134 +46,203 @@ bibliography: references.bib
 
 ## Plan {.smaller}
 
-::: {.incremental}
-1. **Contexte** : Défis de la classification statistique
-2. **Problématique** : Limites des approches actuelles
-3. **Solution GRAAL** : Architecture multi-agents
-4. **Implémentation** : Composants techniques
-5. **Résultats** : Évaluation et performances
-6. **Perspectives** : Développements futurs
-:::
 
-::: {.notes}
-Présentation du framework GRAAL développé au SSPlab pour automatiser la classification dans les nomenclatures officielles.
-:::
+1. **Contexte**. Défis de la classification statistique : des classifications hiérarchiques à haute granularité  
+2. **Le Framework GRAAL**. Architecture multi-agents
+3. **Perspectives**. Développements futurs
 
-# Contexte {background-color="#003366"}
+
+# Contexte 
 
 ## Classification dans les nomenclatures officielles
 
-:::: {.columns}
 
-::: {.column width="50%"}
 ### Nomenclatures INSEE
-
-- **NACE** : Activités économiques
-  - ~700 codes sur 4 niveaux
-  - Structure hiérarchique stricte
-  
-- **COICOP** : Produits de consommation
-  - Classification internationale
-  - Mise à jour régulière
-:::
-
-::: {.column width="50%"}
-### Défis actuels
-
-::: {.incremental}
-- 📊 **Volume** : Millions d'entreprises à classifier
-- ⏱️ **Temps** : Annotation manuelle coûteuse
-- 🎯 **Précision** : Exigences de qualité statistique
-- 📝 **Traçabilité** : Audit et justification
-:::
-:::
-
-::::
-
-## État de l'art
-```{python}
-#| echo: false
-#| fig-width: 10
-#| fig-height: 5
-
-import plotly.graph_objects as go
-import numpy as np
-
-methods = ['Règles<br>manuelles', 'ML<br>classique', 'Deep<br>Learning', 'LLMs<br>directs', 'GRAAL']
-accuracy = [75, 82, 87, 85, 92]
-explainability = [100, 70, 30, 40, 90]
-scalability = [20, 60, 80, 90, 95]
-
-fig = go.Figure()
-
-fig.add_trace(go.Scatter(
-    x=methods, y=accuracy, name='Précision',
-    mode='lines+markers', marker=dict(size=10)
-))
-fig.add_trace(go.Scatter(
-    x=methods, y=explainability, name='Explicabilité',
-    mode='lines+markers', marker=dict(size=10)
-))
-fig.add_trace(go.Scatter(
-    x=methods, y=scalability, name='Passage à l\'échelle',
-    mode='lines+markers', marker=dict(size=10)
-))
-
-fig.update_layout(
-    title="Comparaison des approches de classification",
-    yaxis_title="Performance (%)",
-    xaxis_title="Méthodes",
-    hovermode='x unified',
-    height=400
-)
-fig.show()
-```
-
-# Problématique {background-color="#8B0000"}
-
-## Limites des LLMs pour les nomenclatures
 
 :::: {.columns}
 
 ::: {.column width="60%"}
-### Problèmes identifiés
 
-1. **Context window** limité
-   - Impossible de charger 700+ codes
-   - Perte d'information hiérarchique
+- **NACE** : Nomenclature statistique des Activités économiques dans la Communauté Européenne
+    - ~650 codes finaux
+    - Structure hiérarchique sur 4 niveaux
+  
+- **COICOP** : Classification of Individual Consumption by Purpose
+    - ~300 à ~1000 selon la granularité employée
+    - Structure hiérarchique sur 5 niveaux
+
+### Défis actuels
+
+- **Volume** : Flux importants de labels à classifier : ~X entreprises à labelliser par jour
+- **Temps** : Annotation manuelle coûteuse
+- **Précision** : Exigences de qualité statistique
+- **Traçabilité** : Audit et justification
+
+
+:::
+
+::: {.column width="40%}
+
+```{mermaid}
+graph TD
+  %% Sections
+  S_A["Section A<br/>Agriculture, sylviculture et pêche"]
+  S_C["Section C<br/>Industrie manufacturière"]
+
+  %% Divisions
+  D_01["Division 01<br/>Culture et production animale"]
+  D_10["Division 10<br/>Industries alimentaires"]
+
+  %% Groupes
+  G_01_1["Groupe 01.1<br/>Cultures non permanentes"]
+  G_10_1["Groupe 10.1<br/>Transformation et conservation de la viande"]
+
+  %% Classes
+  C_01_11["Classe 01.11<br/>Culture de céréales"]
+  C_10_11["Classe 10.11<br/>Transformation de la viande"]
+
+  %% Relations
+  S_A --> D_01
+  S_C --> D_10
+
+  D_01 --> G_01_1
+  D_10 --> G_10_1
+
+  G_01_1 --> C_01_11
+  G_10_1 --> C_10_11
+```
+:::
+::::
+
+## Les méthodes utilisées aujourd'hui nécessite des bases de données conséquentes
+
+
+Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé avec une accuracy de 88% 
+
+>[!WARNING]
+> Plusieurs limites à cette approche :
+> - Nécessite un dataset d'entraînement important (1M de labels pour les codes NACE) : pose problème lors d'une création/changement de nomenclature
+> - Impossibilité d'évaluer la qualité du dataset d'entraînement
+
+<!-- TODO: Ajouter le graphe de l'accuracy en fonction de la taille du dataset d'entrainement -->
+
+### Utiliser un LLM pour faire de la classification
+
+<!-- TODO: faire un run avec des llm-only, ajouter l'exemple --> 
+
+### Limites identifiées
+
+1. **Context window** limitée :
+    - gpt-oss 120B :  128k tokens soit ~100 000 mots
+    - Notice NACE:  notice NACE sature le context window
 
 2. **Inconsistance**
    - Résultats variables entre runs
    - Hallucinations sur codes rares
 
 3. **Boîte noire**
-   - Pas de justification
    - Audit impossible
+   - Pas la main sur le modèle
+
+4. **Temps d'inférence et moyens nécessaires**
+   - ~1s pour une requête
+   - Nécessite un GPU en production
+
+## Utiliser la représentation par embeddings
+> Mettre en place un RAG ? 
+> Représentation insuffisante: 
+> - les notices sont denses en concepts
+> - Elles possèdent une organisation particulière à exploiter (includes, not includes -> difficultés dans le choix du chunk)
+> Se trouvent dans un espace différent des labels 
+
+<!-- TODO: Ajouter une visualisation t-SNE -->  
+
+# **Le Framework GRAAL**. Architecture multi-agents 
+
+
+## Représentation par arbre hiérarchique de la nomenclature NACE avec Neo4J
+
+La nomenclature NACE est représentée comme un arbre hiérarchique. 
+
+:::: {.columns}
+
+::: {.column width = 30%}
+<!-- Ajouter une représentation complète d'une notice NACE -->
+┌──────────────────────────────┐
+│            Chunk             │
+├──────────────────────────────┤
+│ CODE        : 60             │
+│ LEVEL       : 2              │
+│ NAME        : Activités de   │
+│              programmation   │
+│              et diffusion    │
+│ parent_code : J              │
+├──────────────────────────────┤
+│ Includes    : …              │
+│ Excludes    : …              │
+│ text        : description    │
+├──────────────────────────────┤
+│ embedding   : vecteur de     │
+│              dimension N     │
+└──────────────────────────────┘
 :::
 
-::: {.column width="40%"}
-### Exemple concret
-```python
-# ❌ Approche naive
-prompt = f"""
-Classifie cette entreprise:
-'{description}'
-Codes possibles: {all_700_codes}
-"""
-# Token limit exceeded!
-```
-```python
-# ❌ Résultats inconsistants
-"Boulangerie" → "10.71Z" (run 1)
-"Boulangerie" → "47.24Z" (run 2)
+::: {.column width = 70%}
+```{mermaid}
+graph TD
+  ROOT["Root"]
+
+  %% Sections
+  J["CODE: J<br/>LEVEL: 1"]
+  A["CODE: A<br/>LEVEL: 1"]
+
+  %% Divisions
+  J60["CODE: J60<br/>LEVEL: 2"]
+  J61["CODE: J61<br/>LEVEL: 2"]
+  A01["CODE: A01<br/>LEVEL: 2"]
+
+  %% Groupes
+  J60_1["CODE: J60.1<br/>LEVEL: 3"]
+  J60_2["CODE: J60.2<br/>LEVEL: 3"]
+  A01_1["CODE: A01.1<br/>LEVEL: 3"]
+
+  %% Classes
+  J60_11["CODE: J60.11<br/>LEVEL: 4"]
+  J60_12["CODE: J60.12<br/>LEVEL: 4"]
+  A01_11["CODE: A01.11<br/>LEVEL: 4"]
+
+  %% Relations HAS_PARENT
+  J -->|HAS_PARENT| ROOT
+  A -->|HAS_PARENT| ROOT
+
+  J60 -->|HAS_PARENT| J
+  J61 -->|HAS_PARENT| J
+  A01 -->|HAS_PARENT| A
+
+  J60_1 -->|HAS_PARENT| J60
+  J60_2 -->|HAS_PARENT| J60
+  A01_1 -->|HAS_PARENT| A01
+
+  J60_11 -->|HAS_PARENT| J60_1
+  J60_12 -->|HAS_PARENT| J60_1
+  A01_11 -->|HAS_PARENT| A01_1
+
 ```
 :::
 
 ::::
 
-# Solution GRAAL {background-color="#2E7D32"}
+## Utilisation du graph comme support pour des agents
 
-## Architecture multi-agents
+On définit un ensemble d'outil afin qu'un agent puisse parcourir le graph : 
+- Des outils se renseigner sur le graph: 
+    - get_code_information
+    - get_children
+    - get_descendants 
+    - get_siblings
+
+
+
 ```{mermaid}
 %%{init: {'theme':'base', 'themeVariables': { 'fontSize': '16px'}}}%%
 flowchart TB
@@ -247,37 +316,6 @@ class GraphNavigator:
 
 ::::
 
-# Implémentation {background-color="#1565C0"}
-
-## Stack technique
-
-:::: {.columns}
-
-::: {.column width="33%"}
-### Infrastructure
-- 🐍 Python 3.11+
-- 🔧 SSPCloud/Onyxia
-- 📦 MinIO Storage
-- 🐳 Docker/K8s
-:::
-
-::: {.column width="33%"}
-### Core Libraries
-- 🧠 LangChain/LangGraph
-- 🗄️ Neo4j Graph DB
-- 🤖 Ollama/vLLM
-- 📊 Pandas/Polars
-:::
-
-::: {.column width="33%"}
-### Monitoring
-- 📈 Langfuse (tracing)
-- 🔍 OpenTelemetry
-- 📊 MLflow
-- 🎯 Custom metrics
-:::
-
-::::
 
 ## Code : Agent de navigation
 ```{python}
@@ -323,21 +361,6 @@ et viennoiseries, avec vente directe en boutique
 """
 ```
 
-### Traitement
-```python
-# Étape 1: Section
-"fabrication" + "pains" → Section C (Industrie)
-
-# Étape 2: Division  
-"artisanale" + "pains spéciaux" → Division 10
-
-# Étape 3: Groupe
-"viennoiseries" → Groupe 10.7
-
-# Étape 4: Classe
-"vente directe" → 10.71Z
-```
-
 ### Output
 ```json
 {
@@ -352,57 +375,6 @@ et viennoiseries, avec vente directe en boutique
 
 :::
 
-# Résultats {background-color="#6A1B9A"}
-
-## Performance sur données de test
-```{python}
-#| echo: false
-#| fig-width: 12
-#| fig-height: 6
-
-import plotly.graph_objects as go
-import pandas as pd
-import numpy as np
-
-# Simulation de données
-np.random.seed(42)
-categories = ['Agriculture', 'Industrie', 'Construction', 'Commerce', 'Services', 'Finance']
-n_samples = [150, 300, 200, 400, 500, 250]
-
-baseline_acc = [0.72, 0.68, 0.75, 0.70, 0.65, 0.73]
-graal_acc = [0.91, 0.89, 0.93, 0.88, 0.87, 0.92]
-
-fig = go.Figure()
-
-x = np.arange(len(categories))
-width = 0.35
-
-fig.add_trace(go.Bar(
-    name='Baseline (ML classique)',
-    x=categories,
-    y=baseline_acc,
-    text=[f'{v:.0%}' for v in baseline_acc],
-    textposition='auto',
-))
-
-fig.add_trace(go.Bar(
-    name='GRAAL',
-    x=categories,
-    y=graal_acc,
-    text=[f'{v:.0%}' for v in graal_acc],
-    textposition='auto',
-))
-
-fig.update_layout(
-    title='Précision par section NACE',
-    yaxis_title='Précision',
-    yaxis_tickformat='.0%',
-    barmode='group',
-    height=400
-)
-
-fig.show()
-```
 
 ::: {.callout-note}
 Évaluation sur 1,800 entreprises annotées manuellement (golden dataset)
@@ -441,6 +413,7 @@ fig.show()
 
 ::::
 
+<!-- TODO: Mettre à jour ce graph -->
 ## Analyse des erreurs
 ```{python}
 #| echo: false
@@ -472,8 +445,8 @@ fig.show()
 :::
 
 # Démonstration {background-color="#00897B"}
-
-## Interface de test
+<!-- TODO: Mettre à jour la démo avec le vrai code -->  
+## Démonstration
 ```{python}
 #| echo: false
 #| eval: false
@@ -500,7 +473,6 @@ output = widgets.Output()
 def on_classify(b):
     with output:
         output.clear_output()
-        print("🔍 Analyse en cours...")
         # Simulation de classification
         print("✅ Code: 10.71Z")
         print("📊 Confiance: 94%")
@@ -511,105 +483,23 @@ classify_button.on_click(on_classify)
 display(description_input, classify_button, output)
 ```
 
-::: {.callout-tip}
-## Démo live
-Démonstration de l'interface web : [graal-demo.lab.sspcloud.fr](https://graal-demo.lab.sspcloud.fr)
-:::
-
-# Perspectives {background-color="#FF6B35"}
-
-## Développements en cours
-
-:::: {.columns}
-
-::: {.column width="50%"}
-### Court terme (Q1 2025)
-
-- 🔧 Optimisation performances
-- 📊 Dashboard de monitoring
-- 🤝 API REST pour production
-- 📚 Extension à COICOP
-:::
-
-::: {.column width="50%"}
-### Moyen terme (2025)
-
-- 🌍 Support multilingue
-- 🔄 Active learning
-- 🏗️ Intégration SI INSEE
-- 📈 Génération données synthétiques
-:::
-
-::::
-
-## Vision long terme
-```{mermaid}
-%%{init: {'theme':'base'}}%%
-timeline
-    title Roadmap GRAAL 2025-2027
-
-    Q1 2025 : API Production
-            : Tests A/B
-            : Documentation
-
-    Q2 2025 : Déploiement pilote
-            : Formation utilisateurs
-    
-    Q3 2025 : Extension COICOP
-            : Multilingue (EN/DE)
-    
-    2026    : Généralisation INSEE
-            : Open source
-            
-    2027    : Standard européen
-            : Collaboration Eurostat
-```
 
 # Conclusion
 
 ## Points clés
 
 ::: {.incremental .r-fit-text}
-- ✅ **Solution opérationnelle** pour la classification automatique
-- ✅ **Gain de productivité** significatif (+70% de rapidité)
-- ✅ **Qualité maintenue** avec traçabilité complète
-- ✅ **Architecture extensible** à d'autres nomenclatures
-- ✅ **Approche innovante** combinant LLMs et graphes
+- **Solution opérationnelle** pour la classification automatique
+- **Gain de productivité** significatif (+70% de rapidité)
+- **Qualité maintenue** avec traçabilité complète
+- **Architecture extensible** à d'autres nomenclatures
+- **Approche innovante** combinant LLMs et graphes
 :::
-
-## {background-image="images/questions.jpg" background-opacity="0.3"}
 
 ::: {.r-fit-text}
 # Questions ?
-
-📧 theo.ferry@insee.fr
 
 🔗 [github.com/InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL)
 
 📊 [SSPLab - INSEE Innovation](https://ssplab.insee.fr)
 :::
-
-## Annexes {visibility="uncounted"}
-
-### Architecture détaillée
-```{python}
-#| echo: false
-#| eval: false
-
-# Schéma d'architecture technique complet
-# (à implémenter avec diagrams ou mermaid)
-```
-
-### Benchmarks complets
-
-| Dataset | Taille | Baseline | GRAAL | Temps |
-|---------|--------|----------|-------|-------|
-| SIRENE | 10K | 68% | 87% | 2.3h |
-| NAF-Test | 5K | 72% | 91% | 1.1h |
-| EU-Business | 15K | 65% | 85% | 3.5h |
-
-### Références bibliographiques
-
-- LangChain Documentation (2024)
-- Neo4j Graph Data Science (2024)
-- INSEE Nomenclatures (2025)
