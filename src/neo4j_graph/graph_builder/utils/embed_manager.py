@@ -1,9 +1,9 @@
 import logging
 
-from langchain.text_splitter import TokenTextSplitter
+from langchain_text_splitters import TokenTextSplitter
 from langchain_openai import OpenAIEmbeddings
 
-from neo4j_graph.graph_builder.config import URL_EMBEDDING_API
+from src.neo4j_graph.graph_builder.config import URL_EMBEDDING_API
 
 logger = logging.getLogger(__name__)
 

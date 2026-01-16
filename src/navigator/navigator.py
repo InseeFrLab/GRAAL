@@ -16,6 +16,8 @@ def make_tools(navigator):
     def get_current_information() -> Dict[str, Any]:
         """
         Retourne les informations du noeud actuel.
+        Fournis les codes et les noms des noeuds enfants.  
+        Pour avoir l'information détaillée sur un enfant, utilise get_code_information(code)
 
         Returns:
             Informations complètes du noeud courant avec historique de navigation
@@ -24,6 +26,7 @@ def make_tools(navigator):
         data = navigator._cached_get_code_information(navigator.current_code)
         if not data:
             return {"error": f"Code {navigator.current_code} not found"}
+        logger.info(f"Data sent to the llm: {data}")
         return _unfreeze_dict(data)
 
     @function_tool
@@ -46,24 +49,37 @@ def make_tools(navigator):
 
         info = _unfreeze_dict(data)
 
-        return {
+        logger.info(f"Information available: {data}")
+
+        filtered_information = {
             "code": info.get("code"),
             "name": info.get("name"),
             "level": info.get("level"),
             "description": info.get("description", "")[:500],  # Limiter la taille
-            "children_count": info.get("children_count", 0),
         }
+
+        logger.info(f"Filtered information: {filtered_information}")
+
+        return filtered_information
 
     @function_tool
     def get_current_children() -> List[Dict[str, Any]]:
         """
-        Retourne les enfants directs du noeud actuel.
+        Retourne les codes et les noms des enfants directs du noeud actuel.
+        Pour avoir l'information détaillée sur un enfant, utilise get_code_information(code)
 
         Returns:
-            Liste des codes enfants du noeud courant
+            Liste des codes enfants du noeud courant, contient le code et son nom
         """
         logger.info("Navigator: get_current_children called")
-        return _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
+        children_found = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
+        keys_to_keep = ["code", "name"]
+        filtered_children_found = [
+            {k:d[k] for k in keys_to_keep}
+            for d in children_found
+        ]
+        logger.info(f"Navigator children found: {filtered_children_found}")
+        return filtered_children_found
 
     @function_tool
     def get_current_siblings() -> List[Dict[str, Any]]:
@@ -119,7 +135,7 @@ def make_tools(navigator):
         Returns:
             Résultat de la navigation avec informations du nouveau noeud
         """
-        logger.info("Navigator: navigate_to called")
+        logger.info(f"Navigator: navigate_to called with node: {code}")
         info = get_code_information(code)
 
         if "error" in info:
@@ -182,7 +198,7 @@ def make_tools(navigator):
         Returns:
             Résultat de la navigation avec validation
         """
-        logger.info("Navigator: go_to_child called")
+        logger.info(f"Navigator: go_to_child called with child_code: {child_code}")
 
         children = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
         child_codes = [child["code"] for child in children]
@@ -285,9 +301,23 @@ def make_tools(navigator):
             "navigation_depth": len(navigator.history),
         }
 
+    logger.info(f"Make tools de Navigator created")
+
     return [
         get_current_information,
         get_code_information,
+        get_current_parent,
+        get_current_children,
+        get_current_siblings,
+        go_to_parent,
+        go_to_child,
+        get_context_summary,
+    ]
+
+    """ return [
+        get_current_information,
+        get_code_information,
+        get_current_parent,
         get_current_children,
         get_current_siblings,
         get_current_descendants,
@@ -297,7 +327,7 @@ def make_tools(navigator):
         reset_to_root,
         get_context_summary,
         get_navigation_history,
-    ]
+    ] """
 
 
 class Navigator(Graph):
@@ -315,4 +345,7 @@ class Navigator(Graph):
         """
         Retourne les tools de navigation (override de Graph.get_tools).
         """
-        return make_tools(self)
+        tools = make_tools(self)
+        tool_names = [tool.name for tool in tools]
+        logger.info(f"Tools accessible to the navigator agent: {tool_names}")
+        return tools

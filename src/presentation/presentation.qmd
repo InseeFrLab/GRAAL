@@ -28,7 +28,6 @@ format:
     incremental: false
     code-fold: false
     code-line-numbers: false
-    code-copy: true
     highlight-style: github
     fig-align: center
     fig-cap-location: bottom
@@ -36,11 +35,13 @@ format:
     toc-depth: 1
     number-sections: false
     embed-resources: true
+    mermaid: 
+      theme: neutral
 execute:
-  echo: true
+  echo: false
   warning: false
   message: false
-  cache: true
+  cache: false
 bibliography: references.bib
 ---
 
@@ -52,17 +53,13 @@ bibliography: references.bib
 3. **Perspectives**. Développements futurs
 
 
-# Contexte 
+# **Contexte**. Défis de la classification statistique : des classifications hiérarchiques à haute granularité  
 
 ## Classification dans les nomenclatures officielles
 
-
-### Nomenclatures INSEE
-
 :::: {.columns}
-
 ::: {.column width="60%"}
-
+### Nomenclatures INSEE
 - **NACE** : Nomenclature statistique des Activités économiques dans la Communauté Européenne
     - ~650 codes finaux
     - Structure hiérarchique sur 4 niveaux
@@ -72,17 +69,13 @@ bibliography: references.bib
     - Structure hiérarchique sur 5 niveaux
 
 ### Défis actuels
-
 - **Volume** : Flux importants de labels à classifier : ~X entreprises à labelliser par jour
 - **Temps** : Annotation manuelle coûteuse
 - **Précision** : Exigences de qualité statistique
 - **Traçabilité** : Audit et justification
-
-
 :::
 
-::: {.column width="40%}
-
+::: {.column width="40%"}
 ```{mermaid}
 graph TD
   %% Sections
@@ -114,23 +107,22 @@ graph TD
 :::
 ::::
 
-## Les méthodes utilisées aujourd'hui nécessite des bases de données conséquentes
+## Les méthodes utilisées aujourd'hui nécessitent des bases de données conséquentes
 
 
 Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé avec une accuracy de 88% 
 
->[!WARNING]
-> Plusieurs limites à cette approche :
-> - Nécessite un dataset d'entraînement important (1M de labels pour les codes NACE) : pose problème lors d'une création/changement de nomenclature
-> - Impossibilité d'évaluer la qualité du dataset d'entraînement
+Plusieurs limites à cette approche :
+- Nécessite un dataset d'entraînement important (1M de labels pour les codes NACE) : pose problème lors d'une création/changement de nomenclature
+- Impossibilité d'évaluer la qualité du dataset d'entraînement
 
 <!-- TODO: Ajouter le graphe de l'accuracy en fonction de la taille du dataset d'entrainement -->
 
-### Utiliser un LLM pour faire de la classification
+## Utiliser un LLM pour faire de la classification
 
 <!-- TODO: faire un run avec des llm-only, ajouter l'exemple --> 
 
-### Limites identifiées
+Limites identifiées :
 
 1. **Context window** limitée :
     - gpt-oss 120B :  128k tokens soit ~100 000 mots
@@ -149,15 +141,15 @@ Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé 
    - Nécessite un GPU en production
 
 ## Utiliser la représentation par embeddings
-> Mettre en place un RAG ? 
-> Représentation insuffisante: 
-> - les notices sont denses en concepts
-> - Elles possèdent une organisation particulière à exploiter (includes, not includes -> difficultés dans le choix du chunk)
-> Se trouvent dans un espace différent des labels 
+Mettre en place un RAG ? 
+Représentation insuffisante: 
+- les notices sont denses en concepts
+- Elles possèdent une organisation particulière à exploiter (includes, not includes -> difficultés dans le choix du chunk)
+- Se trouvent dans un espace différent des labels 
 
 <!-- TODO: Ajouter une visualisation t-SNE -->  
 
-# **Le Framework GRAAL**. Architecture multi-agents 
+# **Le Framework GRAAL**. Architecture multi-agents
 
 
 ## Représentation par arbre hiérarchique de la nomenclature NACE avec Neo4J
@@ -165,29 +157,23 @@ Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé 
 La nomenclature NACE est représentée comme un arbre hiérarchique. 
 
 :::: {.columns}
-
-::: {.column width = 30%}
+::: {.column width="30%"}
 <!-- Ajouter une représentation complète d'une notice NACE -->
-┌──────────────────────────────┐
-│            Chunk             │
-├──────────────────────────────┤
-│ CODE        : 60             │
-│ LEVEL       : 2              │
-│ NAME        : Activités de   │
-│              programmation   │
-│              et diffusion    │
-│ parent_code : J              │
-├──────────────────────────────┤
-│ Includes    : …              │
-│ Excludes    : …              │
-│ text        : description    │
-├──────────────────────────────┤
-│ embedding   : vecteur de     │
-│              dimension N     │
-└──────────────────────────────┘
++--------------+------------------------------------------+
+| Champ        | Valeur                                   |
++==============+==========================================+
+| CODE         | 60                                       |
+| LEVEL        | 2                                        |
+| NAME         | Activités de programmation et diffusion  |
+| parent_code  | J                                        |
+| Includes     | …                                        |
+| Excludes     | …                                        |
+| text         | description                              |
+| embedding    | vecteur de dimension N                   |
++--------------+------------------------------------------+
 :::
 
-::: {.column width = 70%}
+::: {.column width="70%"}
 ```{mermaid}
 graph TD
   ROOT["Root"]
@@ -229,7 +215,6 @@ graph TD
 
 ```
 :::
-
 ::::
 
 ## Utilisation du graph comme support pour des agents

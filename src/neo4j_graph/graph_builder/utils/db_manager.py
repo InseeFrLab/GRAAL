@@ -3,7 +3,7 @@ import logging
 from langchain_neo4j import Neo4jGraph, Neo4jVector
 from neo4j import GraphDatabase
 
-from neo4j_graph.graph_builder.config import NEO4J_PWD, NEO4J_URL, NEO4J_USERNAME
+from src.neo4j_graph.graph_builder.config import NEO4J_PWD, NEO4J_URL, NEO4J_USERNAME
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ def create_root_node():
         WITH root
         MATCH (n WHERE n.LEVEL = 1)
         MERGE (root)-[:HAS_CHILD]->(n)
+
     """
     execute_cypher_command(command)
 

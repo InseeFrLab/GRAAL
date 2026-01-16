@@ -173,13 +173,13 @@ class Graph:
     # get_code_information
     # ------------------------------------------------------------------
 
-    @lru_cache(maxsize=10_000)
+    @lru_cache(maxsize=0)
     def _cached_get_code_information(self, code: str) -> Tuple[Tuple[str, Any], ...]:
         query = """
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
-        WITH node, parent, collect(child.CODE) as children_codes
+        WITH node, parent, collect(child.CODE), collect(child.NAME) as children_codes
         RETURN node.CODE as code,
                node.LEVEL as level,
                node.NAME as name,
@@ -192,21 +192,26 @@ class Graph:
                children_codes,
                size(children_codes) as children_count
         """
+        logger.info(f"_cached_get_code_information called with code {code}")
         result = self.graph.query(query, params={"code": code})
+        logger.info("_cached_get_code_information result: {result}")
         if not result:
+            logger.info("No result in _cached_get_code_information")
             return ()
+
         return _freeze_dict(result[0])
 
     # ------------------------------------------------------------------
     # get_children
     # ------------------------------------------------------------------
 
-    @lru_cache(maxsize=10_000)
+    @lru_cache(maxsize=0)
     def _cached_get_children(self, code: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node {CODE: $code})-[:HAS_CHILD]->(child)
         RETURN child.CODE as code,
                child.LEVEL as level,
+               child.FINAL as final
                child.NAME as name,
                child.text as description,
                child.Includes as includes,
@@ -220,7 +225,7 @@ class Graph:
     # get_descendants
     # ------------------------------------------------------------------
 
-    @lru_cache(maxsize=10_000)
+    @lru_cache(maxsize=0)
     def _cached_get_descendants(
         self, code: str, levels: int
     ) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
@@ -241,7 +246,7 @@ class Graph:
     # get_siblings
     # ------------------------------------------------------------------
 
-    @lru_cache(maxsize=10_000)
+    @lru_cache(maxsize=0)
     def _cached_get_siblings(self, code: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
@@ -262,7 +267,7 @@ class Graph:
     # get_parent
     # ------------------------------------------------------------------
 
-    @lru_cache(maxsize=10_000)
+    @lru_cache(maxsize=0)
     def _cached_get_parent(self, code: str) -> Tuple[Tuple[str, Any], ...]:
         query = """
         MATCH (node {CODE: $code})<-[:HAS_CHILD]-(parent)
@@ -280,7 +285,7 @@ class Graph:
     # search_codes
     # ------------------------------------------------------------------
 
-    @lru_cache(maxsize=5_000)
+    @lru_cache(maxsize=0)
     def _cached_search_codes(self, search_term: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
         query = """
         MATCH (node)

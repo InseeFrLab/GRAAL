@@ -2,22 +2,26 @@ import logging
 
 from langchain_community.document_loaders import DataFrameLoader
 
-from neo4j_graph.graph_builder.config import (
+from src.neo4j_graph.graph_builder.config import (
     COLUMNS_TO_KEEP,
     EMBEDDING_MODEL,
     MAX_TOKENS,
     NOTICES_PATH,
 )
-from neo4j_graph.graph_builder.utils.embed_manager import (
+
+from src.neo4j_graph.graph_builder.utils.db_manager import (
     create_parent_child_relationships,
     create_root_node,
     create_vector_db,
-    get_embedding_model,
     setup_graph,
+)
+
+from src.neo4j_graph.graph_builder.utils.embed_manager import (
+    get_embedding_model,
     truncate_docs_to_max_tokens,
 )
-from neo4j_graph.graph_builder.utils.notice_manager import load_notices
-from utils.logging import configure_logging
+from src.neo4j_graph.graph_builder.utils.notice_manager import load_notices
+from src.utils.logging import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -45,9 +49,9 @@ def run_pipeline():
     docs = truncate_docs_to_max_tokens(docs, MAX_TOKENS)
 
     emb_model = get_embedding_model(EMBEDDING_MODEL)
-    _ = create_vector_db(docs, emb_model)
+    create_vector_db(docs, emb_model)
 
-    _ = create_root_node()
+    create_root_node()
 
     graph = setup_graph()
     create_parent_child_relationships(graph)

@@ -71,12 +71,12 @@ async def main():
 
         # No method specified
         if not methods_to_run:
-            logger.error("No classification method specified!")
             logger.info("Use --help to see available options")
             return 1
 
         # Batch file mode
         if args.batch_file:
+            logger.error("No classification method specified!")
             if len(methods_to_run) > 1:
                 logger.warning("Multiple methods specified, using first one for batch")
 
