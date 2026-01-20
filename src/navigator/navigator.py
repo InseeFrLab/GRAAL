@@ -25,6 +25,7 @@ def make_tools(navigator):
         logger.info("Navigator: get_current_information called")
         data = navigator._cached_get_code_information(navigator.current_code)
         if not data:
+            logger.info("No data to sent")
             return {"error": f"Code {navigator.current_code} not found"}
         logger.info(f"Data sent to the llm: {data}")
         return _unfreeze_dict(data)
@@ -71,13 +72,15 @@ def make_tools(navigator):
         Returns:
             Liste des codes enfants du noeud courant, contient le code et son nom
         """
-        logger.info("Navigator: get_current_children called")
+        logger.info(f"Navigator: get_current_children called at the position {navigator.current_code}")
         children_found = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
         keys_to_keep = ["code", "name"]
+        print(f"Keys_to_keep: {keys_to_keep}")
         filtered_children_found = [
             {k:d[k] for k in keys_to_keep}
             for d in children_found
         ]
+        print("Ici, le logger ne s'affiche pas ")
         logger.info(f"Navigator children found: {filtered_children_found}")
         return filtered_children_found
 
@@ -202,8 +205,10 @@ def make_tools(navigator):
 
         children = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
         child_codes = [child["code"] for child in children]
+        logger.info(f"go_to_child identified those children: {child_codes}")
 
         if child_code not in child_codes:
+            logger.warning(f"child_code {child_code} is not in child_codes")
             return {
                 "success": False,
                 "error": f"{child_code} is not a direct child of {navigator.current_code}",
@@ -215,6 +220,7 @@ def make_tools(navigator):
         navigator.current_code = child_code
         navigator.history.append(child_code)
         logger.info(f"Moved down to: {child_code}")
+        logger.info(f"Navigator.current_code is {navigator.current_code} and navigator.history is {navigator.history}")
 
         return {
             "success": True,
@@ -301,7 +307,36 @@ def make_tools(navigator):
             "navigation_depth": len(navigator.history),
         }
 
-    logger.info(f"Make tools de Navigator created")
+    @function_tool
+    def submit_classification(
+        confidence: float,
+        reasoning: str,
+        alternatives: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Retourne le résultat final de la classification. 
+        
+        Args:
+         - confidence: Score de confiance (compris entre 0 et 1)
+         - reasoning: Justification détaillée du choix de code
+         - alternatives: Liste optionnelle des codes alternatifs envisagés
+
+        Returns:
+            Dictionnaire comprenant la position finale, l'historique de navigation,
+            le niveau de confiance, la justification et les alternatives.
+        """
+
+        result = {
+            "current_position": navigator.current_code,
+            "history": navigator.history,
+            "confidence": confidence,
+            "reasoning": reasoning,
+            "alternatives": alternatives,
+        }
+
+        return result
+
+    logger.info("Navigator tools created")
 
     return [
         get_current_information,
@@ -311,7 +346,7 @@ def make_tools(navigator):
         get_current_siblings,
         go_to_parent,
         go_to_child,
-        get_context_summary,
+        get_context_summary
     ]
 
     """ return [
@@ -327,6 +362,7 @@ def make_tools(navigator):
         reset_to_root,
         get_context_summary,
         get_navigation_history,
+        submit_classification  
     ] """
 
 

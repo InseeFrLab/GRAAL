@@ -179,21 +179,22 @@ class Graph:
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
-        WITH node, parent, collect(child.CODE), collect(child.NAME) as children_codes
+        WITH node, parent, collect(child.CODE) as children_codes, collect(child.NAME) as children_names
         RETURN node.CODE as code,
-               node.LEVEL as level,
-               node.NAME as name,
-               node.text as description,
-               node.Includes as includes,
-               node.IncludesAlso as includes_also,
-               node.Excludes as excludes,
-               node.Implementation_rule as implementation_rule,
-               parent.CODE as parent_code,
-               children_codes,
-               size(children_codes) as children_count
+        node.LEVEL as level,
+        node.NAME as name,
+        node.text as description,
+        node.Includes as includes,
+        node.IncludesAlso as includes_also,
+        node.Excludes as excludes,
+        node.Implementation_rule as implementation_rule,
+        parent.CODE as parent_code,
+        children_codes,
+        size(children_codes) as children_count
         """
         logger.info(f"_cached_get_code_information called with code {code}")
         result = self.graph.query(query, params={"code": code})
+
         logger.info("_cached_get_code_information result: {result}")
         if not result:
             logger.info("No result in _cached_get_code_information")
@@ -211,12 +212,12 @@ class Graph:
         MATCH (node {CODE: $code})-[:HAS_CHILD]->(child)
         RETURN child.CODE as code,
                child.LEVEL as level,
-               child.FINAL as final
+               child.FINAL as final,
                child.NAME as name,
                child.text as description,
                child.Includes as includes,
                child.Excludes as excludes
-        ORDER BY child.CODE
+        ORDER BY code
         """
         result = self.graph.query(query, params={"code": code})
         return _freeze_list_of_dicts(result)
@@ -282,7 +283,7 @@ class Graph:
         return _freeze_dict(result[0])
 
     # ------------------------------------------------------------------
-    # search_codes
+    # search_codes 
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=0)

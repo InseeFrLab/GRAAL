@@ -110,17 +110,25 @@ graph TD
 ## Les méthodes utilisées aujourd'hui nécessitent des bases de données conséquentes
 
 
-Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé avec une accuracy de 88% 
+Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé avec une accuracy de ~85% 
 
 Plusieurs limites à cette approche :
 - Nécessite un dataset d'entraînement important (1M de labels pour les codes NACE) : pose problème lors d'une création/changement de nomenclature
 - Impossibilité d'évaluer la qualité du dataset d'entraînement
 
-<!-- TODO: Ajouter le graphe de l'accuracy en fonction de la taille du dataset d'entrainement -->
+```python 
+
+X = [50, 100, 150, 200, 250, 300, 340, 680, 1000, 1700] # Num trainable observations
+Y = [76, 0.79, 0.81, 0.82, 0.82, 0.83, 0.83, 0.84, 0.85, 0.85] # Accuracy
+
+plt.plot()
+plt.xlabel("Nombre de données d'entraînement (en k)")
+plt.ylabel("Accuracy (%)")
+
+plt.show()
+```
 
 ## Utiliser un LLM pour faire de la classification
-
-<!-- TODO: faire un run avec des llm-only, ajouter l'exemple --> 
 
 Limites identifiées :
 
@@ -141,6 +149,7 @@ Limites identifiées :
    - Nécessite un GPU en production
 
 ## Utiliser la représentation par embeddings
+
 Mettre en place un RAG ? 
 Représentation insuffisante: 
 - les notices sont denses en concepts
