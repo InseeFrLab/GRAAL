@@ -80,7 +80,6 @@ def make_tools(navigator):
             {k:d[k] for k in keys_to_keep}
             for d in children_found
         ]
-        print("Ici, le logger ne s'affiche pas ")
         logger.info(f"Navigator children found: {filtered_children_found}")
         return filtered_children_found
 

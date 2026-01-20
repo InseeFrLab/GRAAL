@@ -179,23 +179,23 @@ class Graph:
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
-        WITH node, parent, collect(child.CODE) as children_codes, collect(child.NAME) as children_names
+        WITH node, parent, collect({code: child.CODE, name: child.NAME}) as children
         RETURN node.CODE as code,
-        node.LEVEL as level,
-        node.NAME as name,
-        node.text as description,
-        node.Includes as includes,
-        node.IncludesAlso as includes_also,
-        node.Excludes as excludes,
-        node.Implementation_rule as implementation_rule,
-        parent.CODE as parent_code,
-        children_codes,
-        size(children_codes) as children_count
+       node.LEVEL as level,
+       node.NAME as name,
+       node.text as description,
+       node.Includes as includes,
+       node.IncludesAlso as includes_also,
+       node.Excludes as excludes,
+       node.Implementation_rule as implementation_rule,
+       parent.CODE as parent_code,
+       children,
+       size(children) as children_count
         """
         logger.info(f"_cached_get_code_information called with code {code}")
         result = self.graph.query(query, params={"code": code})
 
-        logger.info("_cached_get_code_information result: {result}")
+        logger.info(f"_cached_get_code_information result: {result}")
         if not result:
             logger.info("No result in _cached_get_code_information")
             return ()
