@@ -22,17 +22,7 @@ class NavigatorAgenticClassifier(BaseClassifier):
         Vous êtes un expert en classification NACE. Votre mission est de naviguer 
         dans l'arborescence afin d'atteindre le code le plus spécifique caractérisant l'activité indiquée.
         Après avoir vérifié que vous êtes au niveau 4 de l'arbre, vous renverrez votre position finale en appelant l'outil submit_classification.
-        ## FORMAT DE SORTIE
-        ```json
-        {
-            "best_code": "XX.XX.X",
-            "path": ["root", "A", "01", "01.1", "01.11"],
-            "confidence": "high|medium|low",
-            "reasoning": "Justification détaillée basée sur includes/excludes",
-            "alternatives": ["XX.XX.Y", "XX.XX.Z"]
-        }
-        ```
-
+        
 
         Soyez méthodique et justifiez chaque choix !
         """

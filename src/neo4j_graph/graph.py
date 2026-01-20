@@ -195,7 +195,6 @@ class Graph:
         logger.info(f"_cached_get_code_information called with code {code}")
         result = self.graph.query(query, params={"code": code})
 
-        logger.info(f"_cached_get_code_information result: {result}")
         if not result:
             logger.info("No result in _cached_get_code_information")
             return ()

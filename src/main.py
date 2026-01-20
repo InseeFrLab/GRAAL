@@ -22,6 +22,7 @@ async def classify_navigator(query: str, experiment_name: str):
     navigator = Navigator(neo4j_config)
     classifier = NavigatorAgenticClassifier(navigator)
     result = await classifier(query)
+    logger.info(f"Le résultat de la classification est : {result}")
     return result
 
 

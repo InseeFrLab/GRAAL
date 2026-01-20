@@ -65,7 +65,10 @@ class BaseAgent(ABC):
     
     async def __call__(self, *args, **kwargs):
         prompt = self.build_prompt(*args, **kwargs)
-        result = await Runner.run(self.agent, prompt)
+        result = await Runner.run(
+            self.agent,
+            prompt, 
+            max_turns=MAX_TURNS) # TODO: Change local attribution of max_turns
         return result.final_output
 
     def get_model_settings(self) -> ModelSettings:

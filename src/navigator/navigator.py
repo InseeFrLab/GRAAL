@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from agents import function_tool
 from src.neo4j_graph.graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
+from src.agents.closers.match_verifier import MatchVerificationInput
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,6 @@ def make_tools(navigator):
 
         children = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
         child_codes = [child["code"] for child in children]
-        logger.info(f"go_to_child identified those children: {child_codes}")
 
         if child_code not in child_codes:
             logger.warning(f"child_code {child_code} is not in child_codes")
@@ -308,29 +308,29 @@ def make_tools(navigator):
 
     @function_tool
     def submit_classification(
-        confidence: float,
-        reasoning: str,
-        alternatives: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        query: str,
+        confidence: str,
+        reasoning: str, 
+        # TODO: rajouter "alternatives: str"
+    ) -> MatchVerificationInput:
         """
         Retourne le résultat final de la classification. 
         
         Args:
+         - query: Libellé à classer
          - confidence: Score de confiance (compris entre 0 et 1)
          - reasoning: Justification détaillée du choix de code
-         - alternatives: Liste optionnelle des codes alternatifs envisagés
-
+         
         Returns:
             Dictionnaire comprenant la position finale, l'historique de navigation,
             le niveau de confiance, la justification et les alternatives.
         """
 
         result = {
-            "current_position": navigator.current_code,
-            "history": navigator.history,
-            "confidence": confidence,
-            "reasoning": reasoning,
-            "alternatives": alternatives,
+            "activity": query,
+            "code": navigator.current_code,
+            "proposed_explanation": reasoning,
+            "proposed_confidence": float(confidence),
         }
 
         return result
@@ -345,7 +345,8 @@ def make_tools(navigator):
         get_current_siblings,
         go_to_parent,
         go_to_child,
-        get_context_summary
+        get_context_summary,
+        submit_classification
     ]
 
     """ return [
