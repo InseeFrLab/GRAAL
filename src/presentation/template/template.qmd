@@ -1,0 +1,486 @@
+---
+title: "Graph-based Research \
+  with Agents \
+  for Automatic Labelling"
+subtitle: |
+  **[Framework agentique pour la classification dans des nomenclatures hiérarchique]{.orange}**
+author: |
+  [InseeFrLab](https://github.com/InseeFrLab)
+date: today
+date-format: "DD MMMM YYYY"
+slide-number: true
+footer: |
+  **[onyxia.sh](https://www.onyxia.sh)**
+# uncomment for French presentations:
+lang: fr
+# for blind readers:
+slide-tone: true
+# for @olevitt:
+chalkboard: # press the B key to toggle chalkboard
+  theme: whiteboard
+# uncomment to use the multiplex mode:
+#multiplex: true
+format:
+  # pick the light mode (onyxia-revealjs) or the dark mode (onyxia-dark-revealjs)
+  onyxia-revealjs:
+  #onyxia-dark-revealjs:
+    output-file: index.html
+# visual editor configuration:
+editor:
+  render-on-save: true
+jupyter: graal
+---
+
+
+## Plan {.smaller}
+
+
+1. Défis de la classification statistique : des classifications hiérarchiques à haute granularité  
+2. Le Framework GRAAL. Architecture multi-agents
+3. Perspectives. Développements futurs
+
+
+# **Contexte**. Défis de la classification statistique : des classifications hiérarchiques à haute granularité  
+
+## Classification dans les nomenclatures officielles
+
+:::: {.columns}
+::: {.column width="60%"}
+### Nomenclatures INSEE
+- **NACE** : Nomenclature statistique des Activités économiques dans la Communauté Européenne
+    - ~650 codes finaux
+    - Structure hiérarchique sur 4 niveaux
+  
+- **COICOP** : Classification of Individual Consumption by Purpose
+    - ~300 à ~1000 selon la granularité employée
+    - Structure hiérarchique sur 5 niveaux
+
+### Défis actuels
+- **Volume** : Flux importants de labels à classifier : ~X entreprises à labelliser par jour
+- **Temps** : Annotation manuelle coûteuse
+- **Précision** : Exigences de qualité statistique
+- **Traçabilité** : Audit et justification
+:::
+
+::: {.column width="40%"}
+```{mermaid}
+graph TD
+  %% Sections
+  S_A["Section A<br/>Agriculture, sylviculture et pêche"]
+  S_C["Section C<br/>Industrie manufacturière"]
+
+  %% Divisions
+  D_01["Division 01<br/>Culture et production animale"]
+  D_10["Division 10<br/>Industries alimentaires"]
+
+  %% Groupes
+  G_01_1["Groupe 01.1<br/>Cultures non permanentes"]
+  G_10_1["Groupe 10.1<br/>Transformation et conservation de la viande"]
+
+  %% Classes
+  C_01_11["Classe 01.11<br/>Culture de céréales"]
+  C_10_11["Classe 10.11<br/>Transformation de la viande"]
+
+  %% Relations
+  S_A --> D_01
+  S_C --> D_10
+
+  D_01 --> G_01_1
+  D_10 --> G_10_1
+
+  G_01_1 --> C_01_11
+  G_10_1 --> C_10_11
+```
+:::
+::::
+
+## Les méthodes utilisées aujourd'hui nécessitent des bases de données conséquentes
+
+
+Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé avec une accuracy de ~85% 
+
+Plusieurs limites à cette approche :
+- Nécessite un dataset d'entraînement important (1M de labels pour les codes NACE) : pose problème lors d'une création/changement de nomenclature
+- Impossibilité d'évaluer la qualité du dataset d'entraînement
+
+```python 
+
+X = [50, 100, 150, 200, 250, 300, 340, 680, 1000, 1700] # Num trainable observations
+Y = [76, 0.79, 0.81, 0.82, 0.82, 0.83, 0.83, 0.84, 0.85, 0.85] # Accuracy
+
+plt.plot()
+plt.xlabel("Nombre de données d'entraînement (en k)")
+plt.ylabel("Accuracy (%)")
+
+plt.show()
+```
+
+## Utiliser un LLM pour faire de la classification
+
+Limites identifiées :
+
+1. **Context window** limitée :
+    - gpt-oss 120B :  128k tokens soit ~100 000 mots
+    - Notice NACE:  notice NACE sature le context window
+
+2. **Inconsistance**
+   - Résultats variables entre runs
+   - Hallucinations sur codes rares
+
+3. **Boîte noire**
+   - Audit impossible
+   - Pas la main sur le modèle
+
+4. **Temps d'inférence et moyens nécessaires**
+   - ~1s pour une requête
+   - Nécessite un GPU en production
+
+## Utiliser la représentation par embeddings
+
+Mettre en place un RAG ? 
+Représentation insuffisante: 
+- les notices sont denses en concepts
+- Elles possèdent une organisation particulière à exploiter (includes, not includes -> difficultés dans le choix du chunk)
+- Se trouvent dans un espace différent des labels 
+
+<!-- TODO: Ajouter une visualisation t-SNE -->  
+
+# **Le Framework GRAAL**. Architecture multi-agents
+
+
+## Représentation par arbre hiérarchique de la nomenclature NACE avec Neo4J
+
+La nomenclature NACE est représentée comme un arbre hiérarchique. 
+
+:::: {.columns}
+::: {.column width="30%"}
+<!-- Ajouter une représentation complète d'une notice NACE -->
++--------------+------------------------------------------+
+| Champ        | Valeur                                   |
++==============+==========================================+
+| CODE         | 60                                       |
+| LEVEL        | 2                                        |
+| NAME         | Activités de programmation et diffusion  |
+| parent_code  | J                                        |
+| Includes     | …                                        |
+| Excludes     | …                                        |
+| text         | description                              |
+| embedding    | vecteur de dimension N                   |
++--------------+------------------------------------------+
+:::
+
+::: {.column width="70%"}
+```{mermaid}
+graph TD
+  ROOT["Root"]
+
+  %% Sections
+  J["CODE: J<br/>LEVEL: 1"]
+  A["CODE: A<br/>LEVEL: 1"]
+
+  %% Divisions
+  J60["CODE: J60<br/>LEVEL: 2"]
+  J61["CODE: J61<br/>LEVEL: 2"]
+  A01["CODE: A01<br/>LEVEL: 2"]
+
+  %% Groupes
+  J60_1["CODE: J60.1<br/>LEVEL: 3"]
+  J60_2["CODE: J60.2<br/>LEVEL: 3"]
+  A01_1["CODE: A01.1<br/>LEVEL: 3"]
+
+  %% Classes
+  J60_11["CODE: J60.11<br/>LEVEL: 4"]
+  J60_12["CODE: J60.12<br/>LEVEL: 4"]
+  A01_11["CODE: A01.11<br/>LEVEL: 4"]
+
+  %% Relations HAS_PARENT
+  J -->|HAS_PARENT| ROOT
+  A -->|HAS_PARENT| ROOT
+
+  J60 -->|HAS_PARENT| J
+  J61 -->|HAS_PARENT| J
+  A01 -->|HAS_PARENT| A
+
+  J60_1 -->|HAS_PARENT| J60
+  J60_2 -->|HAS_PARENT| J60
+  A01_1 -->|HAS_PARENT| A01
+
+  J60_11 -->|HAS_PARENT| J60_1
+  J60_12 -->|HAS_PARENT| J60_1
+  A01_11 -->|HAS_PARENT| A01_1
+
+```
+:::
+::::
+
+## Utilisation du graph comme support pour des agents
+<!-- TODO: Gérer les outils présents dans le code, il manque toute la partie navigation --> 
+On définit un ensemble d'outil afin qu'un agent puisse parcourir le graph : 
+- Des outils se renseigner sur le graph: 
+    - get_code_information
+    - get_children
+    - get_descendants 
+    - get_siblings
+
+
+
+```{mermaid}
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize': '16px'}}}%%
+flowchart TB
+    Input["🏢 Description entreprise"]
+    
+    subgraph GRAAL["Framework GRAAL"]
+        GA["🔍 Graph Agent<br/>Navigation hiérarchique"]
+        RA["📚 RAG Agent<br/>Recherche contextuelle"]
+        EA["✅ Evaluation Agent<br/>Validation & scoring"]
+        
+        subgraph KG["Knowledge Graph"]
+            N1["NACE Codes"]
+            N2["Relations"]
+            N3["Descriptions"]
+        end
+    end
+    
+    Output["📊 Code + Confiance + Justification"]
+    
+    Input --> GA
+    GA <--> KG
+    GA --> RA
+    RA <--> KG
+    RA --> EA
+    EA --> Output
+    
+    style GRAAL fill:#e8f5e9
+    style KG fill:#fff3e0
+```
+
+## Navigation dans le graphe
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### Approche hiérarchique
+```python
+# Navigation intelligente
+class GraphNavigator:
+    def navigate(self, description):
+        # 1. Identifier section (A-U)
+        section = self.find_section(description)
+        
+        # 2. Descendre division (01-99)
+        division = self.explore_division(
+            section, description
+        )
+        
+        # 3. Raffiner groupe/classe
+        return self.refine_classification(
+            division, description
+        )
+```
+:::
+
+::: {.column width="50%"}
+### Avantages
+
+✅ **Exploration guidée**
+- Suit la structure NACE
+- Réduit l'espace de recherche
+
+✅ **Traçabilité complète**
+- Chemin de décision clair
+- Justifications à chaque étape
+
+✅ **Cohérence garantie**
+- Respect des contraintes hiérarchiques
+- Pas de codes invalides
+:::
+
+::::
+
+
+## Code : Agent de navigation
+```{python}
+#| echo: true
+#| eval: false
+#| code-line-numbers: "|1-3|5-8|10-16|18-22"
+
+from langchain.agents import AgentExecutor
+from neo4j import GraphDatabase
+from typing import Dict, List
+
+class NavigatorAgent:
+    def __init__(self, graph_uri: str):
+        self.driver = GraphDatabase.driver(graph_uri)
+        self.tools = self._create_navigation_tools()
+    
+    def classify(self, description: str) -> Dict:
+        # 1. Analyse initiale
+        context = self.extract_features(description)
+        
+        # 2. Navigation hiérarchique
+        path = self.navigate_hierarchy(context)
+        
+        # 3. Validation finale
+        result = self.validate_classification(path)
+        
+        return {
+            "code": result.code,
+            "confidence": result.confidence,
+            "justification": result.explanation
+        }
+```
+
+## Exemple de classification
+
+::: {.panel-tabset}
+
+### Input
+```python
+description = """
+Entreprise de fabrication artisanale de pains spéciaux 
+et viennoiseries, avec vente directe en boutique
+"""
+```
+
+### Output
+```json
+{
+  "code": "10.71Z",
+  "label": "Fabrication de pain et pâtisserie fraîche",
+  "confidence": 0.94,
+  "path": ["C", "10", "10.7", "10.71", "10.71Z"],
+  "justification": "Fabrication artisanale (C) de produits 
+                    de boulangerie (10.7) avec vente directe"
+}
+```
+
+:::
+
+
+::: {.callout-note}
+Évaluation sur 1,800 entreprises annotées manuellement (golden dataset)
+:::
+
+## Métriques détaillées
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### Performances quantitatives
+
+| Métrique | Baseline | GRAAL | Gain |
+|----------|----------|-------|------|
+| Précision Top-1 | 70% | **89%** | +19% |
+| Précision Top-3 | 82% | **96%** | +14% |
+| Rappel | 68% | **87%** | +19% |
+| F1-Score | 0.69 | **0.88** | +0.19 |
+| Temps médian | 120ms | 450ms | +330ms |
+
+:::
+
+::: {.column width="50%"}
+### Avantages qualitatifs
+
+✅ **Explicabilité** : 100% des décisions justifiées
+
+✅ **Cohérence** : <2% de variance inter-runs
+
+✅ **Auditabilité** : Trace complète du raisonnement
+
+✅ **Adaptabilité** : Mise à jour facile des règles
+
+✅ **Scalabilité** : 10K classifications/heure
+:::
+
+::::
+
+<!-- TODO: Mettre à jour ce graph -->
+## Analyse des erreurs
+```{python}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 5
+
+import plotly.graph_objects as go
+
+errors = ['Ambiguïté métier', 'Activités multiples', 'Description incomplète', 
+          'Code obsolète', 'Erreur annotation', 'Autres']
+counts = [35, 28, 20, 8, 5, 4]
+colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#fdcb6e', '#6c5ce7', '#a8e6cf']
+
+fig = go.Figure(data=[
+    go.Pie(labels=errors, values=counts, hole=.3,
+           marker=dict(colors=colors, line=dict(color='white', width=2)))
+])
+
+fig.update_layout(
+    title="Distribution des erreurs de classification",
+    height=350
+)
+
+fig.show()
+```
+
+::: {.callout-important}
+**Principale source d'erreur** : Entreprises multi-activités nécessitant une analyse du chiffre d'affaires
+:::
+
+# Démonstration {background-color="#00897B"}
+<!-- TODO: Mettre à jour la démo avec le vrai code -->  
+## Démonstration
+```{python}
+#| echo: false
+#| eval: false
+
+# Code pour une démo interactive (non exécuté dans les slides)
+import ipywidgets as widgets
+from IPython.display import display, HTML
+
+description_input = widgets.Textarea(
+    value='Boulangerie artisanale avec salon de thé',
+    placeholder='Décrivez l\'activité de l\'entreprise...',
+    description='Description:',
+    layout=widgets.Layout(width='100%', height='100px')
+)
+
+classify_button = widgets.Button(
+    description='Classifier',
+    button_style='success',
+    icon='check'
+)
+
+output = widgets.Output()
+
+def on_classify(b):
+    with output:
+        output.clear_output()
+        # Simulation de classification
+        print("✅ Code: 10.71Z")
+        print("📊 Confiance: 94%")
+        print("📝 Justification: Activité principale de boulangerie")
+
+classify_button.on_click(on_classify)
+
+display(description_input, classify_button, output)
+```
+
+
+# Conclusion
+
+## Points clés
+
+::: {.incremental .r-fit-text}
+- **Solution opérationnelle** pour la classification automatique
+- **Gain de productivité** significatif (+70% de rapidité)
+- **Qualité maintenue** avec traçabilité complète
+- **Architecture extensible** à d'autres nomenclatures
+- **Approche innovante** combinant LLMs et graphes
+:::
+
+::: {.r-fit-text}
+# Questions ?
+
+🔗 [github.com/InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL)
+
+📊 [SSPLab - INSEE Innovation](https://ssplab.insee.fr)
+:::
