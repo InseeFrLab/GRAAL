@@ -42,11 +42,11 @@
     "text": "Objectifs\n\nOn ne veut plus d’embeddings\nOn veut du reasoning: le LLM peut/doit justifier ses choix (chain of thought)\n\nIdéalement, avec un raisonnement autour de la hiérarchie"
   },
   {
-    "objectID": "index.html#le-framework-graal",
-    "href": "index.html#le-framework-graal",
+    "objectID": "index.html#neo4j-une-graph-database",
+    "href": "index.html#neo4j-une-graph-database",
     "title": "GRAAL : Graph-based Research with Agents for Automatic Labelling",
-    "section": "Le framework GRAAL",
-    "text": "Le framework GRAAL\n\n\n\n\n\ngraph TD\n  ROOT[\"Root\"]\n\n  %% Sections\n  J[\"CODE: J&lt;br/&gt;LEVEL: 1\"]\n  A[\"CODE: A&lt;br/&gt;LEVEL: 1\"]\n\n  %% Divisions\n  J60[\"CODE: J60&lt;br/&gt;LEVEL: 2\"]\n  J61[\"CODE: J61&lt;br/&gt;LEVEL: 2\"]\n  A01[\"CODE: A01&lt;br/&gt;LEVEL: 2\"]\n\n  %% Groupes\n  J60_1[\"CODE: J60.1&lt;br/&gt;LEVEL: 3\"]\n  J60_2[\"CODE: J60.2&lt;br/&gt;LEVEL: 3\"]\n  A01_1[\"CODE: A01.1&lt;br/&gt;LEVEL: 3\"]\n\n  %% Classes\n  J60_11[\"CODE: J60.11&lt;br/&gt;LEVEL: 4\"]\n  J60_12[\"CODE: J60.12&lt;br/&gt;LEVEL: 4\"]\n  A01_11[\"CODE: A01.11&lt;br/&gt;LEVEL: 4\"]\n\n  %% Relations HAS_PARENT\n  J --&gt;|HAS_PARENT| ROOT\n  A --&gt;|HAS_PARENT| ROOT\n\n  J60 --&gt;|HAS_PARENT| J\n  J61 --&gt;|HAS_PARENT| J\n  A01 --&gt;|HAS_PARENT| A\n\n  J60_1 --&gt;|HAS_PARENT| J60\n  J60_2 --&gt;|HAS_PARENT| J60\n  A01_1 --&gt;|HAS_PARENT| A01\n\n  J60_11 --&gt;|HAS_PARENT| J60_1\n  J60_12 --&gt;|HAS_PARENT| J60_1\n  A01_11 --&gt;|HAS_PARENT| A01_1"
+    "section": "Neo4j : une graph database",
+    "text": "Neo4j : une graph database\n\n\n\n\n\ngraph TD\n  ROOT[\"Root\"]\n\n  %% Sections\n  J[\"CODE: J&lt;br/&gt;LEVEL: 1\"]\n  A[\"CODE: A&lt;br/&gt;LEVEL: 1\"]\n\n  %% Divisions\n  J60[\"CODE: J60&lt;br/&gt;LEVEL: 2\"]\n  J61[\"CODE: J61&lt;br/&gt;LEVEL: 2\"]\n  A01[\"CODE: A01&lt;br/&gt;LEVEL: 2\"]\n\n  %% Groupes\n  J60_1[\"CODE: J60.1&lt;br/&gt;LEVEL: 3\"]\n  J60_2[\"CODE: J60.2&lt;br/&gt;LEVEL: 3\"]\n  A01_1[\"CODE: A01.1&lt;br/&gt;LEVEL: 3\"]\n\n  %% Classes\n  J60_11[\"CODE: J60.11&lt;br/&gt;LEVEL: 4\"]\n  J60_12[\"CODE: J60.12&lt;br/&gt;LEVEL: 4\"]\n  A01_11[\"CODE: A01.11&lt;br/&gt;LEVEL: 4\"]\n\n  %% Relations HAS_PARENT\n  J --&gt;|HAS_PARENT| ROOT\n  A --&gt;|HAS_PARENT| ROOT\n\n  J60 --&gt;|HAS_PARENT| J\n  J61 --&gt;|HAS_PARENT| J\n  A01 --&gt;|HAS_PARENT| A\n\n  J60_1 --&gt;|HAS_PARENT| J60\n  J60_2 --&gt;|HAS_PARENT| J60\n  A01_1 --&gt;|HAS_PARENT| A01\n\n  J60_11 --&gt;|HAS_PARENT| J60_1\n  J60_12 --&gt;|HAS_PARENT| J60_1\n  A01_11 --&gt;|HAS_PARENT| A01_1"
   },
   {
     "objectID": "index.html#utilisation-du-graph-comme-support-pour-des-agents",
