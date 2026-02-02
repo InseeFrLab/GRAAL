@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="fr"><head>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="template_files/libs/tone/tone.js"></script>
-<script src="template_files/libs/clipboard/clipboard.min.js"></script>
-<script src="template_files/libs/quarto-html/tabby.min.js"></script>
-<script src="template_files/libs/quarto-html/popper.min.js"></script>
-<script src="template_files/libs/quarto-html/tippy.umd.min.js"></script>
-<link href="template_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="template_files/libs/quarto-html/light-border.css" rel="stylesheet">
-<link href="template_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
-  <meta name="generator" content="quarto-1.8.26">
+<html lang="en"><head>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/tabby.min.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.8.27">
 
-  <meta name="author" content="InseeFrLab">
-  <title>Graph-based Research with Agents for Automatic Labelling</title>
+  <meta name="author" content="Meilame Tayebjee">
+  <meta name="author" content="Théo Ferry">
+  <meta name="dcterms.date" content="2026-04-02">
+  <title>GRAAL : Graph-based Research with Agents for Automatic Labelling</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
-  <link rel="stylesheet" href="template_files/libs/revealjs/dist/reset.css">
-  <link rel="stylesheet" href="template_files/libs/revealjs/dist/reveal.css">
+  <link rel="stylesheet" href="site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="site_libs/revealjs/dist/reveal.css">
   <style>
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
@@ -96,14 +97,15 @@
     code span.vs { color: #20794d; } /* VerbatimString */
     code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   </style>
-  <link rel="stylesheet" href="template_files/libs/revealjs/dist/theme/quarto-4c4b1b13910beff4f4f32c0344bf7219.css">
-  <link rel="stylesheet" href="_extensions/InseeFrLab/onyxia/logo.css">
-  <link href="template_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
-  <link href="template_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
-  <link href="template_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
-  <link href="template_files/libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
-  <link href="template_files/libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
-  <link href="template_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <link rel="stylesheet" href="site_libs/revealjs/dist/theme/quarto-ea8535d309a38c52e88d69daf30b07d0.css">
+  <link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/InseeFrLab/onyxia/logo.css">
+  <link rel="stylesheet" href="custom.css">
+  <link href="site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
   <style type="text/css">
     .reveal div.sourceCode {
       margin: 0;
@@ -191,350 +193,107 @@
       margin-right: 0; 
     }
   </style>
-  <script src="template_files/libs/quarto-diagram/mermaid.min.js"></script>
-  <script src="template_files/libs/quarto-diagram/mermaid-init.js"></script>
-  <link href="template_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
-  
-  <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
-  <script type="text/javascript">
-  window.PlotlyConfig = {MathJaxConfig: 'local'};
-  if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}
-  </script>
-  <script type="module">import "https://cdn.plot.ly/plotly-3.3.1.min"</script>
-
+  <script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+  <script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+  <link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 </head>
 <body class="quarto-light">
   <div class="reveal">
     <div class="slides">
 
-<section id="title-slide" data-background-image="_extensions/InseeFrLab/onyxia/background.svg" data-background-size="contain" class="quarto-title-block center">
-  <h1 class="title">Graph-based Research with Agents for Automatic Labelling</h1>
-  <p class="subtitle"></p><p><strong><span class="orange">Framework agentique pour la classification dans des nomenclatures hiérarchiques</span></strong></p><p></p>
+<section id="title-slide" data-background-image="site_libs/quarto-contrib/quarto-project/InseeFrLab/onyxia/background.svg" data-background-size="contain" class="quarto-title-block center">
+  <h1 class="title">GRAAL : Graph-based Research with Agents for Automatic Labelling</h1>
+  <p class="subtitle">Classification automatique dans des nomenclatures statistiques par approche agentique</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
 <div class="quarto-title-author-name">
- 
+Meilame Tayebjee 
 </div>
+<div class="quarto-title-author-email">
+<a href="mailto:meilame.tayebjee@insee.fr">meilame.tayebjee@insee.fr</a>
 </div>
+        <p class="quarto-title-affiliation">
+            Insee, SSP Lab
+          </p>
+    </div>
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Théo Ferry 
+</div>
+<div class="quarto-title-author-email">
+<a href="mailto:theo.ferry@insee.fr">theo.ferry@insee.fr</a>
+</div>
+        <p class="quarto-title-affiliation">
+            Insee, SSP Lab
+          </p>
+    </div>
 </div>
 
-  <p class="date">21 janvier 2026</p>
+  <p class="date">2 April 2026</p>
 </section>
 <section id="plan" class="slide level2" data-background-image="background.svg" data-background-size="contain">
 <h2>Plan</h2>
 <ol type="1">
-<li class="fragment"><p><strong>Contexte et enjeux</strong><br>
-Défis de la classification statistique</p></li>
-<li class="fragment"><p><strong>État de l’art et limitations</strong><br>
-Approches traditionnelles et LLMs</p></li>
-<li class="fragment"><p><strong>Le Framework GRAAL</strong><br>
-Architecture multi-agents avec graphes de connaissances</p></li>
-<li class="fragment"><p><strong>Résultats et évaluation</strong><br>
-Performances et analyses</p></li>
-<li class="fragment"><p><strong>Perspectives</strong><br>
-Développements futurs</p></li>
+<li><strong>Contexte</strong>. Défis de la codification automatique</li>
+<li><strong>Le framework GRAAL</strong>. Architecture multi-agents</li>
+<li><strong>Perspectives</strong>. Développements futurs</li>
 </ol>
 </section>
 <section>
-<section id="partie-1.-contexte-et-enjeux" class="title-slide slide level1 center" data-background-color="#ff562c" data-background-image="background.svg" data-background-size="contain">
-<h1><strong>Partie 1</strong>. Contexte et enjeux</h1>
+<section id="contexte-le-cas-dusage-de-la-codification-automatique" class="title-slide slide level1 center" data-background-image="background.svg" data-background-size="contain">
+<h1>1️⃣ <strong>Contexte</strong>: le cas d’usage de la codification automatique</h1>
 
 </section>
-<section id="classification-dans-les-nomenclatures-officielles" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Classification dans les nomenclatures officielles</h2>
-<div class="columns">
-<div class="column smaller" style="width:60%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="nomenclatures-insee">Nomenclatures INSEE</h3>
-<p><strong>NACE</strong> : Nomenclature des Activités Économiques - ~650 codes finaux - Structure hiérarchique à 4 niveaux</p>
-<p><strong>COICOP</strong> : Classification de la Consommation - ~300 à 1000 codes selon granularité - 5 niveaux hiérarchiques</p>
-<h3 data-background-image="background.svg" data-background-size="contain" id="enjeux-opérationnels">Enjeux opérationnels</h3>
+<section id="section" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2></h2>
 <ul>
-<li>📊 <strong>Volume</strong> : Milliers d’entreprises à classifier quotidiennement</li>
-<li>🎯 <strong>Précision</strong> : Exigence de qualité statistique élevée</li>
-<li>📝 <strong>Traçabilité</strong> : Justification requise pour audit</li>
+<li><strong>NACE</strong> : Nomenclature statistique des Activités économiques (NAF)
+<ul>
+<li>~700 codes finaux</li>
+<li>Structure hiérarchique sur 5 niveaux</li>
+</ul></li>
+<li><strong>COICOP</strong> : Classification of Individual Consumption by Purpose
+<ul>
+<li>~300 à ~1000 selon la granularité employée</li>
+<li>Structure hiérarchique sur 5 niveaux</li>
+</ul></li>
 </ul>
-</div><div class="column" style="width:40%;">
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base', 'themeVariables': {'fontSize': '14px'}}}%%
-graph TD
-  S["Section J&lt;br/&gt;Information et&lt;br/&gt;communication"]
-  
-  D60["Division 60&lt;br/&gt;Programmation et&lt;br/&gt;diffusion"]
-  D61["Division 61&lt;br/&gt;Télécommunications"]
-  
-  G60_1["Groupe 60.1&lt;br/&gt;Édition et diffusion&lt;br/&gt;de programmes radio"]
-  G60_2["Groupe 60.2&lt;br/&gt;Programmation de&lt;br/&gt;télévision"]
-  
-  C60_10["Classe 60.10Z&lt;br/&gt;Édition et diffusion&lt;br/&gt;programmes radio"]
-  C60_20["Classe 60.20A&lt;br/&gt;Édition chaînes&lt;br/&gt;généralistes"]
-  
-  S --&gt; D60
-  S --&gt; D61
-  D60 --&gt; G60_1
-  D60 --&gt; G60_2
-  G60_1 --&gt; C60_10
-  G60_2 --&gt; C60_20
-  
-  style S fill:#ff562c,color:#fff
-  style D60 fill:#ffb399
-  style G60_1 fill:#ffd9cc
-  style C60_10 fill:#fff
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<div class="callout callout-note no-icon callout-style-simple">
-<div class="callout-body">
-<div class="callout-content">
-<p><strong>Hiérarchie à 4 niveaux</strong></p>
-</div>
-</div>
-</div>
-</div></div>
-</section></section>
-<section>
-<section id="partie-2.-état-de-lart-et-limitations" class="title-slide slide level1 center" data-background-color="#ff562c" data-background-image="background.svg" data-background-size="contain">
-<h1><strong>Partie 2</strong>. État de l’art et limitations</h1>
-
-</section>
-<section id="approche-actuelle-fasttext" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Approche actuelle : FastText</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="principe">Principe</h3>
-<p><strong>FastText</strong> = Classifieur supervisé par embeddings de mots</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href=""></a><span class="co"># Entraînement simplifié</span></span>
-<span id="cb1-2"><a href=""></a>model <span class="op">=</span> fasttext.train_supervised(</span>
-<span id="cb1-3"><a href=""></a>    <span class="bu">input</span><span class="op">=</span><span class="st">"train_data.txt"</span>,</span>
-<span id="cb1-4"><a href=""></a>    lr<span class="op">=</span><span class="fl">0.5</span>,</span>
-<span id="cb1-5"><a href=""></a>    epoch<span class="op">=</span><span class="dv">25</span>,</span>
-<span id="cb1-6"><a href=""></a>    wordNgrams<span class="op">=</span><span class="dv">2</span></span>
-<span id="cb1-7"><a href=""></a>)</span>
-<span id="cb1-8"><a href=""></a></span>
-<span id="cb1-9"><a href=""></a><span class="co"># Prédiction</span></span>
-<span id="cb1-10"><a href=""></a>label, confidence <span class="op">=</span> model.predict(</span>
-<span id="cb1-11"><a href=""></a>    <span class="st">"Boulangerie artisanale"</span></span>
-<span id="cb1-12"><a href=""></a>)</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="avantages">Avantages</h3>
-<p>✅ Rapide (~10ms par classification)<br>
-✅ Performant si données d’entraînement abondantes<br>
-✅ Production stable et éprouvée</p>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="performance-vs.-volume-de-données">Performance vs.&nbsp;Volume de données</h3>
-<div id="446f3b7f" class="cell" data-fig-height="4" data-fig-width="6" data-execution_count="1">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="0bc7c4d6-d834-42ee-8d93-18dea6876e6d" class="plotly-graph-div" style="height:350px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("0bc7c4d6-d834-42ee-8d93-18dea6876e6d")) {                    Plotly.newPlot(                        "0bc7c4d6-d834-42ee-8d93-18dea6876e6d",                        [{"line":{"color":"#2196f3","width":3},"marker":{"size":8},"mode":"lines+markers","name":"Accuracy","x":[50,100,200,300,500,700,1000,1700],"y":[0.76,0.79,0.81,0.82,0.83,0.84,0.85,0.85],"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"shapes":[{"line":{"color":"red","dash":"dash"},"type":"line","x0":0,"x1":1,"xref":"x domain","y0":0.85,"y1":0.85,"yref":"y"}],"annotations":[{"showarrow":false,"text":"Plateau ~85%","x":1,"xanchor":"right","xref":"x domain","y":0.85,"yanchor":"bottom","yref":"y"}],"yaxis":{"title":{"text":"Accuracy (%)"},"range":[0.7,0.9]},"title":{"text":"Courbe d'apprentissage FastText (NACE)"},"xaxis":{"title":{"text":"Nombre d'observations d'entraînement (milliers)"}},"height":350},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('0bc7c4d6-d834-42ee-8d93-18dea6876e6d');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-</div></div>
 </section>
 <section class="slide level2">
 
-<h3 data-background-image="background.svg" data-background-size="contain" id="limites-identifiées">Limites identifiées</h3>
-<div data-incremental-level="1">
-<ol type="1">
-<li class="fragment">🗄️ <strong>Dépendance aux données historiques</strong>
-<ul>
-<li class="fragment">Nécessite 1M+ labels pour performances acceptables</li>
-<li class="fragment">Problématique lors de changements de nomenclature</li>
-<li class="fragment">Impossible d’évaluer la qualité du dataset d’entraînement</li>
-</ul></li>
-<li class="fragment">🎯 <strong>Difficultés structurelles</strong>
-<ul>
-<li class="fragment">Pas de prise en compte de la hiérarchie NACE</li>
-<li class="fragment">Confond facilement codes proches sémantiquement</li>
-<li class="fragment">Exemple : <code>10.71Z</code> (boulangerie) vs <code>10.72Z</code> (biscuiterie)</li>
-</ul></li>
-<li class="fragment">🔍 <strong>Manque d’explicabilité</strong>
-<ul>
-<li class="fragment">Boîte noire difficile à auditer</li>
-<li class="fragment">Pas de traçabilité du raisonnement</li>
-<li class="fragment">Impossible de débugger les erreurs systématiques</li>
-</ul></li>
-<li class="fragment">🆕 <strong>Inadapté aux nouveaux secteurs</strong>
-<ul>
-<li class="fragment">Économie numérique, gig economy</li>
-<li class="fragment">Activités hybrides émergentes</li>
-</ul></li>
-</ol>
-</div>
-</section>
-<section id="alternative-llm-prompt-engineering" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Alternative LLM : Prompt engineering</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="approche-naïve-testée">Approche naïve testée</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href=""></a>prompt <span class="op">=</span> <span class="ss">f"""</span></span>
-<span id="cb2-2"><a href=""></a><span class="ss">Tu es un expert en classification NACE.</span></span>
-<span id="cb2-3"><a href=""></a></span>
-<span id="cb2-4"><a href=""></a><span class="ss">Activité : </span><span class="sc">{</span>description<span class="sc">}</span></span>
-<span id="cb2-5"><a href=""></a></span>
-<span id="cb2-6"><a href=""></a><span class="ss">Codes NACE disponibles : </span></span>
-<span id="cb2-7"><a href=""></a><span class="sc">{</span>liste_complete_codes<span class="sc">}</span><span class="ss"> # ~650 codes</span></span>
-<span id="cb2-8"><a href=""></a></span>
-<span id="cb2-9"><a href=""></a><span class="ss">Retourne le code le plus approprié.</span></span>
-<span id="cb2-10"><a href=""></a><span class="ss">"""</span></span>
-<span id="cb2-11"><a href=""></a></span>
-<span id="cb2-12"><a href=""></a>response <span class="op">=</span> llm.generate(prompt)</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="résultats-observés">Résultats observés</h3>
-<div class="callout callout-caution callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Mise en garde</strong></p>
-</div>
-<div class="callout-content">
-<ul>
-<li>Hallucinations fréquentes (~15%)</li>
-<li>Inconsistance entre runs</li>
-<li>Lent (~2-3s par classification)</li>
-</ul>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="limitations-fondamentales">Limitations fondamentales</h3>
-<h4 data-background-image="background.svg" data-background-size="contain" id="context-window">Context Window</h4>
-<p><strong>Problème</strong> : Notice NACE complète = ~150K tokens</p>
-<ul>
-<li>GPT-4 : 128K tokens max</li>
-<li>Notice sature le contexte</li>
-<li>Impossible de tout inclure</li>
-</ul>
-<h4 data-background-image="background.svg" data-background-size="contain" id="qualité">Qualité</h4>
-<p><strong>Problème</strong> : Variabilité des réponses et auditabilité</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href=""></a><span class="co"># Même prompt, résultats différents</span></span>
-<span id="cb3-2"><a href=""></a>run_1 <span class="op">=</span> classify(<span class="st">"Restaurant"</span>)  <span class="co"># → 56.10A</span></span>
-<span id="cb3-3"><a href=""></a>run_2 <span class="op">=</span> classify(<span class="st">"Restaurant"</span>)  <span class="co"># → 56.10C</span></span>
-<span id="cb3-4"><a href=""></a>run_3 <span class="op">=</span> classify(<span class="st">"Restaurant"</span>)  <span class="co"># → 56.29A</span></span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-</div></div>
-</section>
-<section id="tentative-rag-classique" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Tentative RAG classique</h2>
-<h3 data-background-image="background.svg" data-background-size="contain" id="architecture-testée">Architecture testée</h3>
 <div class="cell" data-reveal="true" data-layout-align="default">
 <div class="cell-output-display">
 <div>
 <p></p><figure class=""><p></p>
 <div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base'}}%%
-flowchart LR
-    A["📝 Description"] --&gt; B["🔍 Embedding"]
-    B --&gt; C[("📚 Vector DB&lt;br/&gt;(notices NACE)")]
-    C --&gt; D["Top-K&lt;br/&gt;similaires"]
-    D --&gt; E["🤖 LLM&lt;br/&gt;Choix final"]
-    E --&gt; F["✅ Code"]
-    
-    style C fill:#fff3e0
-    style E fill:#e3f2fd
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="problèmes-rencontrés">Problèmes rencontrés</h3>
-<ol type="1">
-<li><strong>Notices NACE</strong> et <strong>descriptions utilisateurs</strong> sont dans des espaces sémantiques différents
-<ul>
-<li>Notice : “Fabrication de produits de boulangerie pâtisserie et de pâtisserie fraîche”</li>
-<li>Utilisateur : “Je fais du pain”</li>
-</ul></li>
-<li>RAG standard ne prend pas en compte :
-<ul>
-<li>Hiérarchie NACE (Section → … → Classe)</li>
-<li>Règles d’inclusion/exclusion, de mise en oeuvre</li>
-<li><strong>Chunking problématique</strong></li>
-</ul></li>
-</ol>
-</section></section>
-<section>
-<section id="partie-3.-le-framework-graal" class="title-slide slide level1 center" data-background-color="#ff562c" data-background-image="background.svg" data-background-size="contain">
-<h1><strong>Partie 3</strong>. Le Framework GRAAL</h1>
+<pre class="mermaid mermaid-js">graph TD
+  %% Sections
+  S_A["Section A&lt;br/&gt;Agriculture, sylviculture et pêche"]
+  S_C["Section C&lt;br/&gt;Industrie manufacturière"]
 
-</section>
-<section id="navigation-dans-un-graphe" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Navigation dans un graphe</h2>
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base'}}%%
-graph TD
-    ROOT["🏠 ROOT"]
-    
-    J["Section J&lt;br/&gt;Information"]
-    C["Section C&lt;br/&gt;Industrie"]
-    
-    J60["60 - Programmation&lt;br/&gt;et diffusion"]
-    J61["61 - Télécoms"]
-    C10["10 - Industries&lt;br/&gt;alimentaires"]
-    
-    J60_1["60.1 - Édition&lt;br/&gt;programmes radio"]
-    J60_2["60.2 - Programmes&lt;br/&gt;télévision"]
-    C10_7["10.7 - Boulangerie&lt;br/&gt;pâtisserie"]
-    
-    J60_10["60.10Z"]
-    J60_20["60.20A"]
-    C10_71["10.71Z"]
-    
-    ROOT --&gt; J
-    ROOT --&gt; C
-    J --&gt; J60
-    J --&gt; J61
-    C --&gt; C10
-    J60 --&gt; J60_1
-    J60 --&gt; J60_2
-    C10 --&gt; C10_7
-    J60_1 --&gt; J60_10
-    J60_2 --&gt; J60_20
-    C10_7 --&gt; C10_71
-    
-    style ROOT fill:#ff562c,color:#fff
-    style J fill:#ffb399
-    style C fill:#ffb399
-    style J60 fill:#ffd9cc
-    style C10 fill:#ffd9cc
-    style J60_1 fill:#ffe6e0
-    style C10_7 fill:#ffe6e0
-    style C10_71 fill:#bafb29,stroke:#333,stroke-width:3px
+  %% Divisions
+  D_01["Division 01&lt;br/&gt;Culture et production animale"]
+  D_10["Division 10&lt;br/&gt;Industries alimentaires"]
+
+  %% Groupes
+  G_01_1["Groupe 01.1&lt;br/&gt;Cultures non permanentes"]
+  G_10_1["Groupe 10.1&lt;br/&gt;Transformation et conservation de la viande"]
+
+  %% Classes
+  C_01_11["Classe 01.11&lt;br/&gt;Culture de céréales"]
+  C_10_11["Classe 10.11&lt;br/&gt;Transformation de la viande"]
+
+  %% Relations
+  S_A --&gt; D_01
+  S_C --&gt; D_10
+
+  D_01 --&gt; G_01_1
+  D_10 --&gt; G_10_1
+
+  G_01_1 --&gt; C_01_11
+  G_10_1 --&gt; C_10_11
 </pre>
 </div>
 <p></p></figure><p></p>
@@ -542,1110 +301,234 @@ graph TD
 </div>
 </div>
 </section>
-<section id="architecture-graal-vue-densemble" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Architecture GRAAL : Vue d’ensemble</h2>
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base', 'themeVariables': {'fontSize': '18px'}}}%%
-flowchart TB
-    Input["📝 Description entreprise&lt;br/&gt;&lt;i&gt;'Boulangerie artisanale avec salon de thé'&lt;/i&gt;"]
-    
-    subgraph GRAAL["🎯 Framework GRAAL"]
-        subgraph KG["📊 Knowledge Graph (Neo4j)"]
-            N1["Codes NACE&lt;br/&gt;(650 codes finaux)"]
-            N2["Relations hiérarchiques&lt;br/&gt;(HAS_CHILD)"]
-            N3["Métadonnées&lt;br/&gt;(Includes, Excludes, etc.)"]
-            N4["Embeddings vectoriels&lt;br/&gt;(similarité sémantique)"]
-        end
-        
-        subgraph Agents["🤖 Système Multi-Agents"]
-            Navigator["🧭 Navigator Agent&lt;br/&gt;&lt;i&gt;Navigation hiérarchique guidée&lt;/i&gt;"]
-            Verifier["✅ Match Verifier&lt;br/&gt;&lt;i&gt;Validation code-activité&lt;/i&gt;"]
-            Chooser["🎯 Code Chooser&lt;br/&gt;&lt;i&gt;Sélection entre alternatives&lt;/i&gt;"]
-        end
-        
-        Navigator &lt;--&gt; KG
-        Navigator --&gt; Chooser
-        Chooser &lt;--&gt; KG
-        Chooser --&gt; Verifier
-        Verifier &lt;--&gt; KG
-    end
-    
-    Output["📊 Résultat structuré&lt;br/&gt;
-    • Code: 10.71Z&lt;br/&gt;
-    • Confiance: 0.94&lt;br/&gt;
-    • Justification: 'Fabrication artisanale...'&lt;br/&gt;
-    • Chemin: C → 10 → 10.7 → 10.71 → 10.71Z"]
-    
-    Input --&gt; Navigator
-    Verifier --&gt; Output
-    
-    style GRAAL fill:#e8f5e9
-    style KG fill:#fff3e0
-    style Agents fill:#e3f2fd
-    style Input fill:#f3e5f5
-    style Output fill:#e8f5e9
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-</section>
-<section id="composant-1-knowledge-graph-neo4j" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Composant 1 : Knowledge Graph Neo4j</h2>
-<h3 data-background-image="background.svg" data-background-size="contain" id="structure-des-nœuds">Structure des nœuds</h3>
-<p>Chaque code NACE est un nœud avec propriétés :</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource json number-lines code-with-copy"><code class="sourceCode json"><span id="cb4-1"><a href=""></a><span class="fu">{</span></span>
-<span id="cb4-2"><a href=""></a>  <span class="dt">"CODE"</span><span class="fu">:</span> <span class="st">"10.71Z"</span><span class="fu">,</span></span>
-<span id="cb4-3"><a href=""></a>  <span class="dt">"LEVEL"</span><span class="fu">:</span> <span class="dv">4</span><span class="fu">,</span></span>
-<span id="cb4-4"><a href=""></a>  <span class="dt">"FINAL"</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-<span id="cb4-5"><a href=""></a>  <span class="dt">"NAME"</span><span class="fu">:</span> <span class="st">"Fabrication de pain..."</span><span class="fu">,</span></span>
-<span id="cb4-6"><a href=""></a>  <span class="dt">"Includes"</span><span class="fu">:</span> <span class="st">"boulangerie, pâtisserie..."</span><span class="fu">,</span></span>
-<span id="cb4-7"><a href=""></a>  <span class="dt">"IncludesAlso"</span><span class="fu">:</span> <span class="st">"viennoiserie..."</span><span class="fu">,</span></span>
-<span id="cb4-8"><a href=""></a>  <span class="dt">"Excludes"</span><span class="fu">:</span> <span class="st">"pâtisserie industrielle..."</span><span class="fu">,</span></span>
-<span id="cb4-9"><a href=""></a>  <span class="dt">"Implementation_rule"</span><span class="fu">:</span> <span class="st">"Critères..."</span><span class="fu">,</span></span>
-<span id="cb4-10"><a href=""></a>  <span class="dt">"text"</span><span class="fu">:</span> <span class="st">"Description complète..."</span><span class="fu">,</span></span>
-<span id="cb4-11"><a href=""></a>  <span class="dt">"embedding"</span><span class="fu">:</span> <span class="ot">[</span><span class="fl">0.12</span><span class="ot">,</span> <span class="fl">-0.45</span><span class="ot">,</span> <span class="er">...</span><span class="ot">]</span>  <span class="er">//</span> <span class="dv">1536</span><span class="er">-d</span></span>
-<span id="cb4-12"><a href=""></a><span class="fu">}</span></span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="relations">Relations</h3>
+<section id="défis" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Défis</h2>
 <ul>
-<li><code>HAS_CHILD</code> : lien parent → enfant</li>
-<li>Permet navigation ascendante/descendante</li>
-<li>Requêtes Cypher optimisées</li>
+<li>A l’heure actuelle, apprentissage supervisé classique, avec des modèles de <em>deep learning</em> (PyTorch)
+<ul>
+<li>Frugal, performant et rapide, <em>production-ready</em>… 😎</li>
+<li>… mais nécessite entre 100k et 1M de données labellisées 🫨</li>
+</ul></li>
 </ul>
 </section>
-<section id="composant-2-navigator-agent" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Composant 2 : Navigator Agent</h2>
-<div class="columns">
-<div class="column" style="width:60%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="principe-de-fonctionnement">Principe de fonctionnement</h3>
-<p>L’agent <strong>navigue</strong> dans la hiérarchie niveau par niveau :</p>
-<ol type="1">
-<li><strong>Départ</strong> : Nœud racine <code>ROOT</code></li>
-<li><strong>Exploration</strong> : Examine enfants du nœud courant</li>
-<li><strong>Décision</strong> : Choisit le sous-arbre le plus pertinent</li>
-<li><strong>Descente</strong> : Se déplace vers l’enfant choisi</li>
-<li><strong>Répétition</strong> : Jusqu’à atteindre un code final (niveau 4)</li>
-</ol>
-<div title="Outils disponibles">
-<div class="callout callout-tip callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Outils disponibles</strong></p>
-</div>
-<div class="callout-content">
-<p>Le Navigator dispose de plusieurs outils : - <code>get_current_information()</code> - Info nœud actuel - <code>get_current_children()</code> - Enfants directs - <code>go_to_child(code)</code> - Descendre vers enfant - <code>get_code_information(code)</code> - Info code spécifique - <code>submit_classification()</code> - Soumettre résultat final</p>
-</div>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:40%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="exemple-de-navigation">Exemple de navigation</h3>
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base'}}%%
-graph TD
-    R["ROOT&lt;br/&gt;🔵 Départ"] --&gt; C["C - Industrie&lt;br/&gt;🟢 1. Choisi"]
-    R --&gt; J["J - Information&lt;br/&gt;⚪ Écarté"]
-    
-    C --&gt; C10["10 - Industries&lt;br/&gt;alimentaires&lt;br/&gt;🟢 2. Choisi"]
-    C --&gt; C11["11 - Boissons&lt;br/&gt;⚪ Écarté"]
-    
-    C10 --&gt; C10_7["10.7 - Boulangerie&lt;br/&gt;🟢 3. Choisi"]
-    C10 --&gt; C10_8["10.8 - Autres produits&lt;br/&gt;⚪ Écarté"]
-    
-    C10_7 --&gt; C10_71["10.71Z&lt;br/&gt;🎯 Final"]
-    C10_7 --&gt; C10_72["10.72Z&lt;br/&gt;⚪ Écarté"]
-    
-    style R fill:#2196f3,color:#fff
-    style C fill:#4caf50,color:#fff
-    style C10 fill:#4caf50,color:#fff
-    style C10_7 fill:#4caf50,color:#fff
-    style C10_71 fill:#ff562c,color:#fff
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<p><strong>Chemin</strong> : ROOT → C → 10 → 10.7 → 10.71Z</p>
-</div></div>
+<section id="une-approche-mlops-grandement-facilitée-par-onyxia-mais-encore-incomplète" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Une approche MLOps grandement facilitée par Onyxia mais encore incomplète</h2>
+<ul>
+<li class="fragment"><strong>Data</strong> : Stockage S3 (Datalab), versionnage avec MLFlow Datasets ✅</li>
+<li class="fragment"><strong>Modèle</strong> : développement internalisé et distribution de l’architecture via le package<br>
+<a href="https://github.com/InseeFrLab/torchTextClassifiers"><em>torchTextClassifiers</em></a>, entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅</li>
+<li class="fragment"><strong>Déploiement</strong> : FastAPI déployé via conteneurisation (Docker) ✅</li>
+<li class="fragment"><strong>Monitoring</strong> : c’est là que le bât blesse ❌
+<ul>
+<li class="fragment">Investissements humains importants<br>
+</li>
+<li class="fragment">Comment contrôler le modèle en production sans annotation humaine continue ?</li>
+</ul></li>
+</ul>
+</section>
+<section id="le-besoin-de-saffranchir-des-données-labellisées" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Le besoin de s’affranchir des données labellisées</h2>
+<ul>
+<li class="fragment">Comment faire quand on ne peut pas avoir / n’a pas assez de données labellisées ?</li>
+<li class="fragment">Comment faire quand la nomenclature est mise à jour par le métier ?
+<ul>
+<li class="fragment">Il faut recoder les données existantes</li>
+</ul></li>
+<li class="fragment">Comment faire quand nos données labellisées ne sont pas fiables ?
+<ul>
+<li class="fragment">et qu’idéalement on veuille les corriger…</li>
+</ul></li>
+</ul>
 </section>
 <section class="slide level2">
 
-<h3 data-background-image="background.svg" data-background-size="contain" id="prompt-système-du-navigator">Prompt système du Navigator</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href=""></a>SYSTEM_PROMPT <span class="op">=</span> <span class="st">"""</span></span>
-<span id="cb5-2"><a href=""></a><span class="st">Tu es un expert en classification NACE. Ta mission est de naviguer </span></span>
-<span id="cb5-3"><a href=""></a><span class="st">dans l'arborescence NACE pour trouver le code le plus spécifique </span></span>
-<span id="cb5-4"><a href=""></a><span class="st">caractérisant l'activité indiquée.</span></span>
-<span id="cb5-5"><a href=""></a></span>
-<span id="cb5-6"><a href=""></a><span class="st">INSTRUCTIONS:</span></span>
-<span id="cb5-7"><a href=""></a><span class="st">1. Tu commences à la racine de l'arbre (ROOT)</span></span>
-<span id="cb5-8"><a href=""></a><span class="st">2. À chaque étape, examine les enfants du nœud actuel</span></span>
-<span id="cb5-9"><a href=""></a><span class="st">3. Choisis l'enfant le plus pertinent et descends vers lui</span></span>
-<span id="cb5-10"><a href=""></a><span class="st">4. Continue jusqu'à atteindre un code de niveau 4 (code final)</span></span>
-<span id="cb5-11"><a href=""></a><span class="st">5. Une fois au niveau 4, appelle submit_classification() avec :</span></span>
-<span id="cb5-12"><a href=""></a><span class="st">   - Le code final choisi</span></span>
-<span id="cb5-13"><a href=""></a><span class="st">   - Ton niveau de confiance (0-1)</span></span>
-<span id="cb5-14"><a href=""></a><span class="st">   - Une justification détaillée</span></span>
-<span id="cb5-15"><a href=""></a></span>
-<span id="cb5-16"><a href=""></a><span class="st">MÉTHODOLOGIE:</span></span>
-<span id="cb5-17"><a href=""></a><span class="st">- Lis attentivement les champs Includes/Excludes de chaque code</span></span>
-<span id="cb5-18"><a href=""></a><span class="st">- Prends en compte les règles de mise en œuvre (Implementation_rule)</span></span>
-<span id="cb5-19"><a href=""></a><span class="st">- En cas d'hésitation, consulte les codes voisins (siblings)</span></span>
-<span id="cb5-20"><a href=""></a><span class="st">- Justifie chaque choix de navigation</span></span>
-<span id="cb5-21"><a href=""></a></span>
-<span id="cb5-22"><a href=""></a><span class="st">Sois méthodique et transparent dans ton raisonnement.</span></span>
-<span id="cb5-23"><a href=""></a><span class="st">"""</span></span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="callout callout-important callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Important</strong></p>
-</div>
-<div class="callout-content">
-<p>Le Navigator est <strong>autonome</strong> : il décide quand utiliser chaque outil et dans quel ordre</p>
-</div>
-</div>
-</div>
-</section>
-<section id="composant-3-code-chooser-agent" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Composant 3 : Code Chooser Agent</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="rôle">Rôle</h3>
-<p>Quand <strong>plusieurs codes</strong> semblent pertinents, le Code Chooser :</p>
-<ol type="1">
-<li>Reçoit une liste de codes candidats (2-5)</li>
-<li>Analyse en détail chaque code</li>
-<li>Compare avec l’activité décrite</li>
-<li>Sélectionne le meilleur match</li>
-<li>Retourne code + confiance + justification</li>
-</ol>
-<h3 data-background-image="background.svg" data-background-size="contain" id="cas-dusage">Cas d’usage</h3>
-<div title="Exemple">
-<div class="callout callout-note callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Exemple</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Activité</strong> : “Restaurant avec boulangerie”</p>
-<p><strong>Candidats</strong> : - <code>56.10A</code> - Restauration traditionnelle - <code>10.71Z</code> - Fabrication de pain - <code>56.10C</code> - Restauration de type rapide</p>
-<p><strong>Décision</strong> : Dépend de l’activité principale</p>
-</div>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="architecture">Architecture</h3>
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base'}}%%
-flowchart TD
-    A["📝 Activité&lt;br/&gt;+ Candidats"] --&gt; B["🔍 Analyse&lt;br/&gt;détaillée"]
-    B --&gt; C1["Code 1&lt;br/&gt;+ Notice complète"]
-    B --&gt; C2["Code 2&lt;br/&gt;+ Notice complète"]
-    B --&gt; C3["Code 3&lt;br/&gt;+ Notice complète"]
-    
-    C1 --&gt; D["🧠 LLM&lt;br/&gt;Raisonnement"]
-    C2 --&gt; D
-    C3 --&gt; D
-    
-    D --&gt; E["✅ Choix final&lt;br/&gt;+ Confiance&lt;br/&gt;+ Justification"]
-    
-    style A fill:#f3e5f5
-    style D fill:#e3f2fd
-    style E fill:#e8f5e9
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-</div></div>
-</section>
-<section id="composant-4-match-verifier-agent" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Composant 4 : Match Verifier Agent</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="rôle-contrôle-qualité">Rôle : Contrôle qualité</h3>
-<p>Le Verifier est le <strong>dernier rempart</strong> :</p>
-<ol type="1">
-<li>Reçoit une proposition code + activité</li>
-<li>Vérifie la cohérence de l’association</li>
-<li>Consulte la nomenclature si besoin</li>
-<li>Retourne : validation + confiance + explication</li>
-</ol>
-<div class="callout callout-warning callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Avertissement</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Différence clé</strong> : Le Verifier ne propose pas de code alternatif, il valide ou rejette</p>
-</div>
-</div>
-</div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="intégration-dans-le-pipeline">Intégration dans le pipeline</h3>
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base'}}%%
-flowchart LR
-    C["Classifier&lt;br/&gt;(Navigator ou RAG)"] --&gt; V["Match&lt;br/&gt;Verifier"]
-    V --&gt;|"✅ Valide"| O["Output final"]
-    V --&gt;|"❌ Rejet"| R["Alerte&lt;br/&gt;qualité"]
-    
-    style V fill:#fff3e0
-    style O fill:#e8f5e9
-    style R fill:#ffebee
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="input-et-output">Input et Output</h3>
-<p><strong>Input</strong> :</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href=""></a>{</span>
-<span id="cb6-2"><a href=""></a>  <span class="st">"activity"</span>: <span class="st">"Boulangerie artisanale"</span>,</span>
-<span id="cb6-3"><a href=""></a>  <span class="st">"code"</span>: <span class="st">"10.71Z"</span>,</span>
-<span id="cb6-4"><a href=""></a>  <span class="st">"proposed_explanation"</span>: <span class="st">"..."</span>,</span>
-<span id="cb6-5"><a href=""></a>  <span class="st">"proposed_confidence"</span>: <span class="fl">0.92</span></span>
-<span id="cb6-6"><a href=""></a>}</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Output</strong> :</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href=""></a>{</span>
-<span id="cb7-2"><a href=""></a>  <span class="st">"is_match"</span>: <span class="va">True</span>,</span>
-<span id="cb7-3"><a href=""></a>  <span class="st">"confidence"</span>: <span class="fl">0.95</span>,</span>
-<span id="cb7-4"><a href=""></a>  <span class="st">"explanation"</span>: <span class="st">"Code correct : fabrication </span></span>
-<span id="cb7-5"><a href=""></a><span class="er">                  artisanale de pain correspond </span></span>
-<span id="cb7-6"><a href=""></a>                  exactement au périmètre du </span>
-<span id="cb7-7"><a href=""></a>                  <span class="fl">10.71</span><span class="er">Z</span> selon la notice<span class="st">"</span></span>
-<span id="cb7-8"><a href=""></a><span class="er">}</span></span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="métriques">Métriques</h3>
 <ul>
-<li><strong>Taux de validation</strong> : ~93%</li>
-<li><strong>Faux positifs</strong> : &lt;2%</li>
-<li><strong>Faux négatifs</strong> : &lt;5%</li>
+<li class="fragment">Une première approche <strong>zero-shot</strong> : <span class="orange"><strong>le Retrieval-Augmented Generation (RAG)</strong></span>
+<ul>
+<li class="fragment">Knowledge base = les notices officielles pour chaque code</li>
+<li class="fragment">Très bonne première solution mais…
+<ul>
+<li class="fragment">dépendance au chunking…</li>
+<li class="fragment">dépendance au modèle d’embedding…</li>
+<li class="fragment">saturation du contexte avec les notices…</li>
+<li class="fragment">on compare embedding de <em>notice</em> à un embedding de <em>libellé</em>…</li>
+<li class="fragment">pas de traçabilité, pas de raisonnement…</li>
+<li class="fragment">pas de prise en compte de la hiérarchie !</li>
+</ul></li>
+</ul></li>
 </ul>
-</div></div>
 </section>
-<section id="pipeline-complet-exemple-pas-à-pas" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Pipeline complet : Exemple pas-à-pas</h2>
+<section id="objectifs" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Objectifs</h2>
+<ul>
+<li>On ne veut plus d’embeddings</li>
+<li>On veut du <em>reasoning</em>: le LLM peut/doit justifier ses choix (<em>chain of thought</em>)
+<ul>
+<li>Idéalement, avec un raisonnement autour de la hiérarchie</li>
+</ul></li>
+</ul>
+</section>
+<section id="le-framework-graal" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2><strong>Le framework GRAAL</strong></h2>
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+  ROOT["Root"]
+
+  %% Sections
+  J["CODE: J&lt;br/&gt;LEVEL: 1"]
+  A["CODE: A&lt;br/&gt;LEVEL: 1"]
+
+  %% Divisions
+  J60["CODE: J60&lt;br/&gt;LEVEL: 2"]
+  J61["CODE: J61&lt;br/&gt;LEVEL: 2"]
+  A01["CODE: A01&lt;br/&gt;LEVEL: 2"]
+
+  %% Groupes
+  J60_1["CODE: J60.1&lt;br/&gt;LEVEL: 3"]
+  J60_2["CODE: J60.2&lt;br/&gt;LEVEL: 3"]
+  A01_1["CODE: A01.1&lt;br/&gt;LEVEL: 3"]
+
+  %% Classes
+  J60_11["CODE: J60.11&lt;br/&gt;LEVEL: 4"]
+  J60_12["CODE: J60.12&lt;br/&gt;LEVEL: 4"]
+  A01_11["CODE: A01.11&lt;br/&gt;LEVEL: 4"]
+
+  %% Relations HAS_PARENT
+  J --&gt;|HAS_PARENT| ROOT
+  A --&gt;|HAS_PARENT| ROOT
+
+  J60 --&gt;|HAS_PARENT| J
+  J61 --&gt;|HAS_PARENT| J
+  A01 --&gt;|HAS_PARENT| A
+
+  J60_1 --&gt;|HAS_PARENT| J60
+  J60_2 --&gt;|HAS_PARENT| J60
+  A01_1 --&gt;|HAS_PARENT| A01
+
+  J60_11 --&gt;|HAS_PARENT| J60_1
+  J60_12 --&gt;|HAS_PARENT| J60_1
+  A01_11 --&gt;|HAS_PARENT| A01_1
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="utilisation-du-graph-comme-support-pour-des-agents" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Utilisation du graph comme support pour des agents</h2>
+<ul>
+<li>On définit un ensemble d’outils <strong>commun à tous les agents</strong>:
+<ul>
+<li>get_code_information</li>
+<li>get_children</li>
+<li>get_descendants</li>
+<li>get_siblings</li>
+</ul></li>
+<li>Ils utilisent tous la syntaxe Neo4j</li>
+</ul>
+</section>
+<section id="les-agents" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Les agents</h2>
+<ul>
+<li>Un agent = un prompt, un type d’input et un type d’output</li>
+<li>Les <em>closers</em>
+<ul>
+<li><em>CodeChooser</em>:</li>
+<li><em>MatchVerifier</em></li>
+</ul></li>
+<li><em>Text2Code</em> (classifieur)
+<ul>
+<li>le <em>Navigator</em> hérite de <em>Text2Code</em></li>
+</ul></li>
+<li><em>Code2Text</em> (générateur de données synthétiques)</li>
+</ul>
+</section>
+<section id="exemple-de-classification" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Exemple de classification</h2>
 <div class="panel-tabset">
-<ul id="tabset-1" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-1-1">Étape 1 : Input</a></li><li><a href="#tabset-1-2">Étape 2 : Navigator - Position ROOT</a></li><li><a href="#tabset-1-3">Étape 3 : Navigator - Niveau Division</a></li><li><a href="#tabset-1-4">Étape 4 : Navigator - Niveau Groupe</a></li><li><a href="#tabset-1-5">Étape 5 : Navigator - Niveau Classe</a></li><li><a href="#tabset-1-6">Étape 6 : Verifier</a></li><li><a href="#tabset-1-7">Étape 7 : Output final</a></li></ul>
+<ul id="tabset-1" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-1-1">Input</a></li><li><a href="#tabset-1-2">Output</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1">
-<pre><code>Activité : "Boulangerie artisanale avec vente sur place"</code></pre>
-<p><strong>Question</strong> : Quel code NACE ?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a></a>description <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb1-2"><a></a><span class="st">Entreprise de fabrication artisanale de pains spéciaux </span></span>
+<span id="cb1-3"><a></a><span class="st">et viennoiseries, avec vente directe en boutique</span></span>
+<span id="cb1-4"><a></a><span class="st">"""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-1-2">
-<p><strong>Navigator</strong> examine les sections disponibles :</p>
-<pre><code>Sections : A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U
-
-Analyse :
-- "boulangerie" → fabrication → industrie
-- Section C : Industrie manufacturière ✅</code></pre>
-<p><strong>Action</strong> : <code>go_to_child('C')</code></p>
-</div>
-<div id="tabset-1-3">
-<p><strong>Navigator</strong> examine les divisions de C :</p>
-<pre><code>Divisions : 10, 11, 12, 13, 14, 15, ..., 33
-
-Division 10 : Industries alimentaires
-- Includes : fabrication de produits alimentaires
-- Boulangerie relève de l'alimentaire ✅</code></pre>
-<p><strong>Action</strong> : <code>go_to_child('10')</code></p>
-</div>
-<div id="tabset-1-4">
-<p><strong>Navigator</strong> examine les groupes de 10 :</p>
-<pre><code>Groupes : 10.1, 10.2, ..., 10.7, 10.8, 10.9
-
-Groupe 10.7 : Fabrication de produits de boulangerie-pâtisserie
-- Includes : pain, pâtisserie, viennoiserie
-- Parfaitement aligné ✅</code></pre>
-<p><strong>Action</strong> : <code>go_to_child('10.7')</code></p>
-</div>
-<div id="tabset-1-5">
-<p><strong>Navigator</strong> examine les classes de 10.7 :</p>
-<pre><code>Classes : 10.71Z, 10.72Z
-
-10.71Z : Fabrication de pain et pâtisserie fraîche
-- Includes : pain, viennoiseries
-- Artisanal + vente sur place ✅
-
-10.72Z : Fabrication de biscuits, biscottes et pâtisserie de conservation
-- Excludes : production fraîche ❌</code></pre>
-<p><strong>Décision</strong> : <code>10.71Z</code> est le bon code<br>
-<strong>Confiance</strong> : 0.94</p>
-</div>
-<div id="tabset-1-6">
-<p><strong>Match Verifier</strong> valide :</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href=""></a>Input:</span>
-<span id="cb13-2"><a href=""></a>  activity: <span class="st">"Boulangerie artisanale avec vente sur place"</span></span>
-<span id="cb13-3"><a href=""></a>  code: <span class="st">"10.71Z"</span></span>
-<span id="cb13-4"><a href=""></a>  confidence: <span class="fl">0.94</span></span>
-<span id="cb13-5"><a href=""></a></span>
-<span id="cb13-6"><a href=""></a>Vérification:</span>
-<span id="cb13-7"><a href=""></a>  ✅ <span class="st">"Boulangerie"</span> → fabrication pain → <span class="fl">10.71</span><span class="er">Z</span></span>
-<span id="cb13-8"><a href=""></a>  ✅ <span class="st">"Artisanale"</span> → OK (pas de restriction)</span>
-<span id="cb13-9"><a href=""></a>  ✅ <span class="st">"Vente sur place"</span> → OK (inclus dans Includes)</span>
-<span id="cb13-10"><a href=""></a></span>
-<span id="cb13-11"><a href=""></a>Output:</span>
-<span id="cb13-12"><a href=""></a>  is_match: <span class="va">True</span></span>
-<span id="cb13-13"><a href=""></a>  confidence: <span class="fl">0.96</span></span>
-<span id="cb13-14"><a href=""></a>  explanation: <span class="st">"Code correctement identifié..."</span></span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="tabset-1-7">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource json number-lines code-with-copy"><code class="sourceCode json"><span id="cb14-1"><a href=""></a><span class="fu">{</span></span>
-<span id="cb14-2"><a href=""></a>  <span class="dt">"code"</span><span class="fu">:</span> <span class="st">"10.71Z"</span><span class="fu">,</span></span>
-<span id="cb14-3"><a href=""></a>  <span class="dt">"label"</span><span class="fu">:</span> <span class="st">"Fabrication de pain et pâtisserie fraîche"</span><span class="fu">,</span></span>
-<span id="cb14-4"><a href=""></a>  <span class="dt">"classifier_confidence"</span><span class="fu">:</span> <span class="fl">0.94</span><span class="fu">,</span></span>
-<span id="cb14-5"><a href=""></a>  <span class="dt">"verifier_confidence"</span><span class="fu">:</span> <span class="fl">0.96</span><span class="fu">,</span></span>
-<span id="cb14-6"><a href=""></a>  <span class="dt">"final_confidence"</span><span class="fu">:</span> <span class="fl">0.95</span><span class="fu">,</span></span>
-<span id="cb14-7"><a href=""></a>  <span class="dt">"path"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"ROOT"</span><span class="ot">,</span> <span class="st">"C"</span><span class="ot">,</span> <span class="st">"10"</span><span class="ot">,</span> <span class="st">"10.7"</span><span class="ot">,</span> <span class="st">"10.71Z"</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb14-8"><a href=""></a>  <span class="dt">"explanation"</span><span class="fu">:</span> <span class="st">"Activité de boulangerie artisanale avec fabrication </span></span>
-<span id="cb14-9"><a href=""></a><span class="st">                  et vente sur place correspond au code 10.71Z selon </span></span>
-<span id="cb14-10"><a href=""></a><span class="st">                  la nomenclature NACE. Navigation: Section C (Industrie)</span></span>
-<span id="cb14-11"><a href=""></a><span class="st">                  → Division 10 (Alimentaire) → Groupe 10.7 (Boulangerie-</span></span>
-<span id="cb14-12"><a href=""></a><span class="st">                  pâtisserie) → Classe 10.71Z (produits frais)"</span><span class="fu">,</span></span>
-<span id="cb14-13"><a href=""></a>  <span class="dt">"navigation_history"</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb14-14"><a href=""></a>    <span class="st">"ROOT → C (Section Industrie)"</span><span class="ot">,</span></span>
-<span id="cb14-15"><a href=""></a>    <span class="st">"C → 10 (Industries alimentaires)"</span><span class="ot">,</span></span>
-<span id="cb14-16"><a href=""></a>    <span class="st">"10 → 10.7 (Boulangerie-pâtisserie)"</span><span class="ot">,</span></span>
-<span id="cb14-17"><a href=""></a>    <span class="st">"10.7 → 10.71Z (Produits frais)"</span></span>
-<span id="cb14-18"><a href=""></a>  <span class="ot">]</span></span>
-<span id="cb14-19"><a href=""></a><span class="fu">}</span></span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource json number-lines code-with-copy"><code class="sourceCode json"><span id="cb2-1"><a></a><span class="fu">{</span></span>
+<span id="cb2-2"><a></a>  <span class="dt">"code"</span><span class="fu">:</span> <span class="st">"10.71Z"</span><span class="fu">,</span></span>
+<span id="cb2-3"><a></a>  <span class="dt">"label"</span><span class="fu">:</span> <span class="st">"Fabrication de pain et pâtisserie fraîche"</span><span class="fu">,</span></span>
+<span id="cb2-4"><a></a>  <span class="dt">"confidence"</span><span class="fu">:</span> <span class="fl">0.94</span><span class="fu">,</span></span>
+<span id="cb2-5"><a></a>  <span class="dt">"path"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"C"</span><span class="ot">,</span> <span class="st">"10"</span><span class="ot">,</span> <span class="st">"10.7"</span><span class="ot">,</span> <span class="st">"10.71"</span><span class="ot">,</span> <span class="st">"10.71Z"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-6"><a></a>  <span class="dt">"justification"</span><span class="fu">:</span> <span class="st">"Fabrication artisanale (C) de produits </span></span>
+<span id="cb2-7"><a></a><span class="st">                    de boulangerie (10.7) avec vente directe"</span></span>
+<span id="cb2-8"><a></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 </div>
 </section>
-<section id="avantages-de-lapproche-graal" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Avantages de l’approche GRAAL</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="explicabilité-totale">1. Explicabilité totale</h3>
-<p>✅ <strong>Chemin de navigation traçable</strong></p>
-<pre><code>ROOT → C → 10 → 10.7 → 10.71Z</code></pre>
-<p>✅ <strong>Justification à chaque étape</strong> - Pourquoi Section C ? → Industrie manufacturière - Pourquoi Division 10 ? → Industries alimentaires - Etc.</p>
-<p>✅ <strong>Auditabilité</strong> - Historique complet des décisions - Règles utilisées identifiables</p>
-<h3 data-background-image="background.svg" data-background-size="contain" id="respect-de-la-structure">2. Respect de la structure</h3>
-<p>✅ <strong>Cohérence hiérarchique garantie</strong> - Impossible de proposer un code invalide - Respect des relations parent-enfant</p>
-<p>✅ <strong>Utilisation optimale de la nomenclature</strong> - Includes/Excludes consultés - Implementation rules appliquées</p>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="efficacité">3. Efficacité</h3>
-<p>✅ <strong>Réduction de l’espace de recherche</strong> - Exploration guidée vs.&nbsp;exhaustive - ~20 codes examinés vs.&nbsp;650</p>
-<p>✅ <strong>Temps de réponse acceptable</strong> - Médiane : 450ms vs.&nbsp;120ms (FastText) - Mais avec meilleure précision</p>
-<h3 data-background-image="background.svg" data-background-size="contain" id="adaptabilité">4. Adaptabilité</h3>
-<p>✅ <strong>Changements de nomenclature</strong> - Pas de ré-entraînement nécessaire - Mise à jour du graphe suffit</p>
-<p>✅ <strong>Zero-shot learning</strong> - Fonctionne sur nouveaux secteurs - Sans exemples d’entraînement</p>
-<p>✅ <strong>Maintenance facilitée</strong> - Ajout de règles métier simple - Debuggage ciblé possible</p>
-</div></div>
-</section></section>
-<section>
-<section id="partie-4.-résultats-et-évaluation" class="title-slide slide level1 center" data-background-color="#ff562c" data-background-image="background.svg" data-background-size="contain">
-<h1><strong>Partie 4</strong>. Résultats et évaluation</h1>
-
-</section>
-<section id="protocole-dévaluation" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Protocole d’évaluation</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="dataset-de-test">Dataset de test</h3>
-<p><strong>Source</strong> : Guichet Unique<br>
-<strong>Période</strong> : 2023-2024<br>
-<strong>Taille</strong> : 1 800 entreprises annotées manuellement</p>
-<p><strong>Composition</strong> : - 65% codes niveau 4 (finaux) - 20% multi-activités - 10% cas ambigus - 5% erreurs d’annotation (identifiées)</p>
-<h3 data-background-image="background.svg" data-background-size="contain" id="métriques-1">Métriques</h3>
+<section id="perspectives" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Perspectives</h2>
 <ul>
-<li><strong>Top-1 Accuracy</strong> : Le code prédit est exact</li>
-<li><strong>Top-3 Accuracy</strong> : Le bon code est dans les 3 premiers</li>
-<li><strong>Précision</strong> : Parmi les positifs, % de vrais positifs</li>
-<li><strong>Rappel</strong> : Parmi les vrais codes, % retrouvés</li>
-<li><strong>F1-Score</strong> : Moyenne harmonique précision/rappel</li>
-</ul>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="baselines-comparées">Baselines comparées</h3>
-<table class="caption-top">
-<thead>
-<tr class="header">
-<th>Méthode</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>FastText (prod)</strong></td>
-<td>Classifieur actuel INSEE</td>
-</tr>
-<tr class="even">
-<td><strong>BERT fine-tuné</strong></td>
-<td>CamemBERT + classification head</td>
-</tr>
-<tr class="odd">
-<td><strong>RAG classique</strong></td>
-<td>Embedding + top-k + LLM</td>
-</tr>
-<tr class="even">
-<td><strong>LLM direct</strong></td>
-<td>GPT-4 avec prompt engineering</td>
-</tr>
-<tr class="odd">
-<td><strong>GRAAL Navigator</strong></td>
-<td>Notre approche</td>
-</tr>
-</tbody>
-</table>
-<div class="callout callout-note callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Note</strong></p>
-</div>
-<div class="callout-content">
-<p>Tous les systèmes testés sur le <strong>même dataset</strong> pour comparaison équitable</p>
-</div>
-</div>
-</div>
-<h3 data-background-image="background.svg" data-background-size="contain" id="conditions">Conditions</h3>
+<li>Un cahier des charges respecté
 <ul>
-<li>Temps max : 5s par classification</li>
-<li>Pas d’intervention humaine</li>
-<li>Métriques calculées automatiquement</li>
-</ul>
-</div></div>
-</section>
-<section id="résultats-quantitatifs" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Résultats quantitatifs</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="tableau-comparatif">Tableau comparatif</h3>
-<table class="caption-top">
-<thead>
-<tr class="header">
-<th>Méthode</th>
-<th>Top-1</th>
-<th>Top-3</th>
-<th>F1</th>
-<th>Temps</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>FastText</strong></td>
-<td>70%</td>
-<td>82%</td>
-<td>0.69</td>
-<td>120ms</td>
-</tr>
-<tr class="even">
-<td><strong>BERT</strong></td>
-<td>73%</td>
-<td>85%</td>
-<td>0.72</td>
-<td>250ms</td>
-</tr>
-<tr class="odd">
-<td><strong>RAG classique</strong></td>
-<td>76%</td>
-<td>88%</td>
-<td>0.75</td>
-<td>380ms</td>
-</tr>
-<tr class="even">
-<td><strong>LLM direct</strong></td>
-<td>82%</td>
-<td>91%</td>
-<td>0.81</td>
-<td>2100ms</td>
-</tr>
-<tr class="odd">
-<td><strong>GRAAL</strong></td>
-<td><strong>89%</strong></td>
-<td><strong>96%</strong></td>
-<td><strong>0.88</strong></td>
-<td>450ms</td>
-</tr>
-</tbody>
-</table>
-<div class="callout callout-tip callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Astuce</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>GRAAL surpasse</strong> toutes les baselines avec un temps raisonnable</p>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="visualisation">Visualisation</h3>
-<div id="2e9c9d08" class="cell" data-fig-height="5" data-fig-width="6" data-execution_count="2">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="a4fc104d-37c8-446b-8a6d-86b3f90a17c8" class="plotly-graph-div" style="height:400px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("a4fc104d-37c8-446b-8a6d-86b3f90a17c8")) {                    Plotly.newPlot(                        "a4fc104d-37c8-446b-8a6d-86b3f90a17c8",                        [{"marker":{"color":"#2196f3"},"name":"Top-1 Accuracy","text":["70","73","76","82","89"],"textposition":"auto","x":["FastText","BERT","RAG","LLM direct","GRAAL"],"y":[70,73,76,82,89],"type":"bar"},{"marker":{"color":"#4caf50"},"name":"Top-3 Accuracy","text":["82","85","88","91","96"],"textposition":"auto","x":["FastText","BERT","RAG","LLM direct","GRAAL"],"y":[82,85,88,91,96],"type":"bar"},{"marker":{"color":"#ff9800"},"name":"F1-Score","text":["69","72","75","81","88"],"textposition":"auto","x":["FastText","BERT","RAG","LLM direct","GRAAL"],"y":[69,72,75,81,88],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"legend":{"orientation":"h","y":1.1},"title":{"text":"Comparaison des performances"},"yaxis":{"title":{"text":"Score (%)"}},"barmode":"group","height":400},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('a4fc104d-37c8-446b-8a6d-86b3f90a17c8');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-</div></div>
-</section>
-<section class="slide level2">
-
-<h3 data-background-image="background.svg" data-background-size="contain" id="gains-détaillés-graal-vs.-production">Gains détaillés GRAAL vs.&nbsp;Production</h3>
-<div id="8ce4299d" class="cell" data-fig-height="4" data-fig-width="10" data-execution_count="3">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="d5c23d68-2581-4b60-8a0f-cb8aa1c7382c" class="plotly-graph-div" style="height:350px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("d5c23d68-2581-4b60-8a0f-cb8aa1c7382c")) {                    Plotly.newPlot(                        "d5c23d68-2581-4b60-8a0f-cb8aa1c7382c",                        [{"marker":{"color":"#ff9800"},"name":"FastText","x":["Top-1\u003cbr\u002f\u003eAccuracy","Top-3\u003cbr\u002f\u003eAccuracy","Précision","Rappel","F1-Score"],"y":[70,82,71,68,69],"type":"bar","xaxis":"x","yaxis":"y"},{"marker":{"color":"#4caf50"},"name":"GRAAL","x":["Top-1\u003cbr\u002f\u003eAccuracy","Top-3\u003cbr\u002f\u003eAccuracy","Précision","Rappel","F1-Score"],"y":[89,96,90,87,88],"type":"bar","xaxis":"x","yaxis":"y"},{"marker":{"color":"#ff9800"},"name":"FastText","showlegend":false,"x":["Facile","Moyen","Difficile"],"y":[85,72,55],"type":"bar","xaxis":"x2","yaxis":"y2"},{"marker":{"color":"#4caf50"},"name":"GRAAL","showlegend":false,"x":["Facile","Moyen","Difficile"],"y":[97,92,78],"type":"bar","xaxis":"x2","yaxis":"y2"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"xaxis":{"anchor":"y","domain":[0.0,0.45]},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Accuracy (%)"}},"xaxis2":{"anchor":"y2","domain":[0.55,1.0]},"yaxis2":{"anchor":"x2","domain":[0.0,1.0],"title":{"text":"Accuracy (%)"}},"annotations":[{"font":{"size":16},"showarrow":false,"text":"Amélioration des métriques","x":0.225,"xanchor":"center","xref":"paper","y":1.0,"yanchor":"bottom","yref":"paper"},{"font":{"size":16},"showarrow":false,"text":"Analyse par difficulté","x":0.775,"xanchor":"center","xref":"paper","y":1.0,"yanchor":"bottom","yref":"paper"}],"height":350,"showlegend":true},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('d5c23d68-2581-4b60-8a0f-cb8aa1c7382c');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-<div class="callout callout-important callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Important</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>GRAAL excelle particulièrement</strong> sur les cas difficiles (+23 points)</p>
-</div>
-</div>
-</div>
-</section>
-<section id="analyse-des-erreurs" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Analyse des erreurs</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="distribution-des-erreurs">Distribution des erreurs</h3>
-<div id="3259d6e1" class="cell" data-fig-height="4" data-fig-width="6" data-execution_count="4">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="83286c3f-734d-431c-82b0-4689f4e1ddce" class="plotly-graph-div" style="height:400px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("83286c3f-734d-431c-82b0-4689f4e1ddce")) {                    Plotly.newPlot(                        "83286c3f-734d-431c-82b0-4689f4e1ddce",                        [{"hole":0.3,"labels":["Ambiguïté métier\u003cbr\u002f\u003e(activités multiples)","Description\u003cbr\u002f\u003eincomplète","Frontière floue\u003cbr\u002f\u003eentre codes","Code obsolète\u003cbr\u002f\u003e(nomenclature)","Erreur annotation\u003cbr\u002f\u003e(dataset)","Autres"],"marker":{"colors":["#f44336","#ff9800","#ffc107","#2196f3","#9c27b0","#607d8b"],"line":{"color":"white","width":2}},"textinfo":"label+percent","textposition":"outside","values":[35,28,20,8,5,4],"type":"pie"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"title":{"text":"Répartition des erreurs GRAAL (11% du dataset)"},"height":400,"showlegend":false},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('83286c3f-734d-431c-82b0-4689f4e1ddce');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="analyse-qualitative">Analyse qualitative</h3>
-<div title="Cas d'erreur #1 : Multi-activités">
-<div class="callout callout-caution callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Cas d’erreur #1 : Multi-activités</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Description</strong> : “Restaurant avec boulangerie et épicerie fine”</p>
-<p><strong>Code attendu</strong> : <code>56.10A</code> (activité principale = restaurant)<br>
-<strong>Code GRAAL</strong> : <code>10.71Z</code> (boulangerie)</p>
-<p><strong>Cause</strong> : Absence d’info sur CA<br>
-<strong>Solution</strong> : Ajout d’un outil de questionnement</p>
-</div>
-</div>
-</div>
-</div>
-<div title="Cas d'erreur #2 : Frontière floue">
-<div class="callout callout-caution callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Cas d’erreur #2 : Frontière floue</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Description</strong> : “Conseil en transformation digitale”</p>
-<p><strong>Codes possibles</strong> : - <code>62.02A</code> - Conseil en systèmes informatiques - <code>70.22Z</code> - Conseil pour les affaires</p>
-<p><strong>Problème</strong> : Frontière conceptuelle floue<br>
-<strong>Solution</strong> : Enrichissement nomenclature</p>
-</div>
-</div>
-</div>
-</div>
-<div class="callout callout-tip callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Astuce</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>85% des erreurs</strong> sont intrinsèques à la tâche, pas spécifiques à GRAAL</p>
-</div>
-</div>
-</div>
-</div></div>
-</section>
-<section id="analyse-de-la-navigation" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Analyse de la navigation</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="profondeur-de-navigation">Profondeur de navigation</h3>
-<div id="0d16e157" class="cell" data-fig-height="4" data-fig-width="6" data-execution_count="5">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="43555143-e3ae-4454-a951-003d84d6d467" class="plotly-graph-div" style="height:400px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("43555143-e3ae-4454-a951-003d84d6d467")) {                    Plotly.newPlot(                        "43555143-e3ae-4454-a951-003d84d6d467",                        [{"marker":{"color":["#4caf50","#8bc34a","#cddc39","#ff9800"]},"textinfo":"value+percent initial","textposition":"inside","x":[100,98,95,89],"y":["Niveau 1\u003cbr\u002f\u003e(Section)","Niveau 2\u003cbr\u002f\u003e(Division)","Niveau 3\u003cbr\u002f\u003e(Groupe)","Niveau 4\u003cbr\u002f\u003e(Classe)"],"type":"funnel"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"title":{"text":"Taux de réussite par niveau de navigation"},"height":400},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('43555143-e3ae-4454-a951-003d84d6d467');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-<div class="callout callout-note callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Note</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>95% des navigations</strong> atteignent au moins le niveau 3</p>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="efficacité-de-lexploration">Efficacité de l’exploration</h3>
-<div id="7781b919" class="cell" data-fig-height="4" data-fig-width="6" data-execution_count="6">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="239c75e3-c234-4bb6-a5bd-3d4aca5105ed" class="plotly-graph-div" style="height:350px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("239c75e3-c234-4bb6-a5bd-3d4aca5105ed")) {                    Plotly.newPlot(                        "239c75e3-c234-4bb6-a5bd-3d4aca5105ed",                        [{"marker":{"color":"#2196f3"},"name":"Distribution","nbinsx":20,"x":{"dtype":"i1","bdata":"EQwLCx4UCRIPBQYQHQsJDgkLDQYVBQUPFA4MCwkXEAoIEhcWBwoJCxUbEAgNHg4LCxAHCRYQDhYICg8PBQoMEA8MBQ0NLQsPGRQcBQYJBQ0HHgcKFQUFDg8UEg8IDw8IIxEGFBYQCwgMEA0dEwcGEQsUEQwHBQ8FBw4NBhgXERERFhMHCyoFCRgIEw0IBQ4HDBEVCQgFFicXGggRFAUGHwUcBQYRDQoeBQwSDwgJFRYQBwkNDhILFRUbDRAMByYZFA0HFgwQCQ8JCQ8FBQgLFQwNCxAHDBAPDQ0RJwcoBwUJECMHEQUiGQkbDBoNDQkTDhEFGh4OJiETGxcFCxQfBQUMBQwQBwwWCQcMBiQNCA8MCwkJBRsSEAwGCAUIBiAVDQcGCxYFEggJDQcLBwkUDhQIEgUNEwUIDRcJEhwSCxAIDgwQChAKFQoFBg0gFQUFGRMpCQcNCRcJCwYUBxEjBR0PBg4UBxEfCQYMDRgMCgYFBQULBQwiGAsvDQ8MDQkLHRoFBQcWGhQGCRELCgoZEgoQBQkXBRIFIAkQDg4QBQ4LCQcOBhcRDxcFBRIICAUGFxEOCQ4ZCA0hEwkTBQwTEBIVEREPBhcNExYJCgoaBxwPDxUOGAkcCh0KCwYHDQ8XCwYQDhEICQgZHAkJEx4iCAoPEAsHDSIJDy4JEyISGBURHBMMDhAKDg0TJw8eEg4KDg4ICRAeDAUFBhMFFRMMCAsQBRwQERMbDxQIIg4ICgUJBRQRBgwNBQsNCwgGCwkSHBYNCBYTGw8hDwgJEgkgEQ0OCwUJHg8XGA0TBR0cEQ8NGRQFCgYFGQwRDQUFCgoKCiYXDwwNFAwWECYMGAYIIxURLAwYGR8FDBAfERkFCxwLDR8HCAUfFxcKBQUcEhQPCAsGBhYFBgsOBQURDxsOEggIBQgLGgcnExENDAkFBx8SHwkGDQcPBQUQIBESDQ4FCBoGChkODgoTFgcFBREQLQ4MDxALCA0NDRUNBQgLDRINBQUSCw4KCAsODRYFBQsSFAkFCRANEhkMCgcFBQgXEwknCBseEQgKDgUGBhIZFBcICgsRCBYeEQoHBgULCxUJDA8RFA4FEAgaDQ8vFBAMBQsHIBAZCAcTBwogCgUFBRoJLx4lFxIHDRMWBgsMDAYiCwYjHg4FCQURCQ0hCBEUGgwLCxAdCwUVDRIFCRQFEQ0IBwYNDgoGERYTJgscCAcOHwsFFQwPCA4FIxgNFQgXCgoGEQ0cBhEZLw4KDhsbDBoNFRIKBxkeEA0FGQ8LFQUGCBEOExgTIxgMCQwUChQTBxgQIg0LBgYWIAwMDRkHDxYRBRMRGx8bDQ=="},"type":"histogram"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"shapes":[{"line":{"color":"red","dash":"dash"},"type":"line","x0":13.0,"x1":13.0,"xref":"x","y0":0,"y1":1,"yref":"y domain"}],"annotations":[{"showarrow":false,"text":"Médiane: 13 codes","x":13.0,"xanchor":"left","xref":"x","y":1,"yanchor":"top","yref":"y domain"}],"title":{"text":"Nombre de codes examinés par classification"},"xaxis":{"title":{"text":"Nombre de codes consultés"}},"yaxis":{"title":{"text":"Fréquence"}},"height":350,"showlegend":false},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('239c75e3-c234-4bb6-a5bd-3d4aca5105ed');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-<p><strong>Médiane</strong> : ~18 codes examinés sur 650<br>
-<strong>Gain</strong> : Réduction de <strong>97%</strong> de l’espace de recherche</p>
-</div></div>
-</section>
-<section class="slide level2">
-
-<h3 data-background-image="background.svg" data-background-size="contain" id="comparaison-tempsprécision">Comparaison temps/précision</h3>
-<div id="9d75c58e" class="cell" data-fig-height="5" data-fig-width="10" data-execution_count="7">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="fcc4edb5-646f-4fd4-9157-57cd0a89ddac" class="plotly-graph-div" style="height:450px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("fcc4edb5-646f-4fd4-9157-57cd0a89ddac")) {                    Plotly.newPlot(                        "fcc4edb5-646f-4fd4-9157-57cd0a89ddac",                        [{"marker":{"color":["#ff9800","#9c27b0","#2196f3","#4caf50","#f44336"],"size":[15,18,20,30,22]},"mode":"markers+text","text":["FastText","BERT","RAG classique","GRAAL","LLM direct"],"textfont":{"size":12},"textposition":"top center","x":[120,250,380,450,2100],"y":[70,73,76,89,82],"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"shapes":[{"fillcolor":"lightgreen","layer":"below","line":{"width":0},"opacity":0.2,"type":"rect","x0":0,"x1":600,"y0":85,"y1":100}],"annotations":[{"font":{"color":"darkgreen","size":10},"showarrow":false,"text":"Zone optimale\u003cbr\u002f\u003e(haute précision + temps acceptable)","x":300,"y":92}],"xaxis":{"title":{"text":"Temps de réponse (ms)"},"range":[0,2500]},"yaxis":{"title":{"text":"Top-1 Accuracy (%)"},"range":[65,95]},"title":{"text":"Trade-off Précision vs. Temps de réponse"},"height":450,"showlegend":false},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('fcc4edb5-646f-4fd4-9157-57cd0a89ddac');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-<div class="callout callout-tip callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Astuce</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>GRAAL</strong> atteint le meilleur compromis précision/temps</p>
-</div>
-</div>
-</div>
-</section>
-<section id="explicabilité-exemples-concrets" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Explicabilité : Exemples concrets</h2>
-<div class="panel-tabset">
-<ul id="tabset-2" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-2-1">Exemple 1 : Succès</a></li><li><a href="#tabset-2-2">Exemple 2 : Hésitation résolue</a></li><li><a href="#tabset-2-3">Exemple 3 : Erreur analysée</a></li></ul>
-<div class="tab-content">
-<div id="tabset-2-1">
-<p><strong>Input</strong> : “Développement d’applications mobiles pour iOS et Android”</p>
-<p><strong>Navigation</strong> : 1. ROOT → <code>J</code> (Information et communication) ✅ 2. <code>J</code> → <code>62</code> (Programmation, conseil informatique) ✅ 3. <code>62</code> → <code>62.0</code> (Programmation informatique) ✅ 4. <code>62.0</code> → <code>62.01Z</code> (Programmation informatique) ✅</p>
-<p><strong>Justification</strong> : &gt; “L’activité relève clairement du développement logiciel (Section J). La programmation d’applications mobiles correspond au code 62.01Z selon la notice NACE qui inclut explicitement ‘conception et écriture de programmes informatiques’.”</p>
-<p><strong>Confiance</strong> : 0.97</p>
-<hr>
-</div>
-<div id="tabset-2-2">
-<p><strong>Input</strong> : “Fabrication artisanale de confitures bio vendues en magasin”</p>
-<p><strong>Navigation</strong> : 1. ROOT → <code>C</code> (Industrie manufacturière) ✅ 2. <code>C</code> → <code>10</code> (Industries alimentaires) ✅ 3. <code>10</code> → <code>10.3</code> (Transformation et conservation de fruits et légumes) ✅ 4. <strong>Hésitation</strong> entre : - <code>10.39A</code> - Autre transformation et conservation de légumes - <code>10.39B</code> - Transformation et conservation de fruits</p>
-<ol start="5" type="1">
-<li><strong>Code Chooser</strong> intervient
+<li>Plus <em>d’embeddings</em></li>
+<li>Du raisonnement et de la traçabilité</li>
+<li><strong>Utilisable pour n’importe quelle nomenclature</strong> : il suffit de créer une base Neo4j avec les notices et tout fonctionne !
 <ul>
-<li>Analyse : “Confitures” explicitement dans Includes de <code>10.39B</code></li>
-<li>Choix : <code>10.39B</code> ✅</li>
+<li>GRAAL n’est qu’un distributeurs de tools, de prompts et de structures d’appels au LLM (validation input/output)</li>
 </ul></li>
-</ol>
-<p><strong>Justification</strong> : &gt; “Bien que ‘fabrication artisanale’ puisse prêter à confusion, l’activité principale est la transformation de fruits. Le code 10.39B inclut explicitement ‘confiture, gelée et marmelade de fruits’.”</p>
-<p><strong>Confiance</strong> : 0.91</p>
-<hr>
-</div>
-<div id="tabset-2-3">
-<p><strong>Input</strong> : “Restaurant gastronomique avec boulangerie intégrée pour le pain du restaurant”</p>
-<p><strong>Navigation</strong> : 1. ROOT → <code>C</code> (Industrie) ❌ <em>Devrait être Section I</em> 2. <code>C</code> → <code>10</code> (Alimentaire) 3. <code>10</code> → <code>10.7</code> (Boulangerie) 4. <code>10.7</code> → <code>10.71Z</code> (Fabrication de pain)</p>
-<p><strong>Code attendu</strong> : <code>56.10A</code> (Restauration traditionnelle)<br>
-<strong>Code GRAAL</strong> : <code>10.71Z</code> (Fabrication de pain)</p>
-<p><strong>Analyse post-erreur</strong> : &gt; L’agent a été influencé par le terme “boulangerie” et n’a pas identifié que l’activité principale était la restauration. La boulangerie est ici une activité accessoire au service du restaurant.</p>
-<p><strong>Correction nécessaire</strong> : - Ajout d’un outil de questionnement sur l’activité principale - Renforcement du prompt sur la notion d’activité principale vs.&nbsp;secondaire</p>
-</div>
-</div>
-</div>
-</section>
-<section id="impact-en-production-estimation" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Impact en production (estimation)</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="réduction-du-travail-manuel">Réduction du travail manuel</h3>
-<p><strong>Situation actuelle</strong> (FastText) : - 1M classifications/an - 30% nécessitent validation manuelle - = 300K interventions/an - Temps moyen : 2 min/validation - <strong>Total : 10 000 heures/an</strong></p>
-<p><strong>Avec GRAAL</strong> (estimation) : - 89% d’accuracy (vs.&nbsp;70%) - 11% nécessitent validation - = 110K interventions/an - Même temps : 2 min/validation - <strong>Total : 3 667 heures/an</strong></p>
-<div class="callout callout-tip callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Astuce</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Gain estimé : 6 333 heures/an</strong><br>
-= <strong>790 jours-homme</strong> = <strong>3.2 ETP</strong></p>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="roi-estimatif">ROI estimatif</h3>
-<div id="b9b257ae" class="cell" data-fig-height="5" data-fig-width="6" data-execution_count="8">
-<div class="cell-output cell-output-display">
-<div>            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_SVG"></script><script type="text/javascript">if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}</script>                <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.1.min.js" integrity="sha256-4rD3fugVb/nVJYUv5Ky3v+fYXoouHaBSP20WIJuEiWg=" crossorigin="anonymous"></script>                <div id="76583435-4d34-417b-b248-f0b9b7b95112" class="plotly-graph-div" style="height:400px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("76583435-4d34-417b-b248-f0b9b7b95112")) {                    Plotly.newPlot(                        "76583435-4d34-417b-b248-f0b9b7b95112",                        [{"marker":{"color":"#ff9800"},"name":"Système actuel","text":["250k€","0k€","0k€"],"textposition":"auto","x":["Coût\u003cbr\u002f\u003eintervention\u003cbr\u002f\u003ehumaine","Coût\u003cbr\u002f\u003einfrastructure\u003cbr\u002f\u003e(GPU + Neo4j)","Coût\u003cbr\u002f\u003eAPI LLM"],"y":[250,0,0],"type":"bar"},{"marker":{"color":"#4caf50"},"name":"Avec GRAAL","text":["85k€","30k€","15k€"],"textposition":"auto","x":["Coût\u003cbr\u002f\u003eintervention\u003cbr\u002f\u003ehumaine","Coût\u003cbr\u002f\u003einfrastructure\u003cbr\u002f\u003e(GPU + Neo4j)","Coût\u003cbr\u002f\u003eAPI LLM"],"y":[85,30,15],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"},"margin":{"b":0,"l":0,"r":0,"t":30}}},"title":{"text":"Estimation des coûts annuels"},"yaxis":{"title":{"text":"Coût (k€\u002fan)"}},"barmode":"group","height":400},                        {"responsive": true}                    ).then(function(){
-                            
-var gd = document.getElementById('76583435-4d34-417b-b248-f0b9b7b95112');
-var x = new MutationObserver(function (mutations, observer) {{
-        var display = window.getComputedStyle(gd).display;
-        if (!display || display === 'none') {{
-            console.log([gd, 'removed!']);
-            Plotly.purge(gd);
-            observer.disconnect();
-        }}
-}});
-
-// Listen for the removal of the full notebook cells
-var notebookContainer = gd.closest('#notebook-container');
-if (notebookContainer) {{
-    x.observe(notebookContainer, {childList: true});
-}}
-
-// Listen for the clearing of the current output cell
-var outputEl = gd.closest('.output');
-if (outputEl) {{
-    x.observe(outputEl, {childList: true});
-}}
-
-                        })                };            </script>        </div>
-</div>
-</div>
-<p><strong>Économie estimée : ~120k€/an</strong></p>
-</div></div>
-</section></section>
-<section>
-<section id="partie-5.-perspectives" class="title-slide slide level1 center" data-background-color="#ff562c" data-background-image="background.svg" data-background-size="contain">
-<h1><strong>Partie 5</strong>. Perspectives</h1>
-
-</section>
-<section id="extensions-possibles" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Extensions possibles</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="autres-nomenclatures">1. Autres nomenclatures</h3>
-<p><strong>COICOP</strong> (consommation) : - Même principe de graphe hiérarchique - Adapter les prompts agents - Réutiliser l’architecture</p>
-<p><strong>CPF</strong> (produits) : - Classification de produits industriels - Structure similaire à NACE</p>
-<p><strong>Nomenclatures douanières</strong> : - Classification SH / NC - Graphe plus profond (8 niveaux)</p>
-<div class="callout callout-note callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Note</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Architecture générique</strong> transposable à toute nomenclature hiérarchique</p>
-</div>
-</div>
-</div>
-</div><div class="column" style="width:50%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="amélioration-du-système">2. Amélioration du système</h3>
-<p><strong>Multi-activités</strong> : - Détection automatique - Demande de répartition CA - Classification multi-labels</p>
-<p><strong>Apprentissage continu</strong> : - Feedback humain sur corrections - Ajustement des prompts - Fine-tuning des embeddings</p>
-</div></div>
+</ul></li>
+</ul>
 </section>
 <section class="slide level2">
 
-<h3 data-background-image="background.svg" data-background-size="contain" id="extension-code2text">3. Extension “Code2Text”</h3>
-<p><strong>Problème inverse</strong> : Générer des descriptions types pour un code donné</p>
-<div class="cell" data-reveal="true" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class=""><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme':'base'}}%%
-flowchart LR
-    A["📊 Code NACE&lt;br/&gt;10.71Z"] --&gt; B["🤖 Agent Code2Text"]
-    B --&gt; C[("📚 Graphe&lt;br/&gt;+ Exemples")]
-    C --&gt; B
-    B --&gt; D["📝 Description synthétique&lt;br/&gt;'Boulangerie artisanale...'"]
-    
-    style B fill:#e3f2fd
-    style C fill:#fff3e0
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<p><strong>Applications</strong> : - Génération de données synthétiques d’entraînement - Aide à la rédaction pour entrepreneurs - Augmentation de données pour ML classique</p>
+<ul>
+<li><strong>On va en faire quoi ?</strong>:
+<ul>
+<li>Un modèle agentique est trop lourd pour la production (pas encore de GPU, temps d’inférence trop élevé…)</li>
+<li>Cependant, GRAAL peut être utilisé pour:
+<ul>
+<li><strong>Monitoring du modèle déployé: <em>MatchVerifier</em> analyse les logs de l’API et évalue le modèle en continu, appelle le <em>Navigator</em> si besoin de recoder…</strong></li>
+<li>Recodage d’une base (même workflow que le monitoring)</li>
+<li>Génération de données synthétiques (<em>Code2Text</em>)</li>
+</ul></li>
+</ul></li>
+</ul>
 </section>
-<section class="slide level2">
+<section id="merci-de-votre-attention" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Merci de votre attention !</h2>
+<p>🔗 <a href="https://github.com/InseeFrLab/GRAAL">github.com/InseeFrLab/GRAAL</a></p>
 
-<h3 data-background-image="background.svg" data-background-size="contain" id="recherche-et-développements">5. Recherche et développements</h3>
-<p><strong>Optimisation architecturale</strong> : - Parallélisation de l’exploration (beam search) - Cache intelligent des noeuds visités - Heuristiques d’élagage</p>
-<p><strong>Modèles alternatifs</strong> : - Tester Claude Opus / GPT-o1 - Fine-tuning de modèles open-source - Embeddings spécialisés nomenclature</p>
-<p><strong>Métriques avancées</strong> : - Distance hiérarchique dans les erreurs - Analyse des patterns d’échec - A/B testing en production</p>
-</section>
-<section id="conclusion" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Conclusion</h2>
-<div class="columns">
-<div class="column" style="width:60%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="ce-que-graal-apporte">Ce que GRAAL apporte</h3>
-<ol type="1">
-<li>📊 <strong>Performance</strong> : +19 points d’accuracy vs.&nbsp;production</li>
-<li>🔍 <strong>Explicabilité</strong> : Traçabilité complète du raisonnement</li>
-<li>🎯 <strong>Efficacité</strong> : 97% de réduction de l’espace de recherche</li>
-<li>🔄 <strong>Adaptabilité</strong> : Zero-shot, pas de réentraînement</li>
-<li>🏗️ <strong>Généricité</strong> : Transposable à d’autres nomenclatures</li>
-</ol>
-</div><div class="column" style="width:40%;">
-<h3 data-background-image="background.svg" data-background-size="contain" id="prochaines-étapes">Prochaines étapes</h3>
-<p><strong>Court terme</strong> (3 mois) : - Tests en conditions réelles - Intégration Guichet Unique - Feedback utilisateurs</p>
-<p><strong>Moyen terme</strong> (6-12 mois) : - Déploiement production - Extension COICOP - Monitoring performance</p>
-<p><strong>Long terme</strong> (1-2 ans) : - Apprentissage continu - Autres nomenclatures - Open-sourcing possible</p>
-<div class="callout callout-tip callout-titled callout-style-default">
-<div class="callout-body">
-<div class="callout-title">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<p><strong>Astuce</strong></p>
-</div>
-<div class="callout-content">
-<p><strong>Démonstrateur disponible</strong><br>
-pour tests et évaluations</p>
-</div>
-</div>
-</div>
-</div></div>
-</section>
-<section class="slide level2">
 
 </section></section>
-<section>
-<section id="merci" class="title-slide slide level1 center" data-background-image="background.svg" data-background-size="contain">
-<h1>Merci ! 🎯</h1>
-
-</section>
-<section id="questions" class="slide level2" data-background-image="background.svg" data-background-size="contain">
-<h2>Questions ?</h2>
-<div class="columns">
-<div class="column" style="width:50%;">
-<p><strong>Ressources</strong> :</p>
-<p>🔗 Code : <a href="https://github.com/InseeFrLab/GRAAL">github.com/InseeFrLab/GRAAL</a><br>
-📊 SSPLab : <a href="https://ssplab.insee.fr">ssplab.insee.fr</a><br>
-📧 Contact : ssplab@insee.fr</p>
-<p><strong>Documentation</strong> : - Article technique (à paraître) - Notebooks exemples - API documentation</p>
-</div><div class="column" style="width:50%;">
-<p><strong>Équipe</strong> : - SSPlab - INSEE - InseeFrLab</p>
-<p><strong>Technologies</strong> : - Neo4j (graphe) - OpenAI API (LLM) - Python + Agents Framework - Langfuse (observabilité)</p>
-</div></div>
-</section></section>
-
     </div>
   <div class="quarto-auto-generated-content" style="display: none;">
 <div class="footer footer-default">
-<p><strong><a href="https://github.com/InseeFrLab/GRAAL">GRAAL - Classification Automatique</a></strong></p>
+
 </div>
 </div></div>
 
   <script>window.backupDefine = window.define; window.define = undefined;</script>
-  <script src="template_files/libs/revealjs/dist/reveal.js"></script>
+  <script src="site_libs/revealjs/dist/reveal.js"></script>
   <!-- reveal.js plugins -->
-  <script src="template_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
-  <script src="template_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
-  <script src="template_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
-  <script src="template_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
-  <script src="template_files/libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
-  <script src="template_files/libs/revealjs/plugin/quarto-tone/tone.js"></script>
-  <script src="template_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+  <script src="site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="site_libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
+  <script src="site_libs/revealjs/plugin/quarto-support/support.js"></script>
   
 
-  <script src="template_files/libs/revealjs/plugin/notes/notes.js"></script>
-  <script src="template_files/libs/revealjs/plugin/search/search.js"></script>
-  <script src="template_files/libs/revealjs/plugin/zoom/zoom.js"></script>
-  <script src="template_files/libs/revealjs/plugin/math/math.js"></script>
+  <script src="site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="site_libs/revealjs/plugin/math/math.js"></script>
   <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
 
   <script>
@@ -1653,7 +536,7 @@ pour tests et évaluations</p>
       // Full list of configuration options available at:
       // https://revealjs.com/config/
       Reveal.initialize({
-'controlsAuto': true,
+'controlsAuto': false,
 'previewLinksAuto': false,
 'pdfSeparateFragments': false,
 'autoAnimateEasing': "ease",
@@ -1665,7 +548,7 @@ pour tests et évaluations</p>
 'smaller': false,
  
         // Display controls in the bottom right corner
-        controls: false,
+        controls: true,
 
         // Help the user learn the controls by providing hints, for example by
         // bouncing the down arrow when they first encounter a vertical slide
@@ -1832,7 +715,7 @@ pour tests et évaluations</p>
         },
 
         // reveal.js plugins
-        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoTone, QuartoSupport,
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoSupport,
 
           RevealMath,
           RevealNotes,
@@ -1863,12 +746,12 @@ pour tests et évaluations</p>
           // flash "checked"
           button.classList.add('code-copy-button-checked');
           var currentTitle = button.getAttribute("title");
-          button.setAttribute("title", "Copié");
+          button.setAttribute("title", "Copied!");
           let tooltip;
           if (window.bootstrap) {
             button.setAttribute("data-bs-toggle", "tooltip");
             button.setAttribute("data-bs-placement", "left");
-            button.setAttribute("data-bs-title", "Copié");
+            button.setAttribute("data-bs-title", "Copied!");
             tooltip = new bootstrap.Tooltip(button, 
               { trigger: "manual", 
                 customClass: "code-copy-button-tooltip",
@@ -1911,7 +794,7 @@ pour tests et évaluations</p>
         }
           var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
           var mailtoRegex = new RegExp(/^mailto:/);
-            var filterRegex = new RegExp('/' + window.location.host + '/');
+            var filterRegex = new RegExp("https:\/\/InseeFrLab\.github\.io\/GRAAL\/");
           var isInternal = (href) => {
               return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
           }

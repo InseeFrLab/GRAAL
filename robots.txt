@@ -1,0 +1,1 @@
+Sitemap: https://InseeFrLab.github.io/GRAAL/sitemap.xml
