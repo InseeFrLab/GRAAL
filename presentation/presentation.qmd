@@ -25,7 +25,6 @@ format:
   onyxia-revealjs:
     output-file: index.html
 controls: true
-css: custom.css
 ascii: true
 ---
 
@@ -128,8 +127,9 @@ graph TD
 - On veut du *reasoning*: le LLM peut/doit justifier ses choix (*chain of thought*)
   - Idéalement, avec un raisonnement autour de la hiérarchie
 
-## **Le framework GRAAL** {.scrollable}
+# 2️⃣ **Le framework GRAAL** 
 
+## Neo4j : une *graph database* {.scrollable}
 ```{mermaid}
 graph TD
   ROOT["Root"]
