@@ -1,0 +1,7 @@
+project:
+  type: website
+
+  render:
+    - presentation.qmd
+  
+  output-dir: _preview

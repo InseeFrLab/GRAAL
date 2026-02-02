@@ -211,3 +211,5 @@ __marimo__/
 /_site/
 
 template_files/
+.quarto/
+**/*.quarto_ipynb

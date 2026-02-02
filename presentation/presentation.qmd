@@ -1,81 +1,55 @@
 ---
-title: "GRAAL : Classification automatique de nomenclatures statistiques par approche agentique"
-subtitle: "Graph-based Research with Agents for Automatic Labelling"
-author: "SSPlab"
-institute: "INSEE"
-date: today
-date-format: "DD MMMM YYYY"
-lang: fr
+title: "GRAAL : Graph-based Research with Agents for Automatic Labelling"
+subtitle: "Classification automatique dans des nomenclatures statistiques par approche agentique"
+author:
+  - name: Meilame Tayebjee
+    email: meilame.tayebjee@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+  - name: Théo Ferry
+    email: theo.ferry@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab 
+date: "04/02/2026"
+date-format: "D MMMM YYYY"
+slide-number: true
+# uncomment for French presentations:
+# lang: fr-FR
+# for blind readers:
+slide-tone: false
+chalkboard: # press the B key to toggle chalkboard
+  theme: whiteboard
+# uncomment to use the multiplex mode:
+# multiplex: true
 format:
-  revealjs:
-    theme: [default, custom.scss]
-    # logo: images/logo-insee.png
-    footer: "Corps techniques de l'État - 2025"
-    slide-number: c/t
-    show-slide-number: all
-    width: 1920
-    height: 1080
-    margin: 0.05
-    center: true
-    navigation-mode: vertical
-    controls-layout: bottom-right
-    controls-tutorial: false
-    history: true
-    hash-type: number
-    transition: slide
-    transition-speed: default
-    background-transition: fade
-    incremental: false
-    code-fold: false
-    code-line-numbers: false
-    highlight-style: github
-    fig-align: center
-    fig-cap-location: bottom
-    toc: false
-    toc-depth: 1
-    number-sections: false
-    embed-resources: true
-    mermaid: 
-      theme: neutral
-execute:
-  echo: false
-  warning: false
-  message: false
-  cache: false
-bibliography: references.bib
+  onyxia-revealjs:
+    output-file: index.html
+controls: true
+css: custom.css
+ascii: true
 ---
 
-## Plan {.smaller}
+## Plan
 
 
-1. **Contexte**. Défis de la classification statistique : des classifications hiérarchiques à haute granularité  
-2. **Le Framework GRAAL**. Architecture multi-agents
+1. **Contexte**. Défis de la codification automatique
+2. **Le framework GRAAL**. Architecture multi-agents
 3. **Perspectives**. Développements futurs
 
 
-# **Contexte**. Défis de la classification statistique : des classifications hiérarchiques à haute granularité  
+# 1️⃣ **Contexte**: le cas d'usage de la codification automatique
 
-## Classification dans les nomenclatures officielles
+##
 
-:::: {.columns}
-::: {.column width="60%"}
-### Nomenclatures INSEE
-- **NACE** : Nomenclature statistique des Activités économiques dans la Communauté Européenne
-    - ~650 codes finaux
-    - Structure hiérarchique sur 4 niveaux
+- **NACE** : Nomenclature statistique des Activités économiques (NAF)
+    - ~700 codes finaux
+    - Structure hiérarchique sur 5 niveaux
   
 - **COICOP** : Classification of Individual Consumption by Purpose
     - ~300 à ~1000 selon la granularité employée
     - Structure hiérarchique sur 5 niveaux
 
-### Défis actuels
-- **Volume** : Flux importants de labels à classifier : ~X entreprises à labelliser par jour
-- **Temps** : Annotation manuelle coûteuse
-- **Précision** : Exigences de qualité statistique
-- **Traçabilité** : Audit et justification
-:::
-
-::: {.column width="40%"}
+----
 ```{mermaid}
 graph TD
   %% Sections
@@ -104,85 +78,58 @@ graph TD
   G_01_1 --> C_01_11
   G_10_1 --> C_10_11
 ```
-:::
-::::
 
-## Les méthodes utilisées aujourd'hui nécessitent des bases de données conséquentes
+## Défis
 
-
-Dans le cas de la NACE, l'INSEE utilise un classifieur fast-text pré-entrainé avec une accuracy de ~85% 
-
-Plusieurs limites à cette approche :
-- Nécessite un dataset d'entraînement important (1M de labels pour les codes NACE) : pose problème lors d'une création/changement de nomenclature
-- Impossibilité d'évaluer la qualité du dataset d'entraînement
-
-```python 
-
-X = [50, 100, 150, 200, 250, 300, 340, 680, 1000, 1700] # Num trainable observations
-Y = [76, 0.79, 0.81, 0.82, 0.82, 0.83, 0.83, 0.84, 0.85, 0.85] # Accuracy
-
-plt.plot()
-plt.xlabel("Nombre de données d'entraînement (en k)")
-plt.ylabel("Accuracy (%)")
-
-plt.show()
-```
-
-## Utiliser un LLM pour faire de la classification
-
-Limites identifiées :
-
-1. **Context window** limitée :
-    - gpt-oss 120B :  128k tokens soit ~100 000 mots
-    - Notice NACE:  notice NACE sature le context window
-
-2. **Inconsistance**
-   - Résultats variables entre runs
-   - Hallucinations sur codes rares
-
-3. **Boîte noire**
-   - Audit impossible
-   - Pas la main sur le modèle
-
-4. **Temps d'inférence et moyens nécessaires**
-   - ~1s pour une requête
-   - Nécessite un GPU en production
-
-## Utiliser la représentation par embeddings
-
-Mettre en place un RAG ? 
-Représentation insuffisante: 
-- les notices sont denses en concepts
-- Elles possèdent une organisation particulière à exploiter (includes, not includes -> difficultés dans le choix du chunk)
-- Se trouvent dans un espace différent des labels 
-
-<!-- TODO: Ajouter une visualisation t-SNE -->  
-
-# **Le Framework GRAAL**. Architecture multi-agents
+- A l'heure actuelle, apprentissage supervisé classique, avec des modèles de *deep learning* (PyTorch)
+  - Frugal, performant et rapide, *production-ready*... 😎 
+  - ... mais nécessite entre 100k et 1M de données labellisées 🫨
 
 
-## Représentation par arbre hiérarchique de la nomenclature NACE avec Neo4J
+## Une approche MLOps grandement facilitée par Onyxia mais encore incomplète {.scrollable}
 
-La nomenclature NACE est représentée comme un arbre hiérarchique. 
-
-:::: {.columns}
-::: {.column width="30%"}
-<!-- Ajouter une représentation complète d'une notice NACE -->
-+--------------+------------------------------------------+
-| Champ        | Valeur                                   |
-+==============+==========================================+
-| CODE         | 60                                       |
-| LEVEL        | 2                                        |
-| NAME         | Activités de programmation et diffusion  |
-| parent_code  | J                                        |
-| Includes     | …                                        |
-| Excludes     | …                                        |
-| text         | description                              |
-| embedding    | vecteur de dimension N                   |
-+--------------+------------------------------------------+
+:::{.incremental}
+- **Data** : Stockage S3 (Datalab), versionnage avec MLFlow Datasets ✅
+- **Modèle** : développement internalisé et distribution de l’architecture via le package  
+  [*torchTextClassifiers*](https://github.com/InseeFrLab/torchTextClassifiers), entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅
+- **Déploiement** : FastAPI déployé via conteneurisation (Docker) ✅
+- **Monitoring** : c’est là que le bât blesse ❌  
+  - Investissements humains importants  
+  - Comment contrôler le modèle en production sans annotation humaine continue ?
 :::
 
-::: {.column width="70%"}
+## Le besoin de s'affranchir des données labellisées {.scrollable}
+
+:::{.incremental}
+- Comment faire quand on ne peut pas avoir / n'a pas assez de données labellisées ?
+- Comment faire quand la nomenclature est mise à jour par le métier ?
+  - Il faut recoder les données existantes
+- Comment faire quand nos données labellisées ne sont pas fiables ?
+   - et qu'idéalement on veuille les corriger...
+:::
+
+---
+
+:::{.incremental}
+- Une première approche **zero-shot** : [**le Retrieval-Augmented Generation (RAG)**]{.orange}
+    - Knowledge base = les notices officielles pour chaque code
+    - Très bonne première solution mais...
+      - dépendance au chunking...
+      - dépendance au modèle d'embedding...
+      - saturation du contexte avec les notices...
+      - on compare embedding de *notice* à un embedding de *libellé*...
+      - pas de traçabilité, pas de raisonnement...
+      - pas de prise en compte de la hiérarchie !
+:::
+
+## Objectifs
+
+- On ne veut plus d'embeddings
+- On veut du *reasoning*: le LLM peut/doit justifier ses choix (*chain of thought*)
+  - Idéalement, avec un raisonnement autour de la hiérarchie
+
+## **Le framework GRAAL** {.scrollable}
+
 ```{mermaid}
 graph TD
   ROOT["Root"]
@@ -221,127 +168,29 @@ graph TD
   J60_11 -->|HAS_PARENT| J60_1
   J60_12 -->|HAS_PARENT| J60_1
   A01_11 -->|HAS_PARENT| A01_1
-
 ```
-:::
-::::
 
 ## Utilisation du graph comme support pour des agents
-<!-- TODO: Gérer les outils présents dans le code, il manque toute la partie navigation --> 
-On définit un ensemble d'outil afin qu'un agent puisse parcourir le graph : 
-- Des outils se renseigner sur le graph: 
+
+
+- On définit un ensemble d'outils **commun à tous les agents**: 
     - get_code_information
     - get_children
     - get_descendants 
     - get_siblings
 
+- Ils utilisent tous la syntaxe Neo4j
 
+## Les agents
 
-```{mermaid}
-%%{init: {'theme':'base', 'themeVariables': { 'fontSize': '16px'}}}%%
-flowchart TB
-    Input["🏢 Description entreprise"]
-    
-    subgraph GRAAL["Framework GRAAL"]
-        GA["🔍 Graph Agent<br/>Navigation hiérarchique"]
-        RA["📚 RAG Agent<br/>Recherche contextuelle"]
-        EA["✅ Evaluation Agent<br/>Validation & scoring"]
-        
-        subgraph KG["Knowledge Graph"]
-            N1["NACE Codes"]
-            N2["Relations"]
-            N3["Descriptions"]
-        end
-    end
-    
-    Output["📊 Code + Confiance + Justification"]
-    
-    Input --> GA
-    GA <--> KG
-    GA --> RA
-    RA <--> KG
-    RA --> EA
-    EA --> Output
-    
-    style GRAAL fill:#e8f5e9
-    style KG fill:#fff3e0
-```
+- Un agent = un prompt, un type d'input et un type d'output
+- Les *closers*
+  - *CodeChooser*: 
+  - *MatchVerifier*
+- *Text2Code* (classifieur)
+  - le *Navigator* hérite de *Text2Code*
+- *Code2Text* (générateur de données synthétiques)
 
-## Navigation dans le graphe
-
-:::: {.columns}
-
-::: {.column width="50%"}
-### Approche hiérarchique
-```python
-# Navigation intelligente
-class GraphNavigator:
-    def navigate(self, description):
-        # 1. Identifier section (A-U)
-        section = self.find_section(description)
-        
-        # 2. Descendre division (01-99)
-        division = self.explore_division(
-            section, description
-        )
-        
-        # 3. Raffiner groupe/classe
-        return self.refine_classification(
-            division, description
-        )
-```
-:::
-
-::: {.column width="50%"}
-### Avantages
-
-✅ **Exploration guidée**
-- Suit la structure NACE
-- Réduit l'espace de recherche
-
-✅ **Traçabilité complète**
-- Chemin de décision clair
-- Justifications à chaque étape
-
-✅ **Cohérence garantie**
-- Respect des contraintes hiérarchiques
-- Pas de codes invalides
-:::
-
-::::
-
-
-## Code : Agent de navigation
-```{python}
-#| echo: true
-#| eval: false
-#| code-line-numbers: "|1-3|5-8|10-16|18-22"
-
-from langchain.agents import AgentExecutor
-from neo4j import GraphDatabase
-from typing import Dict, List
-
-class NavigatorAgent:
-    def __init__(self, graph_uri: str):
-        self.driver = GraphDatabase.driver(graph_uri)
-        self.tools = self._create_navigation_tools()
-    
-    def classify(self, description: str) -> Dict:
-        # 1. Analyse initiale
-        context = self.extract_features(description)
-        
-        # 2. Navigation hiérarchique
-        path = self.navigate_hierarchy(context)
-        
-        # 3. Validation finale
-        result = self.validate_classification(path)
-        
-        return {
-            "code": result.code,
-            "confidence": result.confidence,
-            "justification": result.explanation
-        }
-```
 
 ## Exemple de classification
 
@@ -366,134 +215,25 @@ et viennoiseries, avec vente directe en boutique
                     de boulangerie (10.7) avec vente directe"
 }
 ```
-
 :::
 
+## Perspectives
 
-::: {.callout-note}
-Évaluation sur 1,800 entreprises annotées manuellement (golden dataset)
-:::
+- Un cahier des charges respecté
+  - Plus *d'embeddings*
+  - Du raisonnement et de la traçabilité
+  - **Utilisable pour n'importe quelle nomenclature** : il suffit de créer une base Neo4j avec les notices et tout fonctionne !
+    - GRAAL n'est qu'un distributeurs de tools, de prompts et de structures d'appels au LLM (validation input/output)
 
-## Métriques détaillées
+--- 
 
-:::: {.columns}
-
-::: {.column width="50%"}
-### Performances quantitatives
-
-| Métrique | Baseline | GRAAL | Gain |
-|----------|----------|-------|------|
-| Précision Top-1 | 70% | **89%** | +19% |
-| Précision Top-3 | 82% | **96%** | +14% |
-| Rappel | 68% | **87%** | +19% |
-| F1-Score | 0.69 | **0.88** | +0.19 |
-| Temps médian | 120ms | 450ms | +330ms |
-
-:::
-
-::: {.column width="50%"}
-### Avantages qualitatifs
-
-✅ **Explicabilité** : 100% des décisions justifiées
-
-✅ **Cohérence** : <2% de variance inter-runs
-
-✅ **Auditabilité** : Trace complète du raisonnement
-
-✅ **Adaptabilité** : Mise à jour facile des règles
-
-✅ **Scalabilité** : 10K classifications/heure
-:::
-
-::::
-
-<!-- TODO: Mettre à jour ce graph -->
-## Analyse des erreurs
-```{python}
-#| echo: false
-#| fig-width: 10
-#| fig-height: 5
-
-import plotly.graph_objects as go
-
-errors = ['Ambiguïté métier', 'Activités multiples', 'Description incomplète', 
-          'Code obsolète', 'Erreur annotation', 'Autres']
-counts = [35, 28, 20, 8, 5, 4]
-colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#fdcb6e', '#6c5ce7', '#a8e6cf']
-
-fig = go.Figure(data=[
-    go.Pie(labels=errors, values=counts, hole=.3,
-           marker=dict(colors=colors, line=dict(color='white', width=2)))
-])
-
-fig.update_layout(
-    title="Distribution des erreurs de classification",
-    height=350
-)
-
-fig.show()
-```
-
-::: {.callout-important}
-**Principale source d'erreur** : Entreprises multi-activités nécessitant une analyse du chiffre d'affaires
-:::
-
-# Démonstration {background-color="#00897B"}
-<!-- TODO: Mettre à jour la démo avec le vrai code -->  
-## Démonstration
-```{python}
-#| echo: false
-#| eval: false
-
-# Code pour une démo interactive (non exécuté dans les slides)
-import ipywidgets as widgets
-from IPython.display import display, HTML
-
-description_input = widgets.Textarea(
-    value='Boulangerie artisanale avec salon de thé',
-    placeholder='Décrivez l\'activité de l\'entreprise...',
-    description='Description:',
-    layout=widgets.Layout(width='100%', height='100px')
-)
-
-classify_button = widgets.Button(
-    description='Classifier',
-    button_style='success',
-    icon='check'
-)
-
-output = widgets.Output()
-
-def on_classify(b):
-    with output:
-        output.clear_output()
-        # Simulation de classification
-        print("✅ Code: 10.71Z")
-        print("📊 Confiance: 94%")
-        print("📝 Justification: Activité principale de boulangerie")
-
-classify_button.on_click(on_classify)
-
-display(description_input, classify_button, output)
-```
+- **On va en faire quoi ?**:
+  - Un modèle agentique est trop lourd pour la production (pas encore de GPU, temps d'inférence trop élevé...)
+  - Cependant, GRAAL peut être utilisé pour:
+    - **Monitoring du modèle déployé: *MatchVerifier* analyse les logs de l'API et évalue le modèle en continu, appelle le *Navigator* si besoin de recoder...**
+    - Recodage d'une base (même workflow que le monitoring)
+    - Génération de données synthétiques (*Code2Text*)
 
 
-# Conclusion
-
-## Points clés
-
-::: {.incremental .r-fit-text}
-- **Solution opérationnelle** pour la classification automatique
-- **Gain de productivité** significatif (+70% de rapidité)
-- **Qualité maintenue** avec traçabilité complète
-- **Architecture extensible** à d'autres nomenclatures
-- **Approche innovante** combinant LLMs et graphes
-:::
-
-::: {.r-fit-text}
-# Questions ?
-
+##  Merci de votre attention !
 🔗 [github.com/InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL)
-
-📊 [SSPLab - INSEE Innovation](https://ssplab.insee.fr)
-:::
