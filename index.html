@@ -12,7 +12,7 @@
   <meta name="author" content="Meilame Tayebjee">
   <meta name="author" content="Théo Ferry">
   <meta name="dcterms.date" content="2026-04-02">
-  <title>GRAAL : Graph-based Research with Agents for Automatic Labelling</title>
+  <title>GRAAL: Graph-based Research with Agents for Automatic Labelling</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -202,7 +202,7 @@
     <div class="slides">
 
 <section id="title-slide" data-background-image="site_libs/quarto-contrib/quarto-project/InseeFrLab/onyxia/background.svg" data-background-size="contain" class="quarto-title-block center">
-  <h1 class="title">GRAAL : Graph-based Research with Agents for Automatic Labelling</h1>
+  <h1 class="title">GRAAL: Graph-based Research with Agents for Automatic Labelling</h1>
   <p class="subtitle">Classification automatique dans des nomenclatures statistiques par approche agentique</p>
 
 <div class="quarto-title-authors">
@@ -247,58 +247,41 @@ Théo Ferry
 </section>
 <section id="section" class="slide level2" data-background-image="background.svg" data-background-size="contain">
 <h2></h2>
-<ul>
-<li><strong>NAF</strong> : Nomenclature statistique des Activités économiques (NAF)
+<div class="columns">
+<div class="column" style="width:80%;">
+<p><strong>NAF</strong> : Nomenclature statistique des Activités économiques</p>
 <ul>
 <li>~700 codes finaux</li>
 <li>Structure hiérarchique sur 5 niveaux</li>
-</ul></li>
-<li><strong>COICOP</strong> : <em>Classification of Individual Consumption by Purpose</em>
+</ul>
+<p><strong>COICOP</strong> : <em>Classification of Individual Consumption by Purpose</em></p>
 <ul>
 <li>~300 à ~1000 selon la granularité employée</li>
 <li>Structure hiérarchique sur 5 niveaux</li>
-</ul></li>
 </ul>
-</section>
-<section class="slide level2">
-
+</div><div class="column" style="width:20%;">
 <div class="cell" data-reveal="true" data-layout-align="default">
 <div class="cell-output-display">
 <div>
 <p></p><figure class=""><p></p>
 <div>
-<pre class="mermaid mermaid-js">graph TD
-  %% Sections
-  S_A["Section A&lt;br/&gt;Agriculture, sylviculture et pêche"]
-  S_C["Section C&lt;br/&gt;Industrie manufacturière"]
-
-  %% Divisions
-  D_01["Division 01&lt;br/&gt;Culture et production animale"]
-  D_10["Division 10&lt;br/&gt;Industries alimentaires"]
-
-  %% Groupes
-  G_01_1["Groupe 01.1&lt;br/&gt;Cultures non permanentes"]
-  G_10_1["Groupe 10.1&lt;br/&gt;Transformation et conservation de la viande"]
-
-  %% Classes
-  C_01_11["Classe 01.11&lt;br/&gt;Culture de céréales"]
-  C_10_11["Classe 10.11&lt;br/&gt;Transformation de la viande"]
-
-  %% Relations
-  S_A --&gt; D_01
-  S_C --&gt; D_10
-
-  D_01 --&gt; G_01_1
-  D_10 --&gt; G_10_1
-
-  G_01_1 --&gt; C_01_11
-  G_10_1 --&gt; C_10_11
+<pre class="mermaid mermaid-js">flowchart TD
+  A["Agriculture, sylviculture et pêche"]
+  
+  D01["Culture et production animale"]
+  
+  G011["Cultures non permanentes"]
+  
+  C0111["Culture de céréales"]
+  
+  A --&gt; D01 --&gt; G011 --&gt; C0111
 </pre>
 </div>
 <p></p></figure><p></p>
 </div>
 </div>
 </div>
+</div></div>
 </section>
 <section id="défis" class="slide level2" data-background-image="background.svg" data-background-size="contain">
 <h2>Défis</h2>
@@ -429,9 +412,10 @@ Théo Ferry
 <li>On définit un ensemble d’outils <strong>commun à tous les agents</strong>:
 <ul>
 <li>get_code_information</li>
-<li>get_children</li>
-<li>get_descendants</li>
-<li>get_siblings</li>
+<li>get_current_children</li>
+<li>get_current_siblings</li>
+<li>go_to_parent</li>
+<li>go_to_child</li>
 <li>etc.</li>
 </ul></li>
 <li>Ils utilisent tous la syntaxe Neo4j</li>
@@ -445,7 +429,7 @@ Théo Ferry
 <ul>
 <li><p><em>CodeChooser</em>:</p></li>
 <li><p><em>MatchVerifier</em>:</p>
-<div id="fefc1b8a" class="cell" data-execution_count="1">
+<div id="27baad0d" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a></a><span class="kw">class</span> MatchVerifier(BaseAgent):</span>
