@@ -182,7 +182,7 @@ def make_tools(navigator):
         parent_code = parent_info["code"]
         navigator.current_code = parent_code
         navigator.history.append(parent_code)
-        logger.info(f"Moved up to: {parent_code}")
+        logger.info(f"Move up to: {parent_code}")
 
         return {
             "success": True,
@@ -219,7 +219,7 @@ def make_tools(navigator):
         target_info = next((c for c in children if c["code"] == child_code), None)
         navigator.current_code = child_code
         navigator.history.append(child_code)
-        logger.info(f"Moved down to: {child_code}")
+        logger.info(f"Move down to: {child_code}")
         logger.info(f"Navigator.current_code is {navigator.current_code} and navigator.history is {navigator.history}")
 
         return {
@@ -371,7 +371,7 @@ def make_tools(navigator):
         go_to_parent,
         go_to_child,
         get_context_summary,
-        submit_classification
+        # submit_classification
     ]
 
     """ return [

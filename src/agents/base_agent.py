@@ -68,6 +68,7 @@ class BaseAgent(ABC):
             self.agent,
             prompt, 
             max_turns=int(os.environ["MAX_TURNS"])) 
+        logger.info(f"Result of the __call__ in BaseAgent: \n {result.final_output}")
         return result.final_output
 
     def get_model_settings(self) -> ModelSettings:

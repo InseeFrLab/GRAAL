@@ -1,5 +1,5 @@
 ---
-title: "GRAAL : Graph-based Research with Agents for Automatic Labelling"
+title: "GRAAL: Graph-based Research with Agents for Automatic Labelling"
 subtitle: "Classification automatique dans des nomenclatures statistiques par approche agentique"
 author:
   - name: Meilame Tayebjee
@@ -28,6 +28,7 @@ controls: true
 ascii: true
 ---
 
+
 ## Plan
 
 
@@ -50,33 +51,22 @@ ascii: true
 
 ----
 ```{mermaid}
-graph TD
-  %% Sections
-  S_A["Section A<br/>Agriculture, sylviculture et pêche"]
-  S_C["Section C<br/>Industrie manufacturière"]
-
-  %% Divisions
-  D_01["Division 01<br/>Culture et production animale"]
-  D_10["Division 10<br/>Industries alimentaires"]
-
-  %% Groupes
-  G_01_1["Groupe 01.1<br/>Cultures non permanentes"]
-  G_10_1["Groupe 10.1<br/>Transformation et conservation de la viande"]
-
-  %% Classes
-  C_01_11["Classe 01.11<br/>Culture de céréales"]
-  C_10_11["Classe 10.11<br/>Transformation de la viande"]
-
-  %% Relations
-  S_A --> D_01
-  S_C --> D_10
-
-  D_01 --> G_01_1
-  D_10 --> G_10_1
-
-  G_01_1 --> C_01_11
-  G_10_1 --> C_10_11
-```
+flowchart TD
+  A["Section A: Agriculture, sylviculture et pêche"]
+  C["Section C: Industrie manufacturière"]
+  
+  D01["Division 01 Culture et production animale"]
+  D10["Division 10 Industries alimentaires"]
+  
+  G011["Groupe 01.1 Cultures non permanentes"]
+  G101["Groupe 10.1 Conservation de la viande"]
+  
+  C0111["01.11 - Culture de céréales"]
+  C1011["10.11 - Transformation viande"]
+  
+  A --> D01 --> G011 --> C0111
+  C --> D10 --> G101 --> C1011
+  ```
 
 ## Défis
 
@@ -175,9 +165,11 @@ graph TD
 
 - On définit un ensemble d'outils **commun à tous les agents**: 
     - get_code_information
-    - get_children
-    - get_descendants 
-    - get_siblings
+    - get_current_children
+    - get_current_parent 
+    - get_current_siblings
+    - go_to_parent
+    - go_to_child
 
 - Ils utilisent tous la syntaxe Neo4j
 
