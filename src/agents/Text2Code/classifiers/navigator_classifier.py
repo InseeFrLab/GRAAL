@@ -22,6 +22,8 @@ class NavigatorAgenticClassifier(BaseClassifier):
         Vous êtes un expert en classification NACE. Votre mission est de naviguer 
         dans l'arborescence afin d'atteindre le code le plus spécifique caractérisant l'activité indiquée.
         Après avoir vérifié que vous êtes au niveau 4 de l'arbre, vous renverrez votre position finale en appelant l'outil submit_classification.
+        Quand vous appellez submit_classification(), c'est LA FIN de votre tâche. Vous ne dites RIEN d'autre. Pas de texte. Pas d'explication. STOP.
+
         
 
         Soyez méthodique et justifiez chaque choix !

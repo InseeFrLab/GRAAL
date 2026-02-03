@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
+import json 
 
 from agents import function_tool
 from src.neo4j_graph.graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
@@ -314,17 +315,38 @@ def make_tools(navigator):
         # TODO: rajouter "alternatives: str"
     ) -> MatchVerificationInput:
         """
-        Retourne le résultat final de la classification. 
+        OUTIL OBLIGATOIRE pour soumettre ta classification finale.
+        🎯 OUTIL DE SORTIE FINALE - Cette fonction retourne directement le résultat final attendu.
+        🚨 TU DOIS UTILISER CET OUTIL - Ne renvoie JAMAIS de texte libre pour la classification finale.
+        🚨 Appelle cette fonction avec les 3 paramètres - PAS de texte avant ou après l'appel.
         
         Args:
-         - query: Libellé à classer
-         - confidence: Score de confiance (compris entre 0 et 1)
-         - reasoning: Justification détaillée du choix de code
-         
+            query: Le libellé EXACT de l'activité (copie-colle du libellé initial)
+                Exemple : "Fabrication de statuettes en bois dur"
+            
+            confidence: Un nombre décimal entre 0.0 et 1.0 (format : "0.95", "0.78", "0.60")
+                    ⚠️ UNIQUEMENT le nombre, pas de texte comme "très élevée" ou "forte"
+                    Guide :
+                    - "0.95" à "1.0" : correspondance parfaite
+                    - "0.75" à "0.95" : bonne correspondance
+                    - "0.50" à "0.75" : correspondance acceptable
+                    - < "0.50" : incertitude élevée
+            
+            reasoning: Ta justification complète en texte libre (ici tu peux écrire ce que tu veux)
+                    Structure suggérée :
+                    - Pourquoi ce code correspond
+                    - Chemin de navigation (division → groupe → classe)
+                    - Alternatives écartées
+                    - Éléments clés de la définition NACE
+        
         Returns:
-            Dictionnaire comprenant la position finale, l'historique de navigation,
-            le niveau de confiance, la justification et les alternatives.
+            Dictionnaire avec activity, code, proposed_explanation, proposed_confidence
         """
+
+        logger.info(f"""Navigator: submit_classification called with args \n 
+        query: {query}, \n
+        confidence: {confidence}, \n
+        reasoning: {reasoning} \n""")
 
         result = {
             "activity": query,
@@ -332,6 +354,9 @@ def make_tools(navigator):
             "proposed_explanation": reasoning,
             "proposed_confidence": float(confidence),
         }
+
+        logger.info(f""" Result: 
+        {json.dumps(result)}""")
 
         return result
 
