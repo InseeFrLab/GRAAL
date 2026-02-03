@@ -40,11 +40,11 @@ ascii: true
 
 ##
 
-- **NACE** : Nomenclature statistique des Activités économiques (NAF)
+- **NAF** : Nomenclature statistique des Activités économiques (NAF)
     - ~700 codes finaux
     - Structure hiérarchique sur 5 niveaux
   
-- **COICOP** : Classification of Individual Consumption by Purpose
+- **COICOP** : *Classification of Individual Consumption by Purpose*
     - ~300 à ~1000 selon la granularité employée
     - Structure hiérarchique sur 5 niveaux
 
@@ -93,8 +93,8 @@ graph TD
   [*torchTextClassifiers*](https://github.com/InseeFrLab/torchTextClassifiers), entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅
 - **Déploiement** : FastAPI déployé via conteneurisation (Docker) ✅
 - **Monitoring** : c’est là que le bât blesse ❌  
-  - Investissements humains importants  
-  - Comment contrôler le modèle en production sans annotation humaine continue ?
+  - Investissements humains nécessaires, pas toujours faits
+  - **Comment contrôler le modèle en production sans annotation humaine continue ?**
 :::
 
 ## Le besoin de s'affranchir des données labellisées {.scrollable}
@@ -125,6 +125,7 @@ graph TD
 
 - On ne veut plus d'embeddings
 - On veut du *reasoning*: le LLM peut/doit justifier ses choix (*chain of thought*)
+  - Plutôt que lui *imposer du contexte* comme dans un RAG, laisser le modèle **compléter son contexte dynamiquement** ([**= agent !**]{.orange})
   - Idéalement, avec un raisonnement autour de la hiérarchie
 
 # 2️⃣ **Le framework GRAAL** 
@@ -178,21 +179,64 @@ graph TD
     - get_children
     - get_descendants 
     - get_siblings
+    - etc.
 
 - Ils utilisent tous la syntaxe Neo4j
 
-## Les agents
+## Les agents {.scrollable}
 
-- Un agent = un prompt, un type d'input et un type d'output
+- Un agent = un prompt, un type d'input et d'output, et des tools
 - Les *closers*
   - *CodeChooser*: 
-  - *MatchVerifier*
+  - *MatchVerifier*:
+
+    ```{python}
+    #| echo: true
+    #| code-fold: true
+    #| eval: false
+
+    class MatchVerifier(BaseAgent):
+        def __init__(self, graph: Graph):
+            super().__init__(graph)
+
+        def get_agent_name(self) -> str:
+            return "MatchVerifier Agent"
+
+        def get_instructions(self) -> str:
+            return """
+                    Tu es un agent spécialisé dans la vérification de la validité d'une correspondance entre un libellé textuel et le code qui lui a été associé. Tu as accès à des outils pour interroger une base de données de nomenclature statistique structurée en graph database Neo4j.
+                """
+
+        def get_output_type(self):
+            return MatchVerificationResult
+
+        def build_prompt(self, match_verification_input: MatchVerificationInput) -> str:
+            """
+            Construire le prompt pour l'agent de vérification de correspondance.
+            """
+            prompt = f"""
+            Vérifie si le code suivant correspond bien à l'activité décrite.
+
+            Activité : {match_verification_input.activity}
+
+            Code proposé : {match_verification_input.code}
+            Explication proposée : {match_verification_input.proposed_explanation}
+
+            Réponds en fournissant :
+            1. Un booléen indiquant si la correspondance est valide.
+            2. Un niveau de confiance entre 0 et 1.
+            3. Une explication concise de ta décision.
+            """
+            return prompt
+    ```
+
+
 - *Text2Code* (classifieur)
-  - le *Navigator* hérite de *Text2Code*
+  - le *Navigator* est un agent qui hérite de *Text2Code*
 - *Code2Text* (générateur de données synthétiques)
 
 
-## Exemple de classification
+## Exemple de classification par *Navigator*
 
 ::: {.panel-tabset}
 
@@ -212,9 +256,23 @@ et viennoiseries, avec vente directe en boutique
   "confidence": 0.94,
   "path": ["C", "10", "10.7", "10.71", "10.71Z"],
   "justification": "Fabrication artisanale (C) de produits 
-                    de boulangerie (10.7) avec vente directe"
+                    de boulangerie (10.7) avec vente directe : ce code correspond donc au libellé fourni."
 }
 ```
+:::
+
+
+## Evaluation {.scrollable}
+
+:::{.incremental}
+- **Evaluer un agent classifieur**
+  - Si on fait confiance à notre dataset de test : évaluation straightforward
+  - **Sinon : évaluation manuelle !**
+    - Prédiction *ground truth*, prédiction du classifieur, jugement du *CodeChooser* et du *MatchVerifier* mis bout à bout
+    - Evaluation conjointe de tous les composants
+- **Evaluer la génération de données synthétiques**
+  - moins évident
+  - réentraîner un modèle sur un dataset synthétique et voir si on atteint des perfs équivalentes sur le même test set
 :::
 
 ## Perspectives
@@ -224,10 +282,11 @@ et viennoiseries, avec vente directe en boutique
   - Du raisonnement et de la traçabilité
   - **Utilisable pour n'importe quelle nomenclature** : il suffit de créer une base Neo4j avec les notices et tout fonctionne !
     - GRAAL n'est qu'un distributeurs de tools, de prompts et de structures d'appels au LLM (validation input/output)
+- **La tâche principale va être l'évaluation** 🎯
 
 --- 
 
-- **On va en faire quoi ?**:
+- **On va en faire quoi ?**
   - Un modèle agentique est trop lourd pour la production (pas encore de GPU, temps d'inférence trop élevé...)
   - Cependant, GRAAL peut être utilisé pour:
     - **Monitoring du modèle déployé: *MatchVerifier* analyse les logs de l'API et évalue le modèle en continu, appelle le *Navigator* si besoin de recoder...**
