@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from langfuse.openai import AsyncOpenAI
 from pydantic import BaseModel
-from datetime import datetime
 
 from agents import (
     Agent,
@@ -68,7 +67,7 @@ class BaseAgent(ABC):
         result = await Runner.run(
             self.agent,
             prompt, 
-            max_turns=MAX_TURNS) # TODO: Change local attribution of max_turns
+            max_turns=int(os.environ["MAX_TURNS"])) 
         return result.final_output
 
     def get_model_settings(self) -> ModelSettings:
