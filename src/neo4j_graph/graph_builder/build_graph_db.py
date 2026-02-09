@@ -35,7 +35,7 @@ def run_pipeline():
     df = load_notices(NOTICES_PATH, COLUMNS_TO_KEEP)
 
     df["text_to_embed"] = (
-        df["NAME"]
+        df["NAME"].fillna("")
         + "\n"
         + df["Implementation_rule"].fillna("")
         + "\n"
