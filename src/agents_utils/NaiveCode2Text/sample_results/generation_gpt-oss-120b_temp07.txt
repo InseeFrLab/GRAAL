@@ -1,0 +1,27 @@
+5 wordings have been generated in 75.85 sec.
+
+====================================
+Code: 70.10
+Name: Activities of head offices
+Result: Management of district and regional head offices.
+
+====================================
+Code: 78.20
+Name: Temporary employment agency activities and other human resource provisions
+Result: Temporary employment agency activities; other human resource provision.
+
+====================================
+Code: 68.20
+Name: Rental and operating of own or leased real estate
+Result: Rental and operation of own or leased real estate, including land, agricultural land, and forestry land.
+
+====================================
+Code: 68.20
+Name: Rental and operating of own or leased real estate
+Result: Provision of long‑term rental and operation of own or leased residential real estate, including furnished and unfurnished homes and apartments.
+
+====================================
+Code: 70.20
+Name: Business and other management consultancy activities
+Result: Business and other management consultancy activities, including management information services and business start‑up service activities.
+
