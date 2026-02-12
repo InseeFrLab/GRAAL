@@ -4,8 +4,8 @@ import time
 
 from dotenv import load_dotenv
 
-from src.agents_utils.NaiveCode2Text.prompts import prompt_builder, wording_generator
-from src.agents_utils.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
+from src.agents.NaiveCode2Text.prompts import prompt_builder, wording_generator
+from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
 from src.neo4j_graph.graph import Graph, Neo4JConfig
 
 logging.basicConfig(level=logging.INFO)
