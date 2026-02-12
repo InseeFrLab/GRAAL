@@ -1,9 +1,13 @@
-# %% Imports minimalistes
+# %% Imports
+import os
 import numpy as np
 import plotly.graph_objects as go
 import umap
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
+# Factorize the code to embed
+# from src.neo4j_graph.graph_builder.utils.embed_manager import get_embedding_model
+from langchain_openai import OpenAIEmbeddings
 
 # %% Récupération des données
 graph = Graph(neo4j_config)
@@ -34,11 +38,31 @@ for record in results:
     ])
     paths.append(path_str)
 
-embeddings = np.array(embeddings)
+
 print(f"Nœuds récupérés: {len(names)}")
+print(embeddings)
+
+
+# %%
+# Add a query in the embedding space
+
+queries = ["Je vends des croissants", "Livreur de taxi", "Coiffeur"]
+emb_model = OpenAIEmbeddings(
+        model=os.environ['EMBEDDING_MODEL'],
+        openai_api_base=os.environ['URL_EMBEDDING_API'],
+        openai_api_key="EMPTY",
+        tiktoken_enabled=False,
+    )
+for i, query in iter(queries): 
+    query_emb = emb_model.embed_query(query)
+    embeddings.append(query_emb)
+    names.append(f"Query {i}")
+    paths.append(query)
+
 
 # %% UMAP
 reducer = umap.UMAP(random_state=42, n_neighbors=10, min_dist=0.1)
+embeddings = np.array(embeddings)
 coords = reducer.fit_transform(embeddings)
 X, Y = coords.T
 

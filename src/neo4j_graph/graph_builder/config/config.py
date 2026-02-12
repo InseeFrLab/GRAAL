@@ -7,7 +7,7 @@ load_dotenv(override=True)
 # EMBED MANAGER
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", None)
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", 32000))
-URL_EMBEDDING_API = "EMPTY"
+URL_EMBEDDING_API = os.environ.get("URL_EMBEDDING_API", 'EMPTY')
 
 # NEO4J DB MANAGER
 NEO4J_URL = "EMPTY"

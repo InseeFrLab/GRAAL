@@ -29,6 +29,7 @@ def truncate_docs_to_max_tokens(docs, max_tokens):
 # TODO: factorize embedder manager outside from the graph builder ?
 def get_embedding_model(model_name: str) -> OpenAIEmbeddings:
     """Initialize the embedding model."""
+    print(f"URL EMBEDDING API: {URL_EMBEDDING_API}")
     return OpenAIEmbeddings(
         model=model_name,
         openai_api_base=URL_EMBEDDING_API,
