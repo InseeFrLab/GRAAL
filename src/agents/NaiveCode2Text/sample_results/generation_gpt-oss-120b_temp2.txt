@@ -1,0 +1,27 @@
+5 wordings have been generated in 158.49 sec.
+
+====================================
+Code: 69.10
+Name: Legal activities
+Result: Legal consulting; preparation of incorporation, partnership, deed, will, trust, patent and copyright documents; public and civil law notary services; bailiff, arbitration, examination and refereeing activities.
+
+====================================
+Code: 55.90
+Name: Other accommodation
+Result: Operation of boarding houses (other accommodation).
+
+====================================
+Code: 73.11
+Name: Activities of advertising agencies
+Result: Advertising campaign management.
+
+====================================
+Code: 68.20
+Name: Rental and operating of own or leased real estate
+Result: Rental and operation of owned or leased real estate: apartment buildings, dwellings, and data centres.
+
+====================================
+Code: 62.20
+Name: Computer consultancy and computer facilities management activities
+Result: Provision of on‑site management and operation of clients’ computer systems and data processing facilities, together with related support services.
+

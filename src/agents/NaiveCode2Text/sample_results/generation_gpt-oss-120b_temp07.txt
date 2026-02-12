@@ -1,27 +1,27 @@
-5 wordings have been generated in 75.85 sec.
+5 wordings have been generated in 161.51 sec.
 
 ====================================
-Code: 70.10
-Name: Activities of head offices
-Result: Management of district and regional head offices.
-
-====================================
-Code: 78.20
-Name: Temporary employment agency activities and other human resource provisions
-Result: Temporary employment agency activities; other human resource provision.
+Code: 58.13
+Name: Publishing of journals and periodicals
+Result: Publishing of journals and other periodicals.
 
 ====================================
 Code: 68.20
 Name: Rental and operating of own or leased real estate
-Result: Rental and operation of own or leased real estate, including land, agricultural land, and forestry land.
+Result: Rental and operation of own or leased residential real estate, provision of permanent homes and furnished or unfurnished apartments, and management of residential mobile‑home sites for primary residences.
 
 ====================================
-Code: 68.20
-Name: Rental and operating of own or leased real estate
-Result: Provision of long‑term rental and operation of own or leased residential real estate, including furnished and unfurnished homes and apartments.
+Code: 96.30
+Name: Funeral and related activities
+Result: Transportation of human remains.
 
 ====================================
-Code: 70.20
-Name: Business and other management consultancy activities
-Result: Business and other management consultancy activities, including management information services and business start‑up service activities.
+Code: 62.20
+Name: Computer consultancy and computer facilities management activities
+Result: Provision of computer consultancy and facilities management services, including advice on software requirements, procurement of hardware and software components, and auditing and certification of computing and data‑processing infrastructures and services.
+
+====================================
+Code: 69.10
+Name: Legal activities
+Result: Legal counseling and advice; preparation of legal documents such as deeds, wills, and trusts.
 

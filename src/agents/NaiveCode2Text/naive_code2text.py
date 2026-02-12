@@ -3,6 +3,7 @@ import logging
 import time
 
 from dotenv import load_dotenv
+import s3fs
 
 from src.agents.NaiveCode2Text.prompts import prompt_builder, wording_generator
 from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
@@ -13,17 +14,25 @@ logger = logging.getLogger(__name__)
 
 load_dotenv(override=True)
 
-POPULATION_PATH = "s3://projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+POPULATION_PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
 CODE_COLUMN = "nace2025"
 N_CODES = 5
 MODEL = "gpt-oss:120b"
-TEMPERATURE = 0.7
+TEMPERATURE = 2
 
 start = time.perf_counter()
 
+fs = s3fs.S3FileSystem(
+    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
+    key=os.environ["AWS_ACCESS_KEY_ID"],
+    secret=os.environ["AWS_SECRET_ACCESS_KEY"],
+    token=os.environ["AWS_SESSION_TOKEN"]
+)
+
 # Sampling from original data
 logger.info("Sampling from data...")
-code_list = code_sampler.sample_codes(
+code_list = code_sampler.sample_codes_lazy(
+    fs=fs,
     population_path=POPULATION_PATH,
     code_column=CODE_COLUMN,
     n_codes=N_CODES
@@ -66,7 +75,7 @@ logger.info("Saving results...")
 file_name = f"generation_{MODEL}_temp{TEMPERATURE}".replace(":", "-").replace(".", "") + ".txt"
 
 with open(
-        file=f"src/agents_utils/NaiveCode2Text/sample_results/{file_name}",
+        file=f"src/agents/NaiveCode2Text/sample_results/{file_name}",
         mode='w'
         ) as f:
     f.write(f"{N_CODES} wordings have been generated in {end-start:.2f} sec.\n\n")
