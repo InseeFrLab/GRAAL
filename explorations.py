@@ -2,12 +2,17 @@
 import os
 import numpy as np
 import plotly.graph_objects as go
+from langchain_openai import OpenAIEmbeddings
+import polars as pl
 import umap
+import asyncio
+
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
 # Factorize the code to embed
 # from src.neo4j_graph.graph_builder.utils.embed_manager import get_embedding_model
-from langchain_openai import OpenAIEmbeddings
+from src.main import classify_navigator, process_batch_file
+
 
 # %% Récupération des données
 graph = Graph(neo4j_config)
@@ -96,7 +101,53 @@ fig.update_layout(
 )
 
 fig.show()
+# %%
+import os
+import s3fs
+os.environ["AWS_ACCESS_KEY_ID"] = 'UN8E5UMY78E5H4AKC7HF'
+os.environ["AWS_SECRET_ACCESS_KEY"] = 'fSUt5up9uh4qfyHH4LIQ6J0GiQp42eFc+fKWrRS2'
+os.environ["AWS_SESSION_TOKEN"] = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NLZXkiOiJVTjhFNVVNWTc4RTVINEFLQzdIRiIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sImF1ZCI6WyJtaW5pby1kYXRhbm9kZSIsIm9ueXhpYSIsImFjY291bnQiXSwiYXV0aF90aW1lIjoxNzcwNjI4NzkzLCJhenAiOiJvbnl4aWEiLCJlbWFpbCI6InRoZW8uZmVycnlAaW5zZWUuZnIiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZXhwIjoxNzcxNTEyODA1LCJmYW1pbHlfbmFtZSI6IkZlcnJ5IiwiZ2l2ZW5fbmFtZSI6IlRoZW8iLCJncm91cHMiOlsiVVNFUl9PTllYSUEiLCJhcGUiLCJtb2RlbHMtaGYiLCJzc3BsYWIiXSwiaWF0IjoxNzcwOTA4MDA0LCJpc3MiOiJodHRwczovL2F1dGgubGFiLnNzcGNsb3VkLmZyL2F1dGgvcmVhbG1zL3NzcGNsb3VkIiwianRpIjoib25ydHJ0OjllMjk1ZmEzLTliNmMtNjZjYi0yMWE0LTA2NDlhNGVkMWUzYSIsImxvY2FsZSI6ImZyIiwibmFtZSI6IlRoZW8gRmVycnkiLCJwb2xpY3kiOiJzdHNvbmx5IiwicHJlZmVycmVkX3VzZXJuYW1lIjoidGhlb2YiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiIsInZpcCIsImRlZmF1bHQtcm9sZXMtc3NwY2xvdWQiXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwidmlwIiwiZGVmYXVsdC1yb2xlcy1zc3BjbG91ZCJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGdyb3VwcyBlbWFpbCIsInNpZCI6ImRiYTY1NzAxLWE3OTctMDFjZi0yYWE1LTRkYjkzY2Q0ZWM4NiIsInN1YiI6IjNlYTdiY2Q0LWJkMjMtNDA2Yy1hYmE2LWFmMzM3ZjBlMTAzNiIsInR5cCI6IkJlYXJlciJ9.keTVOmqa7NmhFGb5Jp384W0EisDdxox7Sip2f1B4MPdfN5z_tDtU85beJbBqCFl6TJdybu0PHVRX_sDW5q4Fgg'
+os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
+fs = s3fs.S3FileSystem(
+    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
+    key = os.environ["AWS_ACCESS_KEY_ID"], 
+    secret = os.environ["AWS_SECRET_ACCESS_KEY"], 
+    token = os.environ["AWS_SESSION_TOKEN"])
+
+
+def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, n_codes: int):
+    """
+    Sample codes using Polars from S3.
+    
+    Args:
+        fs: S3FileSystem configuré
+        population_path: chemin S3 (avec ou sans s3://)
+        code_column: nom de la colonne
+        n_codes: nombre de codes à échantillonner
+    """
+    with fs.open(population_path, 'rb') as f:
+        df = pl.read_parquet(f)
+
+    sampled = df.select(code_column).sample(n=n_codes, with_replacement=True)
+    
+    return sampled[code_column].to_numpy()
+
+path = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+columns = ["libelle", "nace2025"]
+
+codes = sample_codes(
+    fs=fs,
+    population_path=path,
+    code_column=columns, 
+    n_codes=10)
+
+print(codes)
+labels, codes = zip(*codes)
 
 # %%
-fig.write_html("niveau5_simple.html")
+result = await classify_navigator(labels[0])
+
+
+# %%
+print(result)
 # %%
