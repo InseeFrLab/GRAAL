@@ -2,12 +2,41 @@
 import os
 import numpy as np
 import plotly.graph_objects as go
+from langchain_openai import OpenAIEmbeddings
+import polars as pl
 import umap
+import asyncio
+
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
-# Factorize the code to embed
-# from src.neo4j_graph.graph_builder.utils.embed_manager import get_embedding_model
-from langchain_openai import OpenAIEmbeddings
+from src.main import classify_navigator
+
+
+
+# %% Config
+N_CODES = 20
+K_NN = 1
+
+PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+COLUMNS = ["libelle", "nace2025"]
+
+REDUCTION_METHOD = "umap"  # Options: "umap", "pacmap", "tsne", "pca"
+
+emb_model = OpenAIEmbeddings(
+        model=os.environ['EMBEDDING_MODEL'],
+        openai_api_base=os.environ['URL_EMBEDDING_API'],
+        openai_api_key="EMPTY",
+        tiktoken_enabled=False,
+    )
+
+fs = s3fs.S3FileSystem(
+    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
+    key=os.environ["AWS_ACCESS_KEY_ID"], 
+    secret=os.environ["AWS_SECRET_ACCESS_KEY"], 
+    token=os.environ["AWS_SESSION_TOKEN"])
+
+graph = Graph(neo4j_config)
+
 
 # %% Récupération des données
 graph = Graph(neo4j_config)
@@ -96,7 +125,50 @@ fig.update_layout(
 )
 
 fig.show()
+# %%
+import os
+import s3fs
+
+fs = s3fs.S3FileSystem(
+    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
+    key = os.environ["AWS_ACCESS_KEY_ID"], 
+    secret = os.environ["AWS_SECRET_ACCESS_KEY"], 
+    token = os.environ["AWS_SESSION_TOKEN"])
+
+
+def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, n_codes: int):
+    """
+    Sample codes using Polars from S3.
+    
+    Args:
+        fs: S3FileSystem configuré
+        population_path: chemin S3 (avec ou sans s3://)
+        code_column: nom de la colonne
+        n_codes: nombre de codes à échantillonner
+    """
+    with fs.open(population_path, 'rb') as f:
+        df = pl.read_parquet(f)
+
+    sampled = df.select(code_column).sample(n=n_codes, with_replacement=True)
+    
+    return sampled[code_column].to_numpy()
+
+path = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+columns = ["libelle", "nace2025"]
+
+codes = sample_codes(
+    fs=fs,
+    population_path=path,
+    code_column=columns, 
+    n_codes=10)
+
+print(codes)
+labels, codes = zip(*codes)
 
 # %%
-fig.write_html("niveau5_simple.html")
+result = await classify_navigator(labels[0])
+
+
+# %%
+print(result)
 # %%

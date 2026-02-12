@@ -15,15 +15,38 @@ logger = logging.getLogger(__name__)
 
 
 @observe
-async def classify_navigator(query: str, experiment_name: str):
-    """Classify using agentic method"""
-    logger.info(f"Navigator classification: {query}")
+async def classify_navigator(
+    query: str | list[str], 
+    experiment_name: str = "Navigator Classification"
+):
+    """Classify using agentic method
+    
+    Args:
+        query: A single query string or a list of query strings
+        experiment_name: Name of the experiment
+        
+    Returns:
+        Single result dict if query is str, list of result dicts if query is list
+    """
+    # Normalize input to always work with a list
+    queries = [query] if isinstance(query, str) else query
+    is_single = isinstance(query, str)
+    
+    logger.info(f"Navigator classification: {len(queries)} query/queries")
+    
     # TODO: add the management for exp_name
     navigator = Navigator(neo4j_config)
-    classifier = NavigatorAgenticClassifier(navigator)
-    result = await classifier(query)
-    logger.info(f"Le résultat de la classification est : {result}")
-    return result
+    
+    results = []
+    for q in queries:
+        logger.info(f"Classifying: {q}")
+        classifier = NavigatorAgenticClassifier(navigator)
+        result = await classifier(q)
+        logger.info(f"Le résultat de la classification est : {result}")
+        results.append(result)
+    
+    # Return single result or list based on input type
+    return results[0] if is_single else results
 
 
 @observe
