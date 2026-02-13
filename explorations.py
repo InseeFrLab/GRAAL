@@ -19,11 +19,12 @@ graph = Graph(neo4j_config)
 
 query = """
 MATCH path = (root)-[*]->(n)
-WHERE n.LEVEL = 5
+WHERE n.FINAL = 1
   AND n.embedding IS NOT NULL
   AND root.LEVEL = 0
 RETURN n.embedding as embedding,
        n.NAME as name,
+       n.CODE as code, 
        [node IN nodes(path) | node.CODE] as path_codes,
        [node IN nodes(path) | node.LEVEL] as path_levels
 """
@@ -33,10 +34,14 @@ results = graph.graph.query(query)
 embeddings = []
 names = []
 paths = []
+codes_dict = {}
 
-for record in results:
+for idx, record in enumerate(results):
     embeddings.append(record["embedding"])
     names.append(record["name"])
+    code = record["code"]
+    code_clean = code.replace(".", "").replace(" ", "")
+    codes_dict[code_clean] = idx
     
     path_str = " → ".join([
         name for lvl, name in zip(record["path_levels"], record["path_codes"])
@@ -45,62 +50,11 @@ for record in results:
 
 
 print(f"Nœuds récupérés: {len(names)}")
-print(embeddings)
+
+n_nace_nodes = len(embeddings)
 
 
-# %%
-# Add a query in the embedding space
 
-queries = ["Je vends des croissants", "Livreur de taxi", "Coiffeur"]
-emb_model = OpenAIEmbeddings(
-        model=os.environ['EMBEDDING_MODEL'],
-        openai_api_base=os.environ['URL_EMBEDDING_API'],
-        openai_api_key="EMPTY",
-        tiktoken_enabled=False,
-    )
-for i, query in iter(queries): 
-    query_emb = emb_model.embed_query(query)
-    embeddings.append(query_emb)
-    names.append(f"Query {i}")
-    paths.append(query)
-
-
-# %% UMAP
-reducer = umap.UMAP(random_state=42, n_neighbors=10, min_dist=0.1)
-embeddings = np.array(embeddings)
-coords = reducer.fit_transform(embeddings)
-X, Y = coords.T
-
-# %% Visualisation interactive
-fig = go.Figure()
-
-fig.add_trace(go.Scatter(
-    x=X, y=Y,
-    mode='markers',
-    marker=dict(
-        size=10,
-        color=np.arange(len(X)),  # Couleur par index
-        colorscale='Viridis',
-        showscale=True,
-        line=dict(width=0.5, color='white')
-    ),
-    text=[f"<b>{name}</b><br><br>{path}" for name, path in zip(names, paths)],
-    hovertemplate='%{text}<extra></extra>'
-))
-
-fig.update_layout(
-    title="Nœuds de niveau 5",
-    xaxis_title="UMAP 1",
-    yaxis_title="UMAP 2",
-    width=1200,
-    height=800,
-    hovermode='closest',
-    plot_bgcolor='white',
-    xaxis=dict(showgrid=True, gridcolor='lightgray'),
-    yaxis=dict(showgrid=True, gridcolor='lightgray')
-)
-
-fig.show()
 # %%
 import os
 import s3fs
@@ -108,11 +62,15 @@ os.environ["AWS_ACCESS_KEY_ID"] = 'UN8E5UMY78E5H4AKC7HF'
 os.environ["AWS_SECRET_ACCESS_KEY"] = 'fSUt5up9uh4qfyHH4LIQ6J0GiQp42eFc+fKWrRS2'
 os.environ["AWS_SESSION_TOKEN"] = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NLZXkiOiJVTjhFNVVNWTc4RTVINEFLQzdIRiIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sImF1ZCI6WyJtaW5pby1kYXRhbm9kZSIsIm9ueXhpYSIsImFjY291bnQiXSwiYXV0aF90aW1lIjoxNzcwNjI4NzkzLCJhenAiOiJvbnl4aWEiLCJlbWFpbCI6InRoZW8uZmVycnlAaW5zZWUuZnIiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZXhwIjoxNzcxNTEyODA1LCJmYW1pbHlfbmFtZSI6IkZlcnJ5IiwiZ2l2ZW5fbmFtZSI6IlRoZW8iLCJncm91cHMiOlsiVVNFUl9PTllYSUEiLCJhcGUiLCJtb2RlbHMtaGYiLCJzc3BsYWIiXSwiaWF0IjoxNzcwOTA4MDA0LCJpc3MiOiJodHRwczovL2F1dGgubGFiLnNzcGNsb3VkLmZyL2F1dGgvcmVhbG1zL3NzcGNsb3VkIiwianRpIjoib25ydHJ0OjllMjk1ZmEzLTliNmMtNjZjYi0yMWE0LTA2NDlhNGVkMWUzYSIsImxvY2FsZSI6ImZyIiwibmFtZSI6IlRoZW8gRmVycnkiLCJwb2xpY3kiOiJzdHNvbmx5IiwicHJlZmVycmVkX3VzZXJuYW1lIjoidGhlb2YiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiIsInZpcCIsImRlZmF1bHQtcm9sZXMtc3NwY2xvdWQiXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwidmlwIiwiZGVmYXVsdC1yb2xlcy1zc3BjbG91ZCJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGdyb3VwcyBlbWFpbCIsInNpZCI6ImRiYTY1NzAxLWE3OTctMDFjZi0yYWE1LTRkYjkzY2Q0ZWM4NiIsInN1YiI6IjNlYTdiY2Q0LWJkMjMtNDA2Yy1hYmE2LWFmMzM3ZjBlMTAzNiIsInR5cCI6IkJlYXJlciJ9.keTVOmqa7NmhFGb5Jp384W0EisDdxox7Sip2f1B4MPdfN5z_tDtU85beJbBqCFl6TJdybu0PHVRX_sDW5q4Fgg'
 os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
+
+N_CODES = 20
+
 fs = s3fs.S3FileSystem(
     client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
     key = os.environ["AWS_ACCESS_KEY_ID"], 
     secret = os.environ["AWS_SECRET_ACCESS_KEY"], 
     token = os.environ["AWS_SESSION_TOKEN"])
+
 
 
 def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, n_codes: int):
@@ -139,10 +97,113 @@ codes = sample_codes(
     fs=fs,
     population_path=path,
     code_column=columns, 
-    n_codes=10)
+    n_codes=N_CODES)
 
-print(codes)
-labels, codes = zip(*codes)
+labels, target_codes = zip(*codes)
+
+emb_model = OpenAIEmbeddings(
+        model=os.environ['EMBEDDING_MODEL'],
+        openai_api_base=os.environ['URL_EMBEDDING_API'],
+        openai_api_key="EMPTY",
+        tiktoken_enabled=False,
+    )
+
+labels_embeddings = emb_model.embed_documents(list(labels))
+
+label_to_code_idx = {}
+
+for i, (label, label_emb, target_code) in enumerate(zip(labels, labels_embeddings, target_codes)):
+    embeddings.append(label_emb)
+    names.append(label[:50])
+    paths.append(f"Libellé -> Code cible: {target_code}")
+
+    label_idx = n_nace_nodes + i
+    if target_code in codes_dict: 
+        label_to_code_idx[label_idx] = codes_dict[target_code]
+        
+# %%
+print(label_to_code_idx)
+
+# %% UMAP
+reducer = umap.UMAP(random_state=42, n_neighbors=10, min_dist=0.1)
+embeddings = np.array(embeddings)
+coords = reducer.fit_transform(embeddings)
+X, Y = coords.T
+
+
+
+
+# %% Visualisation interactive
+fig = go.Figure()
+
+
+# 1. Ajouter les lignes de connexion AVANT les points
+for label_idx, code_idx in label_to_code_idx.items():
+    fig.add_trace(go.Scatter(
+        x=[X[label_idx], X[code_idx]],
+        y=[Y[label_idx], Y[code_idx]],
+        mode='lines',
+        line=dict(color='rgba(150, 150, 150, 0.8)', width=3, dash='solid'),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+
+# 2. Ajouter les nœuds NACE (cercles)
+fig.add_trace(go.Scatter(
+    x=X[:n_nace_nodes], 
+    y=Y[:n_nace_nodes],
+    mode='markers',
+    name='Codes NACE',
+    marker=dict(
+        size=10,
+        color=np.arange(n_nace_nodes),
+        colorscale='Viridis',
+        showscale=True,
+        line=dict(width=0.5, color='white'),
+        symbol='circle'
+    ),
+    text=[f"<b>{name}</b><br><br>{path}" for name, path in zip(names[:n_nace_nodes], paths[:n_nace_nodes])],
+    hovertemplate='%{text}<extra></extra>'
+))
+
+# 3. Ajouter les libellés (étoiles)
+fig.add_trace(go.Scatter(
+    x=X[n_nace_nodes:], 
+    y=Y[n_nace_nodes:],
+    mode='markers',
+    name='Libellés',
+    marker=dict(
+        size=15,
+        color='red',
+        symbol='star',  # ou 'diamond', 'square', 'cross', 'x', 'triangle-up'
+        line=dict(width=1, color='darkred')
+    ),
+    text=[f"<b>{name}</b><br><br>{path}" for name, path in zip(names[n_nace_nodes:], paths[n_nace_nodes:])],
+    hovertemplate='%{text}<extra></extra>'
+))
+
+fig.update_layout(
+    title="Nœuds NACE niveau 5 et libellés échantillonnés",
+    xaxis_title="UMAP 1",
+    yaxis_title="UMAP 2",
+    width=1400,
+    height=900,
+    hovermode='closest',
+    plot_bgcolor='white',
+    xaxis=dict(showgrid=True, gridcolor='lightgray'),
+    yaxis=dict(showgrid=True, gridcolor='lightgray'),
+    legend=dict(
+        yanchor="top",
+        y=0.99,
+        xanchor="right",
+        x=0.99
+    )
+)
+
+fig.show()
+
+# %%
+fig.write_html("umap_visualization.html")
 
 # %%
 result = await classify_navigator(labels[0])

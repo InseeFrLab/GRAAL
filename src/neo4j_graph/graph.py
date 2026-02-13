@@ -183,6 +183,7 @@ class Graph:
         RETURN node.CODE as code,
        node.LEVEL as level,
        node.NAME as name,
+       node.FINAL as is_final,
        node.text as description,
        node.Includes as includes,
        node.IncludesAlso as includes_also,
@@ -211,7 +212,7 @@ class Graph:
         MATCH (node {CODE: $code})-[:HAS_CHILD]->(child)
         RETURN child.CODE as code,
                child.LEVEL as level,
-               child.FINAL as final,
+               child.FINAL as is_final,
                child.NAME as name,
                child.text as description,
                child.Includes as includes,
@@ -233,6 +234,7 @@ class Graph:
         MATCH (node {{CODE: $code}})-[:HAS_CHILD*{levels}]->(descendant)
         RETURN descendant.CODE as code,
                descendant.LEVEL as level,
+               descendant.FINAL as is_final,
                descendant.NAME as name,
                descendant.text as description,
                descendant.Includes as includes,
@@ -255,6 +257,7 @@ class Graph:
         RETURN sibling.CODE as code,
                sibling.LEVEL as level,
                sibling.NAME as name,
+               sibling.FINAL as is_final,
                sibling.text as description,
                sibling.Includes as includes,
                sibling.Excludes as excludes
@@ -293,6 +296,7 @@ class Graph:
            OR toLower(node.text) CONTAINS toLower($search_term)
         RETURN node.CODE as code,
                node.LEVEL as level,
+               node.FINAL as is_final, 
                node.NAME as name,
                node.text as description
         ORDER BY node.LEVEL, node.CODE

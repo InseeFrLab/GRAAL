@@ -58,6 +58,7 @@ def make_tools(navigator):
             "code": info.get("code"),
             "name": info.get("name"),
             "level": info.get("level"),
+            "is_final": info.get("is_final"),
             "description": info.get("description", "")[:500],  # Limiter la taille
         }
 
@@ -76,10 +77,9 @@ def make_tools(navigator):
         """
         logger.info(f"Navigator: get_current_children called at the position {navigator.current_code}")
         children_found = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
-        keys_to_keep = ["code", "name"]
-        print(f"Keys_to_keep: {keys_to_keep}")
+        keys_to_keep = ["code", "name", "is_final"]
         filtered_children_found = [
-            {k:d[k] for k in keys_to_keep}
+            {k: d[k] for k in keys_to_keep}
             for d in children_found
         ]
         logger.info(f"Navigator children found: {filtered_children_found}")
@@ -371,25 +371,7 @@ def make_tools(navigator):
         go_to_parent,
         go_to_child,
         get_context_summary,
-        # submit_classification
     ]
-
-    """ return [
-        get_current_information,
-        get_code_information,
-        get_current_parent,
-        get_current_children,
-        get_current_siblings,
-        get_current_descendants,
-        navigate_to,
-        go_to_parent,
-        go_to_child,
-        reset_to_root,
-        get_context_summary,
-        get_navigation_history,
-        submit_classification  
-    ] """
-
 
 class Navigator(Graph):
     """
