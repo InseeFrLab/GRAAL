@@ -14,7 +14,7 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
-@observe
+# @observe
 async def classify_navigator(
     query: str | list[str], 
     experiment_name: str = "Navigator Classification"
@@ -40,10 +40,12 @@ async def classify_navigator(
     results = []
     for q in queries:
         logger.info(f"Classifying: {q}")
+        logger.info(f'Current position of the navigator: {navigator.current_code}')
         classifier = NavigatorAgenticClassifier(navigator)
         result = await classifier(q)
-        logger.info(f"Le résultat de la classification est : {result}")
         results.append(result)
+        logger.info(f"Le résultat de la classification est : {result}")
+        navigator.reset_to_root()
     
     # Return single result or list based on input type
     return results[0] if is_single else results
