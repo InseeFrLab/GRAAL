@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -29,9 +30,8 @@ def ask_model(system_prompt, model, user_prompt, temperature):
     return response.choices[0].message.content
 
 
-def retrieve_wording(message, delimiter=""):
-    message = message.split("### Economic activity")
-    if len(message) != 2:
+def retrieve_wording(message, delimiter="", nb_labels=10):
+    labels = re.split(r"\n\s+\d+.\s+", message)
+    if len(labels) != nb_labels:
         logger.warn("The answer might not be a wording.")
-        return message[0]
-    return message[1]
+    return labels

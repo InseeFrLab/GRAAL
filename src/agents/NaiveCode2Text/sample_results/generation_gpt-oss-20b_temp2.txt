@@ -1,0 +1,72 @@
+5 wordings have been generated in 16.91 sec.
+
+====================================
+Code: 50.10
+Name: Sea and coastal passenger water transport
+Result: 1. Coastal ferry operations  
+2. Water taxi services in marine environments  
+3. Tourist cruise vessel management  
+4. Scheduled sea transport for passengers  
+5. Non‑scheduled excursion boat services  
+6. Crew‑led fishing charter rentals  
+7. Passenger transport on coastal waters  
+8. Marine shuttle service between harbors  
+9. Guided sightseeing boat tours  
+10. Offshore passenger ferry management
+
+====================================
+Code: 85.59
+Name: Other education n.e.c.
+Result: 1. Conversational Spanish Workshop for Adults  
+2. Basic French Speaking Club for Community Learners  
+3. Advanced Sewing and Embroidery Class  
+4. Creative Quilting Project Series  
+5. Japanese Language Immersion Meetup  
+6. English Conversation Café for Beginners  
+7. Handicraft Sewing Techniques Seminar  
+8. Multilingual Conversation Circles  
+9. Pattern Cutting and Tailoring Workshop  
+10. Cultural Language Exchange Sessions
+
+====================================
+Code: 85.59
+Name: Other education n.e.c.
+Result: 1. Plant Protection Product Application Training  
+2. Integrated Pest Management Certification Workshop  
+3. Pesticide Handling and Safety Instruction Course  
+4. Crop Protection Chemical Usage Training Program  
+5. Herbicide Application Skills Development  
+6. Insecticide Use and Environmental Compliance Education  
+7. Fungicide Handling and Application Workshop  
+8. Agricultural Chemical Safety and Best‑Practice Seminar  
+9. Pesticide Application Competency Assessment  
+10. Plant Protection Product Training for Agronomists
+
+====================================
+Code: 46.64
+Name: Wholesale of other machinery and equipment
+Result: 1. Bulk distribution of shipping and storage pallets  
+2. Wholesale supply of wooden and plastic pallet assemblies  
+3. Large‑scale trading of intermodal pallets for logistics  
+4. Commercial pallet equipment procurement services  
+5. National distributor of pallet handling machinery  
+6. Logistics pallet wholesale and rental solutions  
+7. Industrial pallet systems wholesale supplier  
+8. Wholesale trade of pallet racks and transport pallets  
+9. Distribution of durable pallet solutions for warehousing  
+10. Bulk pallet equipment and accessories wholesale
+
+====================================
+Code: 78.10
+Name: Activities of employment placement agencies
+Result: 1. Comprehensive online job matching services  
+2. Digital recruitment and candidate placement platform  
+3. Remote employment liaison and career placement solutions  
+4. Virtual staffing agency for temporary and permanent roles  
+5. E‑platform for sourcing and securing job placements  
+6. Online workforce recruitment and placement services  
+7. Digital placement hub connecting employers with talent  
+8. Cloud‑based employment brokerage and placement operations  
+9. Internet‑based job placement and career matchmaking  
+10. Online staffing and recruitment facilitation services
+

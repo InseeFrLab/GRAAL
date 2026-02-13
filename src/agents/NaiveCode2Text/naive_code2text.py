@@ -17,8 +17,8 @@ load_dotenv(override=True)
 POPULATION_PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
 CODE_COLUMN = "nace2025"
 N_CODES = 5
-MODEL = "devstral-2:123b"
-TEMPERATURE = 2
+MODEL = "gpt-oss:20b"
+TEMPERATURE = 1
 
 start = time.perf_counter()
 
@@ -60,14 +60,14 @@ for i, code in enumerate(code_list):
     logger.info(f"Processing step {i+1}...")
     code_spec = code_specifier.get_code_information(notice_graph, code)
     system_prompt = prompt_builder.build_system_prompt()
-    user_prompt = prompt_builder.business_oriented_user_prompt(code_spec)
+    user_prompt = prompt_builder.build_user_prompt(code_spec)
     result = wording_generator.ask_model(
         system_prompt=system_prompt,
         model=MODEL,
         user_prompt=user_prompt,
         temperature=TEMPERATURE
     )
-    result = wording_generator.retrieve_wording(result)
+    # result = wording_generator.retrieve_wording(result)
     results.append(result)
 
 end = time.perf_counter()
