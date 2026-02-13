@@ -30,7 +30,7 @@ os.environ["AWS_SESSION_TOKEN"] = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2Nl
 os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
 
 # %% Config
-N_CODES = 10
+N_CODES = 20
 K_NN = 1
 
 PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
