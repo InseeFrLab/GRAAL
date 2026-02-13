@@ -114,3 +114,36 @@ def build_user_prompt(
         user_prompt = f"Write in {language} the name of a product you just bought."
 
     return user_prompt
+
+
+def business_oriented_user_prompt(
+        code_sample: dict,
+        language: str = "English",
+        notice: str = "NACE",
+        includes_divider: str = "\n-",
+        examples_divider: str = "\n",
+        excludes_divider: str = "\n",
+        ):
+
+    code_name = code_sample["name"]
+
+    user_prompt = f"""You just want to create a company in the field of {code_name}. Find a \
+        business idea and then summarize it in a short sentence with no verbs.
+
+        Here is the answer format I expect:
+        ### Description of the company
+        [Describe your business here]
+
+        ### Economic activity
+        [Add your summary sentence here]
+
+        Your summary sentence must use simple words, no technical ones. For the business idea, \
+        stay precisely under the field of {code_name}.
+        """
+
+    if code_sample["excludes"]:
+        user_prompt += f"""\nYour company cannot have an activity in these fields:
+        {code_sample["excludes"]}
+        """
+
+    return user_prompt

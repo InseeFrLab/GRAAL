@@ -1,0 +1,32 @@
+5 wordings have been generated in 27.37 sec.
+
+====================================
+Code: 43.32
+Name: Joinery installation
+Result: 
+Custom wooden doors, windows, and furniture installation for homes and businesses.
+
+====================================
+Code: 70.20
+Name: Business and other management consultancy activities
+Result: 
+Clear business advice for better company decisions and growth.
+
+====================================
+Code: 68.11
+Name: Buying and selling of own real estate
+Result: 
+**Purchase and resale of residential properties for profit.**
+
+====================================
+Code: 68.20
+Name: Rental and operating of own or leased real estate
+Result: 
+**Long-term rental of commercial properties for business use.**
+
+====================================
+Code: 43.41
+Name: Roofing activities
+Result: 
+Eco-friendly roof installation and repair with sustainable materials.
+

@@ -1,9 +1,11 @@
 import os
+import logging
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv(override=True)
+logger = logging.getLogger(__name__)
 
 LLM_API_KEY = os.environ["LLM_API_KEY"]
 LLM_URL = os.environ["LLM_URL"]
@@ -25,3 +27,11 @@ def ask_model(system_prompt, model, user_prompt, temperature):
     )
 
     return response.choices[0].message.content
+
+
+def retrieve_wording(message, delimiter=""):
+    message = message.split("### Economic activity")
+    if len(message) != 2:
+        logger.warn("The answer might not be a wording.")
+        return message[0]
+    return message[1]
