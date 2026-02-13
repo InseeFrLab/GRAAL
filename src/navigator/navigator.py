@@ -20,17 +20,43 @@ def make_tools(navigator):
         Retourne les informations du noeud actuel.
         Fournis les codes et les noms des noeuds enfants.  
         Pour avoir l'information détaillée sur un enfant, utilise get_code_information(code)
-
+        
         Returns:
             Informations complètes du noeud courant avec historique de navigation
         """
-        logger.info("Navigator: get_current_information called")
-        data = navigator._cached_get_code_information(navigator.current_code)
+        logger.info(f"Navigator: get_current_information called at the position: {navigator.current_code}")
+        
+        # Cas spécial pour root
+        if navigator.current_code == "root":
+            children = get_current_children()
+            result = {
+                "success": True,
+                "code": "root",
+                "level": 0,
+                "is_final": False,
+                "description": "Nœud racine de la nomenclature NACE. Utilisez get_current_children() pour voir les sections disponibles.",
+                "current_position": "root",
+            }
+            logger.info(f"get_current_information (root): Data sent to the llm: {result}")
+            return result
+        
+        # Cas normal (pas root)
+        data = _unfreeze_dict(navigator._cached_get_code_information(navigator.current_code))
         if not data:
-            logger.info("No data to sent")
-            return {"error": f"Code {navigator.current_code} not found"}
-        logger.info(f"Data sent to the llm: {data}")
-        return _unfreeze_dict(data)
+            logger.warning(f"No data for code: {navigator.current_code}")
+            return {
+                "success": False,
+                "error": f"Code {navigator.current_code} not found",
+                "current_position": navigator.current_code
+            }
+        
+        result = {
+            "success": True, 
+            **data, 
+            "current_position": navigator.current_code,
+        }
+        logger.info(f"get_current_information: Data sent to the llm: {result}")
+        return result
 
     @function_tool
     def get_code_information(code: str) -> Dict[str, Any]:
@@ -43,28 +69,33 @@ def make_tools(navigator):
         Returns:
             Informations complètes du code
         """
-        logger.info("Navigator: get_code_information called")
+        logger.info(f"Navigator: get_code_information called with code {code}")
 
         data = navigator._cached_get_code_information(code)
 
         if not data:
-            return {"error": f"Code {code} not found"}
+            logger.info(f"No data for the code: {code}")
+            return {
+                "success": False,
+                "error": f"Code {code} not found",
+                "current_position": navigator.current_code,
+            }
 
-        info = _unfreeze_dict(data)
+        data = _unfreeze_dict(data)
 
-        logger.info(f"Information available: {data}")
-
-        filtered_information = {
-            "code": info.get("code"),
-            "name": info.get("name"),
-            "level": info.get("level"),
-            "is_final": info.get("is_final"),
-            "description": info.get("description", "")[:500],  # Limiter la taille
+        filtered_data = {
+            "success": True,
+            "code": data.get("code"),
+            "name": data.get("name"),
+            "level": data.get("level"),
+            "is_final": data.get("is_final"),
+            "description": data.get("description", ""),
+            "current_position": navigator.current_code,
         }
 
-        logger.info(f"Filtered information: {filtered_information}")
-
-        return filtered_information
+        logger.info(f"get_code_information with code {code}: Data sent to the llm: {filtered_data}")
+        return filtered_data
+    
 
     @function_tool
     def get_current_children() -> List[Dict[str, Any]]:
@@ -82,7 +113,7 @@ def make_tools(navigator):
             {k: d[k] for k in keys_to_keep}
             for d in children_found
         ]
-        logger.info(f"Navigator children found: {filtered_children_found}")
+        logger.info(f"get_current_children: Data sent to the llm {filtered_children_found}")
         return filtered_children_found
 
     @function_tool
@@ -94,23 +125,9 @@ def make_tools(navigator):
             Liste des siblings du noeud courant
         """
         logger.info("Navigator: get_current_siblings called")
-        return _unfreeze_list_of_dicts(navigator._cached_get_siblings(navigator.current_code))
-
-    @function_tool
-    def get_current_descendants(levels: int = 2) -> List[Dict[str, Any]]:
-        """
-        Retourne les descendants du noeud actuel jusqu'à N niveaux.
-
-        Args:
-            levels: Nombre de niveaux à descendre (défaut: 2)
-
-        Returns:
-            Liste de tous les descendants
-        """
-        logger.info("Navigator: get_current_descendants called")
-        return _unfreeze_list_of_dicts(
-            navigator._cached_get_descendants(navigator.current_code, levels)
-        )
+        result = _unfreeze_list_of_dicts(navigator._cached_get_siblings(navigator.current_code))
+        logger.info(f"get_current_siblings: Data sent to the llm: {result}")
+        return result
 
     @function_tool
     def get_current_parent() -> Optional[Dict[str, Any]]:
@@ -122,7 +139,9 @@ def make_tools(navigator):
         """
         logger.info("Navigator: get_current_parent called")
         data = navigator._cached_get_parent(navigator.current_code)
-        return _unfreeze_dict(data) if data else None
+        result = _unfreeze_dict(data) if data else None
+        logger.info(f"get_current_parent: Data sent to the llm: {result}")
+        return result
 
     # ------------------------------------------------------------------
     # Navigation methods
@@ -143,6 +162,7 @@ def make_tools(navigator):
         info = get_code_information(code)
 
         if "error" in info:
+            logger.info("Error in navigate_to")
             return {
                 "success": False,
                 "error": f"Code {code} not found",
@@ -152,13 +172,14 @@ def make_tools(navigator):
         navigator.current_code = code
         navigator.history.append(code)
         logger.info(f"Navigated to: {code}")
-
-        return {
+        
+        result = {
             "success": True,
             "node": info,
             "current_position": navigator.current_code,
-            "navigation_depth": len(navigator.history),
         }
+        logger.info(f"navigate_to: Data sent to the llm: {result}")
+        return result
 
     @function_tool
     def go_to_parent() -> Dict[str, Any]:
@@ -169,10 +190,9 @@ def make_tools(navigator):
             Résultat de la navigation avec informations du parent
         """
         logger.info("Navigator: go_to_parent called")
-
-        parent_info = get_current_parent()
-
+        parent_info = _unfreeze_dict(navigator._cached_get_parent(navigator.current_code))
         if parent_info is None:
+            logger.warning("parent_info is None, go_to_parent failed")
             return {
                 "success": False,
                 "error": "No parent found (already at root level)",
@@ -183,14 +203,22 @@ def make_tools(navigator):
         navigator.current_code = parent_code
         navigator.history.append(parent_code)
         logger.info(f"Move up to: {parent_code}")
-
-        return {
-            "success": True,
-            "parent": parent_info,
-            "current_position": navigator.current_code,
-            "navigation_depth": len(navigator.history),
+        
+        parent_info_filtered = {
+            'code': parent_info['code'], 
+            'level': parent_info['level'], 
+            'name': parent_info['name'],
         }
 
+        result = {
+            "success": True,
+            "parent": parent_info_filtered,
+            "current_position": navigator.current_code,
+        }
+
+        logger.info(f"go_to_parent: data sent to the llm: {result}")
+        return result
+    
     @function_tool
     def go_to_child(child_code: str) -> Dict[str, Any]:
         """
@@ -217,17 +245,24 @@ def make_tools(navigator):
             }
 
         target_info = next((c for c in children if c["code"] == child_code), None)
+        new_node_information = {
+            "code": target_info["code"],
+            "level": target_info["level"],
+            "is_final": target_info['is_final'],
+            "name": target_info["name"], 
+            }
         navigator.current_code = child_code
         navigator.history.append(child_code)
         logger.info(f"Move down to: {child_code}")
         logger.info(f"Navigator.current_code is {navigator.current_code} and navigator.history is {navigator.history}")
 
-        return {
+        result = {
             "success": True,
-            "node": target_info,
+            "node": new_node_information,
             "current_position": navigator.current_code,
-            "navigation_depth": len(navigator.history),
         }
+        logger.info(f"go_to_child: Data sent to the llm: {result}")
+        return result
 
     @function_tool
     def reset_to_root() -> Dict[str, Any]:
@@ -250,127 +285,15 @@ def make_tools(navigator):
             "current_position": navigator.current_code,
         }
 
-    # ------------------------------------------------------------------
-    # Context methods
-    # ------------------------------------------------------------------
-
-    @function_tool
-    def get_context_summary() -> Dict[str, Any]:
-        """
-        Retourne un résumé complet de la position actuelle dans la hiérarchie.
-
-        Returns:
-            Résumé avec noeud actuel, parent, enfants, siblings et chemin
-        """
-        logger.info("Navigator: get_context_summary called")
-
-        current = get_current_information()
-        if "error" in current:
-            return current
-        children = get_current_children()
-        siblings = get_current_siblings()
-        parent = get_current_parent()
-
-        description = current.get("description", "")
-        truncated_desc = description[:200] + "..." if len(description) > 200 else description
-
-        result = {
-            "current_node": {
-                "code": current.get("code"),
-                "name": current.get("name"),
-                "level": current.get("level"),
-                "description": truncated_desc,
-            },
-            "parent_code": parent.get("code") if parent else None,
-            "children_count": len(children),
-            "siblings_count": len(siblings),
-            "navigation_path": " → ".join(navigator.history[-5:]),
-            "can_go_deeper": len(children) > 0,
-        }
-        logger.info("Navigator result for get_context_summary: {result}")
-        return result
-
-    @function_tool
-    def get_navigation_history() -> Dict[str, Any]:
-        """
-        Retourne l'historique complet de navigation.
-
-        Returns:
-            Historique et position courante
-        """
-        logger.info("Navigator: get_navigation_history called")
-
-        return {
-            "current_position": navigator.current_code,
-            "full_history": navigator.history,
-            "recent_history": navigator.history[-10:],
-            "navigation_depth": len(navigator.history),
-        }
-
-    @function_tool
-    def submit_classification(
-        query: str,
-        confidence: str,
-        reasoning: str, 
-        # TODO: rajouter "alternatives: str"
-    ) -> MatchVerificationInput:
-        """
-        OUTIL OBLIGATOIRE pour soumettre ta classification finale.
-        🎯 OUTIL DE SORTIE FINALE - Cette fonction retourne directement le résultat final attendu.
-        🚨 TU DOIS UTILISER CET OUTIL - Ne renvoie JAMAIS de texte libre pour la classification finale.
-        🚨 Appelle cette fonction avec les 3 paramètres - PAS de texte avant ou après l'appel.
-        
-        Args:
-            query: Le libellé EXACT de l'activité (copie-colle du libellé initial)
-                Exemple : "Fabrication de statuettes en bois dur"
-            
-            confidence: Un nombre décimal entre 0.0 et 1.0 (format : "0.95", "0.78", "0.60")
-                    ⚠️ UNIQUEMENT le nombre, pas de texte comme "très élevée" ou "forte"
-                    Guide :
-                    - "0.95" à "1.0" : correspondance parfaite
-                    - "0.75" à "0.95" : bonne correspondance
-                    - "0.50" à "0.75" : correspondance acceptable
-                    - < "0.50" : incertitude élevée
-            
-            reasoning: Ta justification complète en texte libre (ici tu peux écrire ce que tu veux)
-                    Structure suggérée :
-                    - Pourquoi ce code correspond
-                    - Chemin de navigation (division → groupe → classe)
-                    - Alternatives écartées
-                    - Éléments clés de la définition NACE
-        
-        Returns:
-            Dictionnaire avec activity, code, proposed_explanation, proposed_confidence
-        """
-
-        logger.info(f"""Navigator: submit_classification called with args \n 
-        query: {query}, \n
-        confidence: {confidence}, \n
-        reasoning: {reasoning} \n""")
-
-        result = {
-            "activity": query,
-            "code": navigator.current_code,
-            "proposed_explanation": reasoning,
-            "proposed_confidence": float(confidence),
-        }
-
-        logger.info(f""" Result: 
-        {json.dumps(result)}""")
-
-        return result
-
     logger.info("Navigator tools created")
 
     return [
         get_current_information,
         get_code_information,
-        get_current_parent,
         get_current_children,
         get_current_siblings,
         go_to_parent,
         go_to_child,
-        get_context_summary,
     ]
 
 class Navigator(Graph):
@@ -392,3 +315,8 @@ class Navigator(Graph):
         tool_names = [tool.name for tool in tools]
         logger.info(f"Tools accessible to the navigator agent: {tool_names}")
         return tools
+
+    def reset_to_root(self):
+        self.current_code = "root"
+        self.history = ["root"]
+        logger.info("Navigator: Reset to root")

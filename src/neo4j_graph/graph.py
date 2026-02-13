@@ -119,7 +119,7 @@ class Graph:
             password=neo4j_config.password,
             enhanced_schema=True,
         )
-
+    
         self.emb_model = OpenAIEmbeddings(
             model=os.environ["EMBEDDING_MODEL"],
             openai_api_base=os.environ["URL_EMBEDDING_API"],
@@ -181,26 +181,21 @@ class Graph:
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
         WITH node, parent, collect({code: child.CODE, name: child.NAME}) as children
         RETURN node.CODE as code,
-       node.LEVEL as level,
-       node.NAME as name,
-       node.FINAL as is_final,
-       node.text as description,
-       node.Includes as includes,
-       node.IncludesAlso as includes_also,
-       node.Excludes as excludes,
-       node.Implementation_rule as implementation_rule,
-       parent.CODE as parent_code,
-       children,
-       size(children) as children_count
+            node.LEVEL as level,
+            node.NAME as name,
+            node.FINAL as is_final,
+            node.text as description,
+            parent.CODE as parent_code,
+            children
         """
-        logger.info(f"_cached_get_code_information called with code {code}")
         result = self.graph.query(query, params={"code": code})
 
         if not result:
             logger.info("No result in _cached_get_code_information")
             return ()
-
-        return _freeze_dict(result[0])
+        result = _freeze_dict(result[0])
+        logger.info(f"_cached_get_code_information with code {code}: Return: {result}")
+        return result
 
     # ------------------------------------------------------------------
     # get_children
@@ -281,6 +276,7 @@ class Graph:
         """
         result = self.graph.query(query, params={"code": code})
         if not result:
+            logger.info("No result for _cached_get_parent")
             return ()
         return _freeze_dict(result[0])
 

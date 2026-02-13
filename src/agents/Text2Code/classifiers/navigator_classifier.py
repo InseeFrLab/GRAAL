@@ -24,5 +24,6 @@ class NavigatorAgenticClassifier(BaseClassifier):
         Après avoir vérifié que votre position actuelle est bien finale (is_final = 1), 
         vous renverrez votre position. 
         Si vous n'avez pas réussi à atteindre une position finale, dites-le. 
-        Soyez méthodique et justifiez chaque choix !
+        Soyez méthodique et justifiez chaque choix ! Commence par get_current_children() pour voir les options disponibles.
         """
+
