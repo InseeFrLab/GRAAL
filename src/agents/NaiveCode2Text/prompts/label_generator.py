@@ -1,0 +1,182 @@
+import logging
+import re
+
+import s3fs
+import pandas as pd
+from openai import OpenAI
+
+logger = logging.getLogger(__name__)
+
+
+def ask_model(
+        system_prompt: str,
+        user_prompt: str,
+        llm_client: OpenAI,
+        model: str,
+        temperature: float
+        ) -> str:
+    """
+    Dialogue with the model.
+    The model and the temperature are to be configured in the config.py file.
+
+    Args:
+        system_prompt (str): The system prompt (orders).
+        user_prompts (str): The user prompt (adapted to a specific case).
+
+    Returns:
+        str: The answer returned by the model.
+    """
+    response = llm_client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt}
+        ],
+        temperature=temperature,
+    )
+
+    if response.choices:
+        return response.choices[0].message.content
+
+    else:
+        logger.warn("The LLM did not return an answer.")
+        return ""
+
+
+def retrieve_label(
+        label_listing: str,
+        delimiter: str = r"\n\s+\d+.\s+",
+        nb_labels: int = 10
+        ) -> list:
+    """
+    Split the message which should correspond to a label listing into a list of labels.
+
+    Args:
+        label_listing (str): The listing.
+        delimiter (str): What should separate each label.
+        nb_label (int): The expected number of labels.
+            Send a warning if it differs from the splitting length.
+
+    Returns:
+        str: The list of labels.
+    """
+    # Search and split
+    label_list = re.split(r"\n\s+\d+.\s+", label_listing)
+    label_list[0] = label_list[0].replace("1. ", "")
+
+    # Quick check
+    if len(label_list) != nb_labels:
+        logger.warn("The answer might not be a wording.")
+
+    return label_list
+
+
+def export_to_txt(
+        codes: list,
+        names: list,
+        labels: list,
+        file_path: str,
+        generation_time: float
+        ) -> bool:
+    """
+    Save results to file .txt
+    The number of codes used for generation should not exceed 100.
+    Else, upload in .parquet format
+
+    Args:
+        codes (list): List of codes generated.
+        names (list): List of names for the codes generated
+        labels (list of lists): List of labels for each code
+        file_path (str): The .txt file path.
+        generation_time (float): The time it took to generate.
+
+    Returns:
+        bool: True if the file has been correctly saved.
+    """
+    if len(labels) == 0 or len(labels) > 100:
+        return False
+
+    nb_labels = len(labels) * len(labels[0])
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"{nb_labels} wordings have been generated in {generation_time:.2f} sec.\n\n")
+        f.write("=" * 36 + "\n")
+
+        for i, code in enumerate(codes):
+            name = names[i]
+            f.write(f"Code: {code}\n")
+            f.write(f"Name: {name}\n")
+            f.write("Result:\n")
+
+            for j, label in enumerate(labels[i]):
+                f.write(f"{j}. {label}\n")
+
+            f.write("\n" + "=" * 36 + "\n")
+
+    return True
+
+
+def export_to_parquet(
+        codes: list,
+        names: list,
+        labels: list,
+        file_path: str,
+        fs: s3fs.S3FileSystem
+        ) -> bool:
+    """
+    Save results to file .txt
+    The number of codes used for generation should not exceed 100.
+    Else, upload in .parquet format
+
+    Args:
+        codes (list): List of codes used for the generation.
+        names (list): List of names for the codes used for the generation.
+        labels (list of lists): List of generated labels for each code.
+        file_path (str): The .parquet file path.
+        fs (float): The filesystem for exportation.
+
+    Returns:
+        bool: True if the file has been correctly saved.
+    """
+
+    # Basic validation
+    if not (len(codes) == len(names) == len(labels)):
+        logger.warn("codes, names, and labels must have the same length.")
+        return False
+
+    if len(codes) == 0:
+        logger.warn("Empty input: nothing to export.")
+        return False
+
+    # Flatten structure
+    rows = []
+
+    for code, name, label_list in zip(codes, names, labels):
+
+        if not isinstance(label_list, list):
+            logger.warn("Labels must be stored in a list.")
+            return False
+
+        for label in label_list:
+            rows.append({
+                "code": code,
+                "name": name,
+                "label": label
+            })
+
+    # Save to parquet
+    df = pd.DataFrame(rows)
+
+    existing_df = pd.read_parquet(file_path)
+    df = pd.concat([existing_df, df], ignore_index=True)
+
+    df.to_parquet(
+        file_path,
+        engine="pyarrow",
+        index=False,
+        filesystem=fs
+    )
+
+    return True

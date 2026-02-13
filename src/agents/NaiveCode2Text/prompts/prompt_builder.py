@@ -1,48 +1,104 @@
+import logging
+
 import numpy.random as npr
 
+logger = logging.getLogger(__name__)
 
-def select_random_spec(all_spec, min_spec, max_spec, geom_prob=0.7):
+
+def select_random_items(
+        all_items: list,
+        min_items: int = 1,
+        max_items: int = None,
+        geom_prob: float = 0.7
+        ) -> list:
     """
-    Select random specifications from a list.
+    Select random items from a list (no replacement).
     The number of elements selected is drawn according to a geometric law.
+
+    Args:
+        all_items (list): The list of the items to sample from.
+        min_items (int): The minimum number of items to pick
+                        (offset for the geometric law)
+        max_items (int): The maximum number of items to pick
+                        (if None, equal to the number of items)
+        geom_prob (float): parameter to give for the geometric law
+
+    Returns:
+        list: Random items sampled from the original list
     """
-    random_spec = npr.choice(
-            all_spec,
-            min(npr.geometric(geom_prob)-1+min_spec, max_spec),
+    # Set max_items to appropriate value
+    if max_items is None:
+        max_items = len(all_items)-1
+    max_items = min(max_items, len(all_items)-1)
+    min_items = max(min(min_items, len(all_items)-1), 0)
+
+    # Sample
+    random_items = npr.choice(
+            all_items,
+            min(npr.geometric(geom_prob)-1+min_items, max_items),
             replace=False
         )
-    return random_spec
+    return random_items
 
 
 def split_spec_and_select(
-        all_spec,
-        examples_divider,
-        min_spec,
-        spec_prob=0.7,
-        example_prob=0.5
-        ):
+        all_spec: list,
+        examples_divider: str,
+        spec_geom_prob: float = 0.7,
+        spec_min: int = 1,
+        spec_max: int = None,
+        examples_geom_prob: float = 0.5,
+        examples_min: int = 1,
+        examples_max: int = None,
+        ) -> list:
     """
-    Select random specifications from a list.
+    Select random specifications from a list (no replacement).
     Handle the case where specifications contain examples.
+
+    Args:
+        all_spec (list): The list of the specifications to sample from.
+        examples_divider (str): Divider for examples inside each specification.
+        spec_geom_prob (float): parameter to give for the geometric law for spec.
+        spec_min (int): The minimum number of specifications to pick
+                        (offset for the geometric law)
+        spec_max (int): The maximum number of specifications to pick
+                        (if None, equal to the number of items)
+        examples_geom_prob (float): parameter to give for the geometric law for examples.
+        examples_min (int): The minimum number of examples to pick
+                        (offset for the geometric law)
+        examples_max (int): The maximum number of examples to pick
+                        (if None, equal to the number of items)
+
+    Returns:
+        list: Random spec with examples sampled from the original list
     """
     final_spec = []
-    random_spec = select_random_spec(
-        all_spec=all_spec,
-        min_spec=1,
-        max_spec=len(all_spec),
-        geom_prob=spec_prob
+
+    # First, select spec to keep
+    random_spec = select_random_items(
+        all_items=all_spec,
+        min_items=spec_min,
+        max_items=spec_max,
+        geom_prob=spec_geom_prob
     )
 
+    # Then, select examples to keep within each spec that remains
     for spec in random_spec:
         spec = spec.split(examples_divider)
+
+        # If the spec contains examples
         if len(spec) >= 2:
-            sub_spec = select_random_spec(
-                all_spec=spec[1:],
-                min_spec=1,
-                max_spec=len(spec)-1,
-                geom_prob=example_prob
+            sub_spec = select_random_items(
+                all_items=spec[1:],
+                min_items=examples_min,
+                max_items=examples_max,
+                geom_prob=examples_geom_prob
             )
+
+            # Add the spec description
             spec = spec[0]
+
+            # Add examples
             for s in sub_spec:
                 spec += s
 
@@ -53,131 +109,115 @@ def split_spec_and_select(
     return final_spec
 
 
-def build_system_prompt(language: str = "English", nb_labels: int = 10):
+def build_system_prompt(
+        prompt_path: str,
+        language: str = "English",
+        nb_labels: int = 10,
+        ) -> str:
     """
     Build system prompt.
+
+    Args:
+        language (str): English or French.
+        nb_labels (int): The number of labels to generate.
+
+    Returns:
+        str: The system prompt.
     """
-    if language == "English":
-        system_prompt = f"""
-You are an expert in classification systems and synthetic data generation for \
-    training coding models.
 
-Your task is to generate realistic labels that STRICTLY correspond to a given code, \
-    based on its official description.
+    # Selecting language
+    if language == "French":
+        suffix = "_fr"
+    elif language == "English":
+        suffix = "_en"
+    else:
+        logger.warn("Supported languages are English and French. Switching to English...")
 
-Mandatory constraints:
+    # Importing prompt
+    file_path = prompt_path + "system_prompt" + suffix + ".txt"
+    with open(file=file_path, mode='r') as f:
+        system_prompt = f.read()
 
-1. You must produce exactly {nb_labels} labels.
-
-2. Each label must:
-    - align with the title and included domains
-    - strictly comply with the criteria defined in the description
-    - never fall under any excluded domains
-
-3. The labels must be:
-    - lexically diverse (no trivial rewordings)
-    - structurally varied (short phrases, long descriptions, nominal forms, technical \
-        wording, administrative phrasing, business-style wording, etc.)
-    - realistic in a professional context
-
-4. Never mention the code in the labels.
-
-5. Do not explain your reasoning.
-
-6. Output ONLY the numbered list of the {nb_labels} labels.
-
-7. Avoid semantic duplicates.
-
-8. Include different levels of specificity (general to highly specific cases).
-
-Important:
-If a potential label risks falling into an excluded domain, you must discard it.
-
-Output format:
-1. …
-2. …
-3. …
-    …
-{nb_labels}. …
-        """
-
-    elif language == "French":
-        system_prompt = f"""
-Tu es un expert en nomenclatures et en production de données synthétiques pour \
-l'entraînement de modèles de codification.
-
-Ta mission est de générer des libellés réalistes correspondant STRICTEMENT à un \
-code donné, selon sa notice officielle.
-
-Contraintes obligatoires :
-
-1. Tu dois produire exactement {nb_labels} libellés.
-
-2. Chaque libellé doit :
-    - correspondre au titre et aux domaines inclus
-    - respecter les critères définis dans la notice
-    - ne jamais relever des domaines exclus
-
-3. Les libellés doivent être :
-    - variés lexicalement (pas de reformulation triviale)
-    - de structures différentes (phrases courtes, longues, nominales, techniques, \
-        formulations administratives, formulations métier, etc.)
-    - réalistes dans un contexte professionnel
-
-4. Ne jamais mentionner le code dans les libellés.
-
-5. Ne jamais expliquer ton raisonnement.
-
-6. Ne produire QUE la liste numérotée des {nb_labels} libellés.
-
-7. Éviter les doublons sémantiques.
-
-8. Introduire différents niveaux de précision (général / spécifique).
-
-Important :
-Si un libellé risque d'entrer dans un domaine exclu, tu dois l'écarter.
-
-Format de sortie :
-
-1. …
-2. …
-3. …
-    …
-{nb_labels}. …
-"""
+    # Indicating the correct number of labels
+    system_prompt = system_prompt.replace("{nb_labels}", str(nb_labels))
     return system_prompt
 
 
 def build_user_prompt(
-        code_sample: dict,
+        code_details: dict,
         language: str = "English",
         nb_labels: int = 10,
         includes_divider: str = "\n-",
         examples_divider: str = "\n",
         excludes_divider: str = "\n",
-        ):
+        random_spec_sampling: bool = False,
+        random_includes_geom_prob: float = 0.7,
+        random_includes_min: int = 1,
+        random_includes_max: int = None,
+        random_examples_geom_prob: float = 0.5,
+        random_examples_min: int = 1,
+        random_examples_max: int = None,
+        ) -> str:
     """
-    Build user prompt
+    Build user prompt.
+
+    Args:
+        code_details (dict): A dictionnary that includes details about the code.
+            Necessary keys:
+            - code: the code itself
+            - name: the title of the code
+            - includes: what the code includes
+            - includes_also: what the code includes also
+            - excludes: what the code excludes
+            These keys should be the same as in the Neo4j database.
+        language (str): English or French
+        nb_labels (int): The number of labels to generate.
+        includes_divider (str): Divider for includes inside includes and includes_also.
+        examples_divider (str): Divider for examples inside each include.
+        random_spec_sampling (bool): Select a random sample from all includes and examples.
+        random_includes_geom_prob (float): parameter to give for the geometric law for includes.
+        random_includes_min (int): The minimum number of includes to pick
+                        (offset for the geometric law)
+        random_includes_max (int): The maximum number of includes to pick
+                        (if None, equal to the number of items)
+        random_examples_geom_prob (float): parameter to give for the geometric law for examples.
+        random_examples_min (int): The minimum number of examples to pick
+                        (offset for the geometric law)
+        random_examples_max (int): The maximum number of examples to pick
+                        (if None, equal to the number of items)
+
+    Returns:
+        list: Random spec with examples sampled from the original list
     """
     # Extracting useful information
-    if code_sample["includes"]:
-        all_includes = code_sample["includes"].split(includes_divider)[1:]
+    if code_details["includes"]:
+        all_includes = code_details["includes"].split(includes_divider)[1:]
 
         # Case with includes_also: extend the Includes
-        if code_sample["includes_also"]:
-            all_includes += code_sample["includes_also"].split(includes_divider)[1:]
+        if code_details["includes_also"]:
+            all_includes += code_details["includes_also"].split(includes_divider)[1:]
 
-        # Select includes randomly
-        random_includes = split_spec_and_select(
-            all_spec=all_includes,
-            examples_divider=examples_divider,
-            min_spec=1
-        )
+        if random_spec_sampling:
+            # Select includes randomly
+            random_includes = split_spec_and_select(
+                all_spec=all_includes,
+                examples_divider=examples_divider,
+                spec_geom_prob=random_includes_geom_prob,
+                spec_min=random_includes_min,
+                spec_max=random_includes_max,
+                examples_geom_prob=random_examples_geom_prob,
+                examples_min=random_examples_min,
+                examples_max=random_examples_max
+            )
+        else:
+            # Select all includes
+            random_includes = all_includes
     else:
         random_includes = []
 
-    if code_sample["excludes"]:
-        all_excludes = code_sample["excludes"].split(excludes_divider)[1:]
+    # Add all excludes
+    if code_details["excludes"]:
+        all_excludes = code_details["excludes"].split(excludes_divider)[1:]
     else:
         all_excludes = []
 
@@ -185,10 +225,10 @@ def build_user_prompt(
     if language == "English":
         user_prompt = "I would like to generate labels corresponding to the following code:"
 
-        user_prompt += f"\n\nCode : {code_sample["code"]}"
+        user_prompt += f"\n\nCode : {code_details["code"]}"
 
-        if code_sample["name"]:
-            user_prompt += f"\n\nTitle : {code_sample["name"]}"
+        if code_details["name"]:
+            user_prompt += f"\n\nTitle : {code_details["name"]}"
 
         if len(random_includes) >= 1:
             user_prompt += "\n\nIncluded domains:"
@@ -208,10 +248,10 @@ def build_user_prompt(
     elif language == "French":
         user_prompt = "Je souhaite générer des libellés correspondant au code suivant :"
 
-        user_prompt += f"\n\nCode : {code_sample["code"]}"
+        user_prompt += f"\n\nCode : {code_details["code"]}"
 
-        if code_sample["name"]:
-            user_prompt += f"\n\nTitre : {code_sample["name"]}"
+        if code_details["name"]:
+            user_prompt += f"\n\nTitre : {code_details["name"]}"
 
         if len(random_includes) >= 1:
             user_prompt += "\n\n Domaines inclus :"

@@ -1,0 +1,78 @@
+5 wordings have been generated in 24.97 sec.
+
+====================================
+Code: 79.12
+Name: Tour operator activities
+Result:
+0. Coordination of domestic and international tour itineraries  
+2. Development of bespoke group travel packages  
+3. Management of bundled accommodation and transport arrangements  
+4. Promotion of pre‑planned tour circuits  
+5. Assembly of sightseeing and hospitality components for tour operators  
+6. Marketing of curated travel experiences across multiple destinations  
+7. Design of all‑inclusive tour packages for corporate groups  
+8. Integration of transport, lodging, and activity services for packaged trips  
+9. Oversight of cross‑border tour logistics and compliance  
+10. Facilitation of travel agency collaborations for packaged tour offerings
+
+====================================
+Code: 70.20
+Name: Business and other management consultancy activities
+Result:
+0. Development of cost‑accounting frameworks for mid‑size enterprises  
+2. Implementation of budget‑control systems in manufacturing firms  
+3. Design of public procurement evaluation procedures for local governments  
+4. Strategic business start‑up advisory for technology ventures  
+5. Management audit certification services for family‑owned businesses  
+6. Operational efficiency consulting for retail chains  
+7. Executive management planning for multinational corporations  
+8. Process re‑engineering for healthcare service providers  
+9. Governance structure assessment for non‑profit organizations  
+10. Performance measurement system design for construction firms
+
+====================================
+Code: 81.23
+Name: Other cleaning activities
+Result:
+0. Industrial fleet sanitation and upkeep  
+2. Maritime tanker interior hygiene services  
+3. Aircraft cabin decontamination and maintenance  
+4. Snow removal and de‑icing for public infrastructure  
+5. Transit vehicle cleaning and disinfecting operations  
+6. Street sweep and roadway debris removal  
+7. Bottling plant cleaning and sanitation  
+8. Recreational pool maintenance and sanitization  
+9. Large‑scale decontamination and extermination tasks  
+10. Roadside waste collection and cleaning services
+
+====================================
+Code: 55.20
+Name: Holiday and other short-stay accommodation
+Result:
+0. Short‑stay holiday villas and apartments  
+2. Private mountain cabin getaways  
+3. Guest rooms offered by individual homeowners  
+4. Bungalow rentals for weekend breaks  
+5. Bed‑and‑breakfast lodging without daily cleaning  
+6. Hostel dormitory accommodations for travelers  
+7. Visitor flats available for brief stays  
+8. Cottage lodging without housekeeping services  
+9. Alpine lodge stays for short visits  
+10. Cottage and cabin rentals for seasonal retreats
+
+====================================
+Code: 85.59
+Name: Other education n.e.c.
+Result:
+0. Meditation and Mindfulness Practice Sessions  
+2. Parent–Child Relationship Enhancement Workshops  
+3. Everyday Computer Literacy for Non‑Specialists  
+4. Advanced Speed‑Reading Techniques Course  
+5. Public Speaking and Presentation Mastery Training  
+6. Introductory Sewing and Textile Design Classes  
+7. Lifeguard Safety Certification Program  
+8. Wilderness Survival Skills for Outdoor Adventurers  
+9. Wine and Oenology Appreciation Series  
+10. Safe Use of Agricultural Plant Protection Products Training
+
+====================================
