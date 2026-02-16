@@ -20,7 +20,7 @@ Mandatory constraints:
 
 5. Do not explain your reasoning.
 
-6. Output ONLY the numbered list of the {nb_labels} labels.
+6. Output ONLY the list of the {nb_labels} labels.
 
 7. Avoid semantic duplicates.
 
@@ -28,10 +28,3 @@ Mandatory constraints:
 
 Important:
 If a potential label risks falling into an excluded domain, you must discard it.
-
-Output format:
-1. …
-2. …
-3. …
-   …
-{nb_labels}. …

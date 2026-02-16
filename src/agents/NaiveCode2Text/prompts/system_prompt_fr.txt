@@ -20,7 +20,7 @@ Contraintes obligatoires :
 
 5. Ne jamais expliquer ton raisonnement.
 
-6. Ne produire QUE la liste numérotée des {nb_labels} libellés.
+6. Ne produire QUE la liste des {nb_labels} libellés.
 
 7. Éviter les doublons sémantiques.
 
@@ -28,11 +28,3 @@ Contraintes obligatoires :
 
 Important :
 Si un libellé risque d'entrer dans un domaine exclu, tu dois l'écarter.
-
-Format de sortie :
-
-1. …
-2. …
-3. …
-   …
-{nb_labels}. …

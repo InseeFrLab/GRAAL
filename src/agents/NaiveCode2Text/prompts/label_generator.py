@@ -4,8 +4,29 @@ import re
 import s3fs
 import pandas as pd
 from openai import OpenAI
+from pydantic import BaseModel, Field, create_model
+from typing import List, Type
 
 logger = logging.getLogger(__name__)
+
+
+def build_label_generation_model(n_labels: int) -> Type[BaseModel]:
+    """
+    Dynamically build a Pydantic model enforcing exactly n_labels.
+    """
+
+    return create_model(
+        "LabelGeneration",
+        labels=(
+            List[str],
+            Field(
+                ...,
+                min_items=n_labels,
+                max_items=n_labels,
+                description=f"Exactly {n_labels} generated labels"
+            )
+        )
+    )
 
 
 def ask_model(
@@ -13,7 +34,8 @@ def ask_model(
         user_prompt: str,
         llm_client: OpenAI,
         model: str,
-        temperature: float
+        temperature: float,
+        LabelGeneration: Type[BaseModel]
         ) -> str:
     """
     Dialogue with the model.
@@ -30,19 +52,18 @@ def ask_model(
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": user_prompt}
+            {"role": "user", "content": user_prompt}
         ],
         temperature=temperature,
+        response_format=LabelGeneration
     )
 
     if response.choices:
-        return response.choices[0].message.content
+        return response.choices[0].message.parsed
 
     else:
         logger.warn("The LLM did not return an answer.")
-        return ""
+        return None
 
 
 def retrieve_label(

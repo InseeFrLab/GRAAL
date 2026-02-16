@@ -71,6 +71,15 @@ if __name__ == "__main__":
     name_list = []
     label_list = []
 
+    # Prepare the model
+    LabelGenerationModel = label_generator.build_label_generation_model(NB_LABELS)
+
+    system_prompt = prompt_builder.build_system_prompt(
+            prompt_path=PROMPT_PATH,
+            language=LANGUAGE,
+            nb_labels=NB_LABELS
+        )
+
     for i, code in enumerate(code_list):
         logger.info(f"Processing step {i+1}...")
 
@@ -84,11 +93,6 @@ if __name__ == "__main__":
         name_list.append(code_details["name"])
 
         # Build prompts
-        system_prompt = prompt_builder.build_system_prompt(
-            prompt_path=PROMPT_PATH,
-            language=LANGUAGE,
-            nb_labels=NB_LABELS
-        )
         user_prompt = prompt_builder.build_user_prompt(
             code_details=code_details,
             language=LANGUAGE,
@@ -106,19 +110,16 @@ if __name__ == "__main__":
             )
 
         # Ask the chatbot
-        result = label_generator.ask_model(
+        generation = label_generator.ask_model(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             llm_client=LLM_CLIENT,
             model=MODEL,
-            temperature=TEMPERATURE
+            temperature=TEMPERATURE,
+            LabelGeneration=LabelGenerationModel
         )
-        labels = label_generator.retrieve_label(
-            label_listing=result,
-            delimiter=r"\s+\d+.\s+",
-            nb_labels=NB_LABELS
-            )
-        label_list.append(labels)
+
+        label_list.append(generation.labels)
 
         if OUTPUT_FORMAT == ".parquet" and (i+1) % BATCH_SIZE == 0:
             logger.info("Saving intermediate results...")
