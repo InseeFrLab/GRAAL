@@ -24,10 +24,7 @@ from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
 from src.main import classify_navigator
 
-os.environ["AWS_ACCESS_KEY_ID"] = 'OPW7XDWAN8X4O7N5UBNI'
-os.environ["AWS_SECRET_ACCESS_KEY"] = 'IcJqYK4pd0l6gNnezFQD+tfIhK8EFAyHiQUc+jBJ'
-os.environ["AWS_SESSION_TOKEN"] = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NLZXkiOiJPUFc3WERXQU44WDRPN041VUJOSSIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sImF1ZCI6WyJtaW5pby1kYXRhbm9kZSIsIm9ueXhpYSIsImFjY291bnQiXSwiYXV0aF90aW1lIjoxNzcwNjI4NzkzLCJhenAiOiJvbnl4aWEiLCJlbWFpbCI6InRoZW8uZmVycnlAaW5zZWUuZnIiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZXhwIjoxNzcxNjAxOTMyLCJmYW1pbHlfbmFtZSI6IkZlcnJ5IiwiZ2l2ZW5fbmFtZSI6IlRoZW8iLCJncm91cHMiOlsiVVNFUl9PTllYSUEiLCJhcGUiLCJtb2RlbHMtaGYiLCJzc3BsYWIiXSwiaWF0IjoxNzcwOTk3MTMyLCJpc3MiOiJodHRwczovL2F1dGgubGFiLnNzcGNsb3VkLmZyL2F1dGgvcmVhbG1zL3NzcGNsb3VkIiwianRpIjoib25ydHJ0OmUwMzE3NGNmLTc2ZmQtZDMzYi1iYjI3LTM3Y2UzNWEwZjA2NSIsImxvY2FsZSI6ImZyIiwibmFtZSI6IlRoZW8gRmVycnkiLCJwb2xpY3kiOiJzdHNvbmx5IiwicHJlZmVycmVkX3VzZXJuYW1lIjoidGhlb2YiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiIsInZpcCIsImRlZmF1bHQtcm9sZXMtc3NwY2xvdWQiXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwidmlwIiwiZGVmYXVsdC1yb2xlcy1zc3BjbG91ZCJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGdyb3VwcyBlbWFpbCIsInNpZCI6ImRiYTY1NzAxLWE3OTctMDFjZi0yYWE1LTRkYjkzY2Q0ZWM4NiIsInN1YiI6IjNlYTdiY2Q0LWJkMjMtNDA2Yy1hYmE2LWFmMzM3ZjBlMTAzNiIsInR5cCI6IkJlYXJlciJ9.a6uZ8t0q3t1dFjLCYdN_jOAE4fvjeiTUhQpQh6WKHwKTs7mO7avzXasdpMF65tPiI7elSlITIQUeOuGdFYCFjQ'
-os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
+
 
 # %% Config
 N_CODES = 20
@@ -87,7 +84,21 @@ for idx, record in enumerate(results):
     paths.append(path_str)
 
 n_nace_nodes = len(embeddings)
-# %% Récupération d'un échantillon de libellés et codes 
+
+
+
+# %%
+import os
+import s3fs
+
+fs = s3fs.S3FileSystem(
+    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
+    key = os.environ["AWS_ACCESS_KEY_ID"], 
+    secret = os.environ["AWS_SECRET_ACCESS_KEY"], 
+    token = os.environ["AWS_SESSION_TOKEN"])
+
+
+
 def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, n_codes: int):
     """
     Sample codes using Polars from S3.
@@ -105,6 +116,9 @@ def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, 
     
     return sampled[code_column].to_numpy()
 
+    label_idx = n_nace_nodes + i
+    if target_code in codes_dict: 
+        label_to_code_idx[label_idx] = codes_dict[target_code]
 
 codes = sample_codes(
     fs=fs,
