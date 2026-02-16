@@ -1,4 +1,21 @@
-def get_code_information(graph, code: str):
+from src.neo4j_graph.graph import Graph
+
+
+def get_code_information(
+        graph: Graph,
+        code: str
+        ) -> dict:
+    """
+    Retrieve code specifications from a Neo4j graph
+
+    Args:
+        graph (Graph from local library): The Neo4j graph.
+        code (str): The code to specify.
+
+    Returns:
+        dict: Every accessible information of the code in the graph.
+    """
+
     query = """
     MATCH (node {CODE: $code})
     OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
@@ -25,5 +42,16 @@ def get_code_information(graph, code: str):
     return result[0]
 
 
-def NAF_to_NACE(code):
+def NAF_to_NACE(
+        code: str
+        ) -> str:
+    """
+    For the case of NAF code format (DDDDL), transform it into NACE (DD.DD).
+
+    Args:
+        code (str): The code in NAF format to transform.
+
+    Returns:
+        str: The code in NACE format.
+    """
     return code[0:2] + '.' + code[2:4]

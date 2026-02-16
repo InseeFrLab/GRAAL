@@ -61,6 +61,7 @@ if __name__ == "__main__":
         password=os.environ["NEO4J_PWD"]
     ))
 
+    # Define an automatic name for output
     file_name = f"generation_{MODEL}_temp{TEMPERATURE}".replace(":", "-").replace(".", "") \
                 + OUTPUT_FORMAT
     FINAL_PATH = OUTPUT_PATH + file_name
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     name_list = []
     label_list = []
 
-    # Prepare the model
+    # Model set up
     LabelGenerationModel = label_generator.build_label_generation_model(NB_LABELS)
 
     system_prompt = prompt_builder.build_system_prompt(

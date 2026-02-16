@@ -7,13 +7,19 @@ def sample_codes(
         fs: s3fs.S3FileSystem,
         population_path: str,
         code_column: str,
-        n_codes: str
+        n_codes: int
         ) -> np.ndarray:
     """
     Sample codes with replacement using dataframes from Polars.
 
     Args:
-        fs: S3FileSystem configuré
+        fs (S3FileSystem): The filesystem for importation.
+        population_path (str): The path of the parquet file of the population.
+        code_column (str): The name of the column for codes.
+        n_codes (int): The number of codes to sample.
+
+    Returns:
+        numpy.ndarray: An array of n_codes codes sampled with replacement.
     """
 
     with fs.open(population_path, 'rb') as f:
@@ -32,6 +38,15 @@ def sample_codes_lazy(
         ) -> np.ndarray:
     """
     Sample codes with replacement using lazyframes from Polars.
+
+    Args:
+        fs (S3FileSystem): The filesystem for importation.
+        population_path (str): The path of the parquet file of the population.
+        code_column (str): The name of the column for codes.
+        n_codes (int): The number of codes to sample.
+
+    Returns:
+        numpy.ndarray: An array of n_codes codes sampled with replacement.
     """
 
     with fs.open(population_path, 'rb') as f:

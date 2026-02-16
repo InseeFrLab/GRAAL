@@ -10,9 +10,15 @@ from typing import List, Type
 logger = logging.getLogger(__name__)
 
 
-def build_label_generation_model(n_labels: int) -> Type[BaseModel]:
+def build_label_generation_model(nb_labels: int) -> Type[BaseModel]:
     """
     Dynamically build a Pydantic model enforcing exactly n_labels.
+
+    Args:
+        nb_labels (int): The number of labels.
+
+    Returns:
+        Type[BaseModel]: The expected format for output.
     """
 
     return create_model(
@@ -21,9 +27,9 @@ def build_label_generation_model(n_labels: int) -> Type[BaseModel]:
             List[str],
             Field(
                 ...,
-                min_items=n_labels,
-                max_items=n_labels,
-                description=f"Exactly {n_labels} generated labels"
+                min_items=nb_labels,
+                max_items=nb_labels,
+                description=f"Exactly {nb_labels} generated labels"
             )
         )
     )
@@ -44,6 +50,10 @@ def ask_model(
     Args:
         system_prompt (str): The system prompt (orders).
         user_prompts (str): The user prompt (adapted to a specific case).
+        llm_client (OpenAI): The client to connect to (initialized with your logins)
+        model (str): The model to talk to.
+        temperatur (float): Temperature for the answer, between 0 and 2.
+        LabelGeneration (Type[BaseModel]): The expected format for output.
 
     Returns:
         str: The answer returned by the model.

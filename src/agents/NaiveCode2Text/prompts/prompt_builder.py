@@ -115,9 +115,10 @@ def build_system_prompt(
         nb_labels: int = 10,
         ) -> str:
     """
-    Build system prompt.
+    Import system prompt with the correct language and specify the number of labels.
 
     Args:
+        prompt_path (str): The path for importation.
         language (str): English or French.
         nb_labels (int): The number of labels to generate.
 
