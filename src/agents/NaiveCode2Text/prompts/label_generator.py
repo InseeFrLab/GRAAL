@@ -48,7 +48,7 @@ def ask_model(
     Returns:
         str: The answer returned by the model.
     """
-    response = llm_client.chat.completions.create(
+    response = llm_client.chat.completions.parse(
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},

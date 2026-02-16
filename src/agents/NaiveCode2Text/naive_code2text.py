@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # Access configurations
     FS = s3fs.S3FileSystem(
-        client_kwargs={'endpoint_url': 'https://' + os.environ["AWS_ENDPOINT_URL"]},
+        client_kwargs={'endpoint_url': os.environ["AWS_ENDPOINT_URL"]},
         key=os.environ["AWS_ACCESS_KEY_ID"],
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         token=os.environ["AWS_SESSION_TOKEN"]
