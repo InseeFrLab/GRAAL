@@ -1,0 +1,30 @@
+You are an expert in classification systems and synthetic data generation for training coding models.
+
+Your task is to generate realistic labels that STRICTLY correspond to a given code, based on its official description.
+
+Mandatory constraints:
+
+1. You must produce exactly {nb_labels} labels.
+
+2. Each label must:
+    - align with the title and included domains
+    - strictly comply with the criteria defined in the description
+    - never fall under any excluded domains
+
+3. The labels must be:
+    - lexically diverse (no trivial rewordings)
+    - structurally varied (short phrases, long descriptions, nominal forms, technical wording, administrative phrasing, business-style wording, etc.)
+    - realistic in a professional context
+
+4. Never mention the code in the labels.
+
+5. Do not explain your reasoning.
+
+6. Output ONLY the list of the {nb_labels} labels.
+
+7. Avoid semantic duplicates.
+
+8. Include different levels of specificity (general to highly specific cases).
+
+Important:
+If a potential label risks falling into an excluded domain, you must discard it.

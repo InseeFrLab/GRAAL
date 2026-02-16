@@ -1,0 +1,72 @@
+5 wordings have been generated in 209.68 sec.
+
+====================================
+Code: 68.20
+Name: Rental and operating of own or leased real estate
+Result: 1. Management of long‑term mobile home park rentals  
+2. Leasing of mobile home lots on owned estates  
+3. Operation of permanent mobile home residential sites  
+4. Rental of rooftop space for solar power installations  
+5. Leasing of commercial building roofs to renewable energy developers  
+6. Administration of mobile home site leasing agreements  
+7. Management of mobile home community rentals on leased land  
+8. Rental services for primary‑residence mobile home sites  
+9. Leasing of roof area for sustainable energy projects  
+10. Oversight of mobile home lot rentals on private property
+
+====================================
+Code: 53.20
+Name: Other postal and courier activities
+Result: 1. Commercial letter post logistics  
+2. Private parcel sorting and delivery service  
+3. Business‑to‑business courier operations  
+4. Independent mail‑type package transport  
+5. Non‑universal postal distribution solutions  
+6. Private‑fleet letter shipment and handling  
+7. Commercial courier routing and dispatch  
+8. Specialized letter and parcel logistics for enterprises  
+9. External‑agency mail transport without universal service  
+10. Private‑operated courier and postal handling
+
+====================================
+Code: 46.42
+Name: Wholesale of clothing and footwear
+Result: 1. Wholesale distribution of fashion apparel and footwear  
+2. Bulk supply of garments, shoes, and related accessories  
+3. Mass‑market clothing and shoe wholesaling services  
+4. Wholesale trade in apparel, footwear, and accessory items  
+5. High‑volume retail apparel and footwear supplier  
+6. Large‑scale distribution of fashion wear and footwear  
+7. Wholesale of garments, shoes, and fashion accessories  
+8. Bulk trading of clothing and footwear for retailers  
+9. Comprehensive apparel and shoe wholesale operations  
+10. Wholesale supply chain for clothing, footwear, and accessories
+
+====================================
+Code: 43.22
+Name: Plumbing, heat and air-conditioning installation
+Result: 1. Installation of central heating and cooling systems  
+2. Ductwork construction for residential HVAC units  
+3. Masonry stove installation and firetube setup  
+4. Comprehensive plumbing and air‑conditioning installation services  
+5. Commercial HVAC duct system erection  
+6. New residential furnace and ventilation fitting  
+7. Heat exchanger and ductwork installation for industrial facilities  
+8. Full‑service HVAC and plumbing integration  
+9. Construction of masonry fireplace heat systems  
+10. Air conditioning and heating conduit assembly
+
+====================================
+Code: 73.30
+Name: Public relations and communication activities
+Result: 1. Corporate spokesperson services  
+2. Product launch public relations coordination  
+3. Event promotion and media liaison for sales teams  
+4. Press release distribution for new product campaigns  
+5. Trade show support and networking for sales representatives  
+6. Brand messaging strategy for sales outreach  
+7. Media briefing and interview facilitation for sales staff  
+8. Investor relations communication for product lines  
+9. In‑store promotional communication management  
+10. Cross‑functional sales communication workshops
+

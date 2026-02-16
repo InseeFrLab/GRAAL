@@ -116,6 +116,9 @@ def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, 
     
     return sampled[code_column].to_numpy()
 
+    label_idx = n_nace_nodes + i
+    if target_code in codes_dict: 
+        label_to_code_idx[label_idx] = codes_dict[target_code]
 
 codes = sample_codes(
     fs=fs,
