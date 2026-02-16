@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
         if OUTPUT_FORMAT == ".parquet" and (i+1) % BATCH_SIZE == 0:
             logger.info("Saving intermediate results...")
-            label_generator.export_to_txt(
+            label_generator.export_to_parquet(
                 codes=code_list[i+1-BATCH_SIZE:i+1],
                 names=name_list,
                 labels=label_list,
@@ -136,11 +136,24 @@ if __name__ == "__main__":
 
     end = time.perf_counter()
 
-    logger.info("Saving results...")
-    label_generator.export_to_txt(
-        codes=code_list,
-        names=name_list,
-        labels=label_list,
-        file_path=FINAL_PATH,
-        generation_time=end-start
-        )
+    if OUTPUT_FORMAT == ".txt":
+        logger.info("Saving results to txt...")
+        label_generator.export_to_txt(
+            codes=code_list,
+            names=name_list,
+            labels=label_list,
+            file_path=FINAL_PATH,
+            generation_time=end-start
+            )
+
+    elif OUTPUT_FORMAT == ".parquet":
+        logger.info("Saving final results...")
+        first_unsaved_index = BATCH_SIZE*(N_CODES//BATCH_SIZE)
+        if first_unsaved_index < N_CODES:
+            label_generator.export_to_parquet(
+                codes=code_list[BATCH_SIZE*(N_CODES//BATCH_SIZE):],
+                names=name_list,
+                labels=label_list,
+                file_path=FINAL_PATH,
+                fs=FS
+                )

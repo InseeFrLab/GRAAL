@@ -135,13 +135,12 @@ def export_to_txt(
         f.write(f"{nb_labels} wordings have been generated in {generation_time:.2f} sec.\n\n")
         f.write("=" * 36 + "\n")
 
-        for i, code in enumerate(codes):
-            name = names[i]
+        for code, name, generated_labels in zip(codes, names, labels):
             f.write(f"Code: {code}\n")
             f.write(f"Name: {name}\n")
             f.write("Result:\n")
 
-            for j, label in enumerate(labels[i]):
+            for j, label in enumerate(generated_labels):
                 f.write(f"{j}. {label}\n")
 
             f.write("\n" + "=" * 36 + "\n")
@@ -184,13 +183,13 @@ def export_to_parquet(
     # Flatten structure
     rows = []
 
-    for code, name, label_list in zip(codes, names, labels):
+    for code, name, generated_labels in zip(codes, names, labels):
 
-        if not isinstance(label_list, list):
+        if not isinstance(generated_labels, list):
             logger.warn("Labels must be stored in a list.")
             return False
 
-        for label in label_list:
+        for label in generated_labels:
             rows.append({
                 "code": code,
                 "name": name,
@@ -200,8 +199,19 @@ def export_to_parquet(
     # Save to parquet
     df = pd.DataFrame(rows)
 
-    existing_df = pd.read_parquet(file_path)
-    df = pd.concat([existing_df, df], ignore_index=True)
+    if fs is None:
+        try:
+            existing_df = pd.read_parquet(file_path)
+            df = pd.concat([existing_df, df], ignore_index=True)
+        except FileNotFoundError:
+            logger.info(f"No file found at location{file_path}, creating...")
+    else:
+        try:
+            with fs.open(file_path, 'rb') as f:
+                existing_df = pd.read_parquet(f)
+            df = pd.concat([existing_df, df], ignore_index=True)
+        except FileNotFoundError:
+            logger.info(f"No file found at location{file_path}, creating...")
 
     df.to_parquet(
         file_path,
