@@ -14,6 +14,8 @@ import polars as pl
 import umap
 import pacmap
 from plotly.subplots import make_subplots
+import logging 
+from dotenv import load_dotenv
 
 import s3fs
 from sklearn.neighbors import NearestNeighbors
@@ -25,11 +27,9 @@ from src.neo4j_graph.graph import Graph
 from src.main import classify_navigator
 
 
-
 # %% Config
 N_CODES = 20
 K_NN = 1
-
 PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
 COLUMNS = ["libelle", "nace2025"]
 
@@ -141,18 +141,30 @@ for i, (label, label_emb, target_code) in enumerate(zip(labels, labels_embedding
 
 embeddings = np.array(embeddings)
 
+# %%
+load_dotenv(override=True)
+%env MAX_TURNS=30
+# %env GENERATION_MODEL=google/gemma-3-27b-it
+%env OPENAI_BASE_URL=vllm-generation2.user.lab.sspcloud.fr
+%env OPENAI_API_KEY=EMPTY
+
+logger.info(f"Environment: {os.environ['GENERATION_MODEL']}, {os.environ['OPENAI_BASE_URL']}, {os.environ['OPENAI_API_KEY']}")
+
 
 # %% Classification by the navigator
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
 from src.main import classify_navigator
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
 graph = Graph(neo4j_config)
 
 results = await classify_navigator(labels)
 codes = [result.code.replace(".", "").replace(" ", "") for result in results]
 print(codes)
-
 
 
 # %% Calcul des k plus proches voisins parmi les codes NACE
@@ -608,3 +620,5 @@ navigator.current_code='01'
 # 
 # %%
 tools[2]
+
+# %%

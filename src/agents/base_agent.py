@@ -14,6 +14,8 @@ from agents import (
     set_tracing_disabled,
 )
 from agents.model_settings import ModelSettings
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+
 from src.neo4j_graph.graph import Graph
 
 logger = logging.getLogger(__name__)
@@ -25,13 +27,19 @@ client = AsyncOpenAI(
     api_key=os.environ["OPENAI_API_KEY"],
 )
 
+model = OpenAIChatCompletionsModel(
+    model=os.environ["GENERATION_MODEL"],
+    openai_client=client,
+)
+
 set_default_openai_client(client=client, use_for_tracing=False)
 set_default_openai_api("chat_completions")
-set_tracing_disabled(True)
+# set_tracing_disabled(True)
+
 
 
 class BaseAgent(ABC):
-    def __init__(self, graph: Graph):
+    def __init__(self, graph: Graph, model: OpenAIChatCompletionsModel = model):
         super().__init__()
         self.graph = graph
         self.tools = self.graph.get_tools()
@@ -41,7 +49,7 @@ class BaseAgent(ABC):
             name=self.get_agent_name(),
             instructions=self.instructions,
             tools=self.tools,
-            model=os.environ["GENERATION_MODEL"],
+            model=model,
             model_settings=self.get_model_settings(),
             output_type=self.output_type,
         )
