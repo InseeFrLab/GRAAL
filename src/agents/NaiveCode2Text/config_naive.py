@@ -20,16 +20,16 @@ RANDOM_EXAMPLES_MIN = 1
 RANDOM_EXAMPLES_MAX = None      # None = up to the max number of examples per include
 
 # Exportation
-OUTPUT_PATH = "src/agents/NaiveCode2Text/sample_results/"
-OUTPUT_FORMAT = ".txt"          # .txt or .parquet
-SAVE_BATCH_SIZE = 10               # If choosing .parquet output format
+OUTPUT_PATH = "projet-ape/synthetic_data_test/naive/"
+OUTPUT_FORMAT = ".parquet"          # .txt or .parquet
+SAVE_BATCH_SIZE = 1000              # If choosing .parquet output format
 
 # LLM Hyperparameters
 MODEL = None
-TEMPERATURE = 1.8
+TEMPERATURE = 0.8
 LANGUAGE = "English"
 GENERATION_BATCH_SIZE = 20
 
 # Generation specifications
-N_CODES = 40                    # Number of codes to sample
+N_CODES = 20000                 # Number of codes to sample, multiple of GENERATION_BATCH_SIZE
 NB_LABELS = 10                  # Number of labels to generate per code

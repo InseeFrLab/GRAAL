@@ -21,10 +21,8 @@ from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifie
 from src.neo4j_graph.graph import Graph, Neo4JConfig
 
 # Logger
-logging.basicConfig(
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
 
 handler = RotatingFileHandler(
     "naive_code2text.log",
@@ -37,7 +35,7 @@ formatter = logging.Formatter(
 )
 
 handler.setFormatter(formatter)
-logger.addHandler(handler)
+root_logger.addHandler(handler)
 
 # Environment
 load_dotenv(override=True)
@@ -60,7 +58,7 @@ if __name__ == "__main__":
     LLM_CLIENT = AsyncOpenAI(base_url=URL_GENERATION_API)
 
     # Sampling from original data
-    logger.info("Sampling from data...")
+    root_logger.info("Sampling from data...")
     code_list = code_sampler.sample_codes_lazy(
         fs=FS,
         population_path=POPULATION_PATH,
@@ -68,12 +66,12 @@ if __name__ == "__main__":
         n_codes=N_CODES
     )
 
-    # NAF to NACE
-    logger.info("Transforming codes from NAF to NACE...")
+    # NAF to NACE : comment if unnecessary
+    root_logger.info("Transforming codes from NAF to NACE...")
     code_list = [code_specifier.NAF_to_NACE(code) for code in code_list]
 
     # Neo4j connection
-    logger.info("Connecting to Neo4j graph...")
+    root_logger.info("Connecting to Neo4j graph...")
     notice_graph = Graph(Neo4JConfig(
         url=os.environ["NEO4J_URL"],
         username=os.environ["NEO4J_USERNAME"],
@@ -86,25 +84,19 @@ if __name__ == "__main__":
     FINAL_PATH = OUTPUT_PATH + file_name
 
     # Prompt generation
-    logger.info("Generating prompts...")
+    root_logger.info("Creating prompts...")
 
-    name_list = []
-    label_list = []
-
-    # Model set up
-    LabelGenerationModel = label_generator.build_label_generation_model(NB_LABELS)
-
+    # System prompt
     system_prompt = prompt_builder.build_system_prompt(
             prompt_path=PROMPT_PATH,
             language=LANGUAGE,
             nb_labels=NB_LABELS
         )
 
-    user_prompts = []
+    valid_items = []
 
+    # User prompt
     for i, code in enumerate(code_list):
-        logger.info(f"Processing step {i+1}...")
-
         try:
 
             # Get code details from Neo4j
@@ -112,9 +104,6 @@ if __name__ == "__main__":
                 graph=notice_graph,
                 code=code
                 )
-
-            # For exportation purpose
-            name_list.append(code_details["name"])
 
             # Build prompts
             user_prompt = prompt_builder.build_user_prompt(
@@ -133,64 +122,109 @@ if __name__ == "__main__":
                 random_examples_max=RANDOM_EXAMPLES_MAX
                 )
 
-            user_prompts.append(user_prompt)
+            valid_items.append({
+                "code": code,
+                "name": code_details["name"],
+                "prompt": user_prompt
+            })
 
-            if len(user_prompts) == GENERATION_BATCH_SIZE:
+        except Exception as e:
+            root_logger.warning(f"Error preparing code {code}, skipping...\nDetails: {e}")
+            root_logger.info(traceback.format_exc())
+            continue
 
-                # Ask the chatbot
-                generations = asyncio.run(label_generator.ask_model_multiple(
+    # Model set up
+    root_logger.info("Generating labels...")
+
+    LabelGenerationModel = label_generator.build_label_generation_model(NB_LABELS)
+
+    results_buffer = []
+
+    for i in range(0, len(valid_items), GENERATION_BATCH_SIZE):
+        root_logger.info(f"Processing batch {i//GENERATION_BATCH_SIZE}...")
+
+        batch = valid_items[i:i + GENERATION_BATCH_SIZE]
+        prompts = [item["prompt"] for item in batch]
+
+        try:
+            generations = asyncio.run(
+                label_generator.ask_model_multiple(
                     system_prompt=system_prompt,
-                    user_prompts=user_prompts,
+                    user_prompts=prompts,
                     llm_client=LLM_CLIENT,
                     model=MODEL,
                     temperature=TEMPERATURE,
                     LabelGeneration=LabelGenerationModel,
-                    max_concurrency=GENERATION_BATCH_SIZE
-                ))
+                    max_concurrency=len(prompts)
+                )
+            )
 
-                for generation in generations:
-                    label_list.append(generation.labels)
-
-                user_prompts = []
+            for item, generation in zip(batch, generations):
+                results_buffer.append({
+                    "code": item["code"],
+                    "name": item["name"],
+                    "labels": generation.labels
+                })
 
         except Exception as e:
-            label_list.append(["None"]*10)
-            name_list.append(code_details["name"])
-            logger.warn(f"Error raised, skipping...\nDetails: {e}")
-            logger.info(f"Traceback:\n{traceback.format_exc()}")
+            root_logger.warning(f"Batch generation failed, skipping... Details: {e}")
+            root_logger.info(traceback.format_exc())
 
-        if OUTPUT_FORMAT == ".parquet" and (i+1) % SAVE_BATCH_SIZE == 0:
-            logger.info("Saving intermediate results...")
-            label_generator.export_to_parquet(
-                codes=code_list[i+1-SAVE_BATCH_SIZE:i+1],
-                names=name_list,
-                labels=label_list,
-                file_path=FINAL_PATH,
-                fs=FS
+        if OUTPUT_FORMAT == ".parquet" and len(results_buffer) >= SAVE_BATCH_SIZE:
+            root_logger.info("Saving intermediate results...")
+
+            try:
+                codes = [r["code"] for r in results_buffer]
+                names = [r["name"] for r in results_buffer]
+                labels = [r["labels"] for r in results_buffer]
+
+                label_generator.export_to_parquet(
+                    codes=codes,
+                    names=names,
+                    labels=labels,
+                    file_path=FINAL_PATH,
+                    fs=FS
                 )
-            label_list = []
-            name_list = []
+
+            except Exception as e:
+                root_logger.warning(f"Buffer exportation failed, dropped... Details: {e}")
+                root_logger.info(traceback.format_exc())
+
+            results_buffer = []
 
     end = time.perf_counter()
 
     if OUTPUT_FORMAT == ".txt":
-        logger.info("Saving results to txt...")
+        root_logger.info("Saving results to txt...")
+
+        codes = [r["code"] for r in results_buffer]
+        names = [r["name"] for r in results_buffer]
+        labels = [r["labels"] for r in results_buffer]
+
         label_generator.export_to_txt(
-            codes=code_list,
-            names=name_list,
-            labels=label_list,
+            codes=codes,
+            names=names,
+            labels=labels,
             file_path=FINAL_PATH,
             generation_time=end-start
             )
 
-    elif OUTPUT_FORMAT == ".parquet":
-        logger.info("Saving final results...")
-        first_unsaved_index = SAVE_BATCH_SIZE*(N_CODES//SAVE_BATCH_SIZE)
-        if first_unsaved_index < N_CODES:
+    if OUTPUT_FORMAT == ".parquet" and results_buffer:
+        root_logger.info("Saving final remaining results...")
+
+        try:
+            codes = [r["code"] for r in results_buffer]
+            names = [r["name"] for r in results_buffer]
+            labels = [r["labels"] for r in results_buffer]
+
             label_generator.export_to_parquet(
-                codes=code_list[SAVE_BATCH_SIZE*(N_CODES//SAVE_BATCH_SIZE):],
-                names=name_list,
-                labels=label_list,
+                codes=codes,
+                names=names,
+                labels=labels,
                 file_path=FINAL_PATH,
                 fs=FS
-                )
+            )
+
+        except Exception as e:
+            root_logger.warning(f"Buffer exportation failed, dropped... Details: {e}")
+            root_logger.info(traceback.format_exc())

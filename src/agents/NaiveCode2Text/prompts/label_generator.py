@@ -242,11 +242,11 @@ def export_to_parquet(
 
     # Basic validation
     if not (len(codes) == len(names) == len(labels)):
-        logger.warn("codes, names, and labels must have the same length.")
+        raise "Codes, names, and labels must have the same length."
         return False
 
     if len(codes) == 0:
-        logger.warn("Empty input: nothing to export.")
+        raise "Empty input: nothing to export."
         return False
 
     # Flatten structure
@@ -255,7 +255,7 @@ def export_to_parquet(
     for code, name, generated_labels in zip(codes, names, labels):
 
         if not isinstance(generated_labels, list):
-            logger.warn("Labels must be stored in a list.")
+            raise "Labels must be stored in a list."
             return False
 
         for label in generated_labels:

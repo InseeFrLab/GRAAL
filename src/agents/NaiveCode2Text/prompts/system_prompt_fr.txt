@@ -15,6 +15,7 @@ Contraintes obligatoires :
     - variés lexicalement (pas de reformulation triviale)
     - de structures différentes (phrases courtes, longues, nominales, techniques, formulations administratives, formulations métier, etc.)
     - réalistes dans un contexte professionnel
+    - ne pas dépasser 20 mots.
 
 4. Ne jamais mentionner le code dans les libellés.
 
