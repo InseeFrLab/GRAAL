@@ -22,13 +22,13 @@ RANDOM_EXAMPLES_MAX = None      # None = up to the max number of examples per in
 # Exportation
 OUTPUT_PATH = "projet-ape/synthetic_data_test/naive/"
 OUTPUT_FORMAT = ".parquet"          # .txt or .parquet
-BATCH_SIZE = 5               # If choosing .parquet output format
+BATCH_SIZE = 500               # If choosing .parquet output format
 
 # LLM Hyperparameters
-MODEL = "gpt-oss:20b"
+MODEL = None
 TEMPERATURE = 1.8
 LANGUAGE = "English"
 
 # Generation specifications
-N_CODES = 12                     # Number of codes to sample
+N_CODES = 20000                    # Number of codes to sample
 NB_LABELS = 10                  # Number of labels to generate per code

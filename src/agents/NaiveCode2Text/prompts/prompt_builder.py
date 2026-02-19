@@ -72,15 +72,22 @@ def split_spec_and_select(
     Returns:
         list: Random spec with examples sampled from the original list
     """
+    # First check to unintended selection
+    if len(all_spec) == 0:
+        return all_spec
+
     final_spec = []
 
     # First, select spec to keep
-    random_spec = select_random_items(
-        all_items=all_spec,
-        min_items=spec_min,
-        max_items=spec_max,
-        geom_prob=spec_geom_prob
-    )
+    if len(all_spec) >= 2:
+        random_spec = select_random_items(
+            all_items=all_spec,
+            min_items=spec_min,
+            max_items=spec_max,
+            geom_prob=spec_geom_prob
+        )
+    else:
+        random_spec = all_spec
 
     # Then, select examples to keep within each spec that remains
     for spec in random_spec:
@@ -192,13 +199,21 @@ def build_user_prompt(
     """
     # Extracting useful information
     if code_details["includes"]:
-        all_includes = code_details["includes"].split(includes_divider)[1:]
+        all_includes = code_details["includes"].split(includes_divider)
+
+        if len(all_includes) >= 2:              # Introduction sentence
+            all_includes = all_includes[1:]
 
         # Case with includes_also: extend the Includes
         if code_details["includes_also"]:
-            all_includes += code_details["includes_also"].split(includes_divider)[1:]
+            all_includes_also = code_details["includes_also"].split(includes_divider)
 
-        if random_spec_sampling:
+            if len(all_includes_also) >= 2:     # Introduction sentence
+                all_includes_also = all_includes_also[1:]
+
+            all_includes += all_includes_also
+
+        if random_spec_sampling and len(all_includes) >= 2:
             # Select includes randomly
             random_includes = split_spec_and_select(
                 all_spec=all_includes,
@@ -218,7 +233,9 @@ def build_user_prompt(
 
     # Add all excludes
     if code_details["excludes"]:
-        all_excludes = code_details["excludes"].split(excludes_divider)[1:]
+        all_excludes = code_details["excludes"].split(excludes_divider)
+        if len(all_excludes) >= 2:
+            all_excludes = all_excludes[1:]
     else:
         all_excludes = []
 

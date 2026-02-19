@@ -1,6 +1,8 @@
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 import time
+import traceback
 
 from dotenv import load_dotenv
 import s3fs
@@ -17,8 +19,23 @@ from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifie
 from src.neo4j_graph.graph import Graph, Neo4JConfig
 
 # Logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+)
 logger = logging.getLogger(__name__)
+
+handler = RotatingFileHandler(
+    "naive_code2text.log",
+    maxBytes=10_000_000,  # 10MB
+    backupCount=5
+)
+
+formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)s | %(message)s"
+)
+
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Environment
 load_dotenv(override=True)
@@ -36,9 +53,9 @@ if __name__ == "__main__":
         token=os.environ["AWS_SESSION_TOKEN"]
     )
 
-    LLM_API_KEY = os.environ["LLM_API_KEY"]
-    LLM_URL = os.environ["LLM_URL"]
-    LLM_CLIENT = OpenAI(api_key=LLM_API_KEY, base_url=LLM_URL)
+    # LLM_API_KEY = os.environ["LLM_API_KEY"]
+    URL_GENERATION_API = os.environ["URL_GENERATION_API"]
+    LLM_CLIENT = OpenAI(base_url=URL_GENERATION_API)
 
     # Sampling from original data
     logger.info("Sampling from data...")
@@ -84,43 +101,51 @@ if __name__ == "__main__":
     for i, code in enumerate(code_list):
         logger.info(f"Processing step {i+1}...")
 
-        # Get code details from Neo4j
-        code_details = code_specifier.get_code_information(
-            graph=notice_graph,
-            code=code
+        try:
+
+            # Get code details from Neo4j
+            code_details = code_specifier.get_code_information(
+                graph=notice_graph,
+                code=code
+                )
+
+            # For exportation purpose
+            name_list.append(code_details["name"])
+
+            # Build prompts
+            user_prompt = prompt_builder.build_user_prompt(
+                code_details=code_details,
+                language=LANGUAGE,
+                nb_labels=NB_LABELS,
+                includes_divider=INCLUDES_DIVIDER,
+                examples_divider=EXAMPLES_DIVIDER,
+                excludes_divider=EXCLUDE_DIVIDER,
+                random_spec_sampling=RANDOM_SPEC_SAMPLING,
+                random_includes_geom_prob=RANDOM_INCLUDES_GEOM_PROB,
+                random_includes_min=RANDOM_INCLUDES_MIN,
+                random_includes_max=RANDOM_INCLUDES_MAX,
+                random_examples_geom_prob=RANDOM_EXAMPLES_GEOM_PROB,
+                random_examples_min=RANDOM_EXAMPLES_MIN,
+                random_examples_max=RANDOM_EXAMPLES_MAX
+                )
+
+            # Ask the chatbot
+            generation = label_generator.ask_model(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                llm_client=LLM_CLIENT,
+                model=MODEL,
+                temperature=TEMPERATURE,
+                LabelGeneration=LabelGenerationModel
             )
 
-        # For exportation purpose
-        name_list.append(code_details["name"])
+            label_list.append(generation.labels)
 
-        # Build prompts
-        user_prompt = prompt_builder.build_user_prompt(
-            code_details=code_details,
-            language=LANGUAGE,
-            nb_labels=NB_LABELS,
-            includes_divider=INCLUDES_DIVIDER,
-            examples_divider=EXAMPLES_DIVIDER,
-            excludes_divider=EXCLUDE_DIVIDER,
-            random_spec_sampling=RANDOM_SPEC_SAMPLING,
-            random_includes_geom_prob=RANDOM_INCLUDES_GEOM_PROB,
-            random_includes_min=RANDOM_INCLUDES_MIN,
-            random_includes_max=RANDOM_INCLUDES_MAX,
-            random_examples_geom_prob=RANDOM_EXAMPLES_GEOM_PROB,
-            random_examples_min=RANDOM_EXAMPLES_MIN,
-            random_examples_max=RANDOM_EXAMPLES_MAX
-            )
-
-        # Ask the chatbot
-        generation = label_generator.ask_model(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            llm_client=LLM_CLIENT,
-            model=MODEL,
-            temperature=TEMPERATURE,
-            LabelGeneration=LabelGenerationModel
-        )
-
-        label_list.append(generation.labels)
+        except Exception as e:
+            label_list.append(["None"]*10)
+            name_list.append(code_details["name"])
+            logger.warn(f"Error raised, skipping...\nDetails: {e}")
+            logger.info(f"Traceback:\n{traceback.format_exc()}")
 
         if OUTPUT_FORMAT == ".parquet" and (i+1) % BATCH_SIZE == 0:
             logger.info("Saving intermediate results...")
