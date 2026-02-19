@@ -3,17 +3,19 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 import traceback
+import asyncio
 
 from dotenv import load_dotenv
 import s3fs
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from src.agents.NaiveCode2Text.config_naive import \
     MODEL, TEMPERATURE, OUTPUT_PATH, N_CODES, POPULATION_PATH, CODE_COLUMN, \
-    OUTPUT_FORMAT, BATCH_SIZE, LANGUAGE, NB_LABELS, PROMPT_PATH, \
+    OUTPUT_FORMAT, SAVE_BATCH_SIZE, LANGUAGE, NB_LABELS, PROMPT_PATH, \
     INCLUDES_DIVIDER, EXAMPLES_DIVIDER, EXCLUDE_DIVIDER, RANDOM_SPEC_SAMPLING, \
     RANDOM_INCLUDES_GEOM_PROB, RANDOM_INCLUDES_MIN, RANDOM_INCLUDES_MAX, \
-    RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX
+    RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX, \
+    GENERATION_BATCH_SIZE
 from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator
 from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
 from src.neo4j_graph.graph import Graph, Neo4JConfig
@@ -55,7 +57,7 @@ if __name__ == "__main__":
 
     # LLM_API_KEY = os.environ["LLM_API_KEY"]
     URL_GENERATION_API = os.environ["URL_GENERATION_API"]
-    LLM_CLIENT = OpenAI(base_url=URL_GENERATION_API)
+    LLM_CLIENT = AsyncOpenAI(base_url=URL_GENERATION_API)
 
     # Sampling from original data
     logger.info("Sampling from data...")
@@ -98,6 +100,8 @@ if __name__ == "__main__":
             nb_labels=NB_LABELS
         )
 
+    user_prompts = []
+
     for i, code in enumerate(code_list):
         logger.info(f"Processing step {i+1}...")
 
@@ -129,17 +133,25 @@ if __name__ == "__main__":
                 random_examples_max=RANDOM_EXAMPLES_MAX
                 )
 
-            # Ask the chatbot
-            generation = label_generator.ask_model(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                llm_client=LLM_CLIENT,
-                model=MODEL,
-                temperature=TEMPERATURE,
-                LabelGeneration=LabelGenerationModel
-            )
+            user_prompts.append(user_prompt)
 
-            label_list.append(generation.labels)
+            if len(user_prompts) == GENERATION_BATCH_SIZE:
+
+                # Ask the chatbot
+                generations = asyncio.run(label_generator.ask_model_multiple(
+                    system_prompt=system_prompt,
+                    user_prompts=user_prompts,
+                    llm_client=LLM_CLIENT,
+                    model=MODEL,
+                    temperature=TEMPERATURE,
+                    LabelGeneration=LabelGenerationModel,
+                    max_concurrency=GENERATION_BATCH_SIZE
+                ))
+
+                for generation in generations:
+                    label_list.append(generation.labels)
+
+                user_prompts = []
 
         except Exception as e:
             label_list.append(["None"]*10)
@@ -147,10 +159,10 @@ if __name__ == "__main__":
             logger.warn(f"Error raised, skipping...\nDetails: {e}")
             logger.info(f"Traceback:\n{traceback.format_exc()}")
 
-        if OUTPUT_FORMAT == ".parquet" and (i+1) % BATCH_SIZE == 0:
+        if OUTPUT_FORMAT == ".parquet" and (i+1) % SAVE_BATCH_SIZE == 0:
             logger.info("Saving intermediate results...")
             label_generator.export_to_parquet(
-                codes=code_list[i+1-BATCH_SIZE:i+1],
+                codes=code_list[i+1-SAVE_BATCH_SIZE:i+1],
                 names=name_list,
                 labels=label_list,
                 file_path=FINAL_PATH,
@@ -173,10 +185,10 @@ if __name__ == "__main__":
 
     elif OUTPUT_FORMAT == ".parquet":
         logger.info("Saving final results...")
-        first_unsaved_index = BATCH_SIZE*(N_CODES//BATCH_SIZE)
+        first_unsaved_index = SAVE_BATCH_SIZE*(N_CODES//SAVE_BATCH_SIZE)
         if first_unsaved_index < N_CODES:
             label_generator.export_to_parquet(
-                codes=code_list[BATCH_SIZE*(N_CODES//BATCH_SIZE):],
+                codes=code_list[SAVE_BATCH_SIZE*(N_CODES//SAVE_BATCH_SIZE):],
                 names=name_list,
                 labels=label_list,
                 file_path=FINAL_PATH,

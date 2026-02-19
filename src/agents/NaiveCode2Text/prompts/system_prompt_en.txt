@@ -28,3 +28,7 @@ Mandatory constraints:
 
 Important:
 If a potential label risks falling into an excluded domain, you must discard it.
+Use plain English.
+Do not use special characters.
+No multilingual content.
+Only ASCII characters.

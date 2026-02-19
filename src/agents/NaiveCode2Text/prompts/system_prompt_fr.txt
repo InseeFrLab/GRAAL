@@ -28,3 +28,7 @@ Contraintes obligatoires :
 
 Important :
 Si un libellé risque d'entrer dans un domaine exclu, tu dois l'écarter.
+Rédige en français uniquement.
+N'utilise pas de caractères spéciaux.
+Pas de contenu multilingue.
+Que des caractères ASCII.
