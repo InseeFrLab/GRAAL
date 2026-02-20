@@ -34,7 +34,7 @@ def sample_codes_lazy(
         fs: s3fs.S3FileSystem,
         population_path: str,
         code_column: str,
-        n_codes: str
+        n_codes: int
         ) -> np.ndarray:
     """
     Sample codes with replacement using lazyframes from Polars.

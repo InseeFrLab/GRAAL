@@ -33,7 +33,7 @@ def get_code_information(
     children,
     size(children) as children_count
     """
-    result = graph.graph.query(query, params={"code": code})
+    result = graph.query(query, params={"code": code})
 
     if not result:
         print("No result in get_code_information")

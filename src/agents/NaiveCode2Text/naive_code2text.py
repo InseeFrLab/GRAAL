@@ -15,10 +15,11 @@ from src.agents.NaiveCode2Text.config_naive import \
     INCLUDES_DIVIDER, EXAMPLES_DIVIDER, EXCLUDE_DIVIDER, RANDOM_SPEC_SAMPLING, \
     RANDOM_INCLUDES_GEOM_PROB, RANDOM_INCLUDES_MIN, RANDOM_INCLUDES_MAX, \
     RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX, \
-    GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF
-from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator
-from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
-from src.neo4j_graph.graph import Graph, Neo4JConfig
+    GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF, \
+    LABEL_COLUMN, N_FEWSHOT
+from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator, fewshot_builder
+from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier, fewshot_sampler
+from langchain_neo4j import Neo4jGraph
 
 # Logger
 root_logger = logging.getLogger()
@@ -69,23 +70,26 @@ if __name__ == "__main__":
     # NAF to NACE
     if CONVERT_NAF_TO_NACE:
         root_logger.info("Transforming codes from NAF to NACE...")
-        code_list = [code_specifier.NAF_to_NACE(code) for code in code_list]
+        new_code_list = [code_specifier.NAF_to_NACE(code) for code in code_list]
 
-    if CONVERT_TO_PROPER_NAF:
+    elif CONVERT_TO_PROPER_NAF:
         root_logger.info("Transforming codes from NAF to NACE...")
-        code_list = [code_specifier.to_proper_NAF(code) for code in code_list]
+        new_code_list = [code_specifier.to_proper_NAF(code) for code in code_list]
+
+    else:
+        new_code_list = code_list
 
     # Neo4j connection
     root_logger.info("Connecting to Neo4j graph...")
-    notice_graph = Graph(Neo4JConfig(
+    notice_graph = Neo4jGraph(
         url=os.environ["NEO4J_URL"],
         username=os.environ["NEO4J_USERNAME"],
         password=os.environ["NEO4J_PWD"]
-    ))
+    )
 
     # Define an automatic name for output
-    file_name = f"generation_{MODEL}_temp{TEMPERATURE}".replace(":", "-").replace(".", "") \
-                + OUTPUT_FORMAT
+    file_name = f"generation_{MODEL}_temp{TEMPERATURE}_{LANGUAGE}_fewshot{N_FEWSHOT}"\
+                .replace(":", "-").replace(".", "") + OUTPUT_FORMAT
     FINAL_PATH = OUTPUT_PATH + file_name
 
     # Prompt generation
@@ -101,14 +105,23 @@ if __name__ == "__main__":
     valid_items = []
 
     # User prompt
-    for i, code in enumerate(code_list):
+    for i, (code, new_code) in enumerate(zip(code_list, new_code_list)):
         try:
 
             # Get code details from Neo4j
             code_details = code_specifier.get_code_information(
                 graph=notice_graph,
-                code=code
+                code=new_code
                 )
+
+            code_fewshot = fewshot_sampler.sample_fewshot_lazy(
+                fs=FS,
+                population_path=POPULATION_PATH,
+                code_column=CODE_COLUMN,
+                code=code,
+                label_column=LABEL_COLUMN,
+                n_fewshot=N_FEWSHOT
+            )
 
             # Build prompts
             user_prompt = prompt_builder.build_user_prompt(
@@ -127,14 +140,19 @@ if __name__ == "__main__":
                 random_examples_max=RANDOM_EXAMPLES_MAX
                 )
 
+            user_prompt += fewshot_builder.add_fewshot(
+                fewshot=code_fewshot,
+                language=LANGUAGE
+            )
+
             valid_items.append({
-                "code": code,
+                "code": new_code,
                 "name": code_details["name"],
                 "prompt": user_prompt
             })
 
         except Exception as e:
-            root_logger.warning(f"Error preparing code {code}, skipping...\nDetails: {e}")
+            root_logger.warning(f"Error preparing code {new_code}, skipping...\nDetails: {e}")
             root_logger.info(traceback.format_exc())
             continue
 

@@ -258,9 +258,9 @@ def build_user_prompt(
             for exclude in all_excludes:
                 user_prompt += "\n" + exclude
 
-        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic \
-            labels that strictly correspond to this code, fully complying with the official \
-                description."
+        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic" \
+            + "labels that strictly correspond to this code, fully complying with the official" \
+            + " description."
 
     # For French
     elif language == "French":
@@ -281,7 +281,7 @@ def build_user_prompt(
             for exclude in all_excludes:
                 user_prompt += "\n" + exclude
 
-        user_prompt += f"\n\n Consigne :\nGénère {nb_labels} libellés différents, variés et \
-            réalistes correspondant strictement à ce code, en respectant la notice."
+        user_prompt += f"\n\n Consigne :\nGénère {nb_labels} libellés différents, variés et" \
+            + " réalistes correspondant strictement à ce code, en respectant la notice."
 
     return user_prompt
