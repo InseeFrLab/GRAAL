@@ -1,6 +1,8 @@
 # For code sampling
 POPULATION_PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
 CODE_COLUMN = "nace2025"
+CONVERT_NAF_TO_NACE = False
+CONVERT_TO_PROPER_NAF = True
 
 # For prompt creation
 PROMPT_PATH = "src/agents/NaiveCode2Text/prompts/"
@@ -20,14 +22,14 @@ RANDOM_EXAMPLES_MIN = 1
 RANDOM_EXAMPLES_MAX = None      # None = up to the max number of examples per include
 
 # Exportation
-OUTPUT_PATH = "projet-ape/synthetic_data_test/naive/"
+OUTPUT_PATH = "projet-ape/synthetic_data_test/naive/NAF2025_FR/"
 OUTPUT_FORMAT = ".parquet"          # .txt or .parquet
 SAVE_BATCH_SIZE = 1000              # If choosing .parquet output format
 
 # LLM Hyperparameters
 MODEL = None
 TEMPERATURE = 0.8
-LANGUAGE = "English"
+LANGUAGE = "French"
 GENERATION_BATCH_SIZE = 20
 
 # Generation specifications

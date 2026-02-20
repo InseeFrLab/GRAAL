@@ -55,3 +55,18 @@ def NAF_to_NACE(
         str: The code in NACE format.
     """
     return code[0:2] + '.' + code[2:4]
+
+
+def to_proper_NAF(
+        code: str
+        ) -> str:
+    """
+    For the case of NAF code format (DDDDL), transform it into NACE (DD.DD).
+
+    Args:
+        code (str): The code in NAF format to transform.
+
+    Returns:
+        str: The code in NACE format.
+    """
+    return code[0:2] + '.' + code[2:]
