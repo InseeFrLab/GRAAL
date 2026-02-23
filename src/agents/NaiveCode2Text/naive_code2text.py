@@ -92,6 +92,18 @@ if __name__ == "__main__":
                 .replace(":", "-").replace(".", "") + OUTPUT_FORMAT
     FINAL_PATH = OUTPUT_PATH + file_name
 
+    # Few-shot sampling
+    if USE_FEWSHOT:
+        root_logger.info("Sampling examples for few-shot...")
+        codes_fewshot = fewshot_sampler.sample_fewshot_lazy_multi(
+            fs=FS,
+            population_path=POPULATION_PATH,
+            code_column=CODE_COLUMN,
+            codes=code_list,
+            label_column=LABEL_COLUMN,
+            n_fewshot=N_FEWSHOT
+        )
+
     # Prompt generation
     root_logger.info("Creating prompts...")
 
@@ -112,23 +124,13 @@ if __name__ == "__main__":
     valid_items = []
 
     # User prompt
-    for i, (code, new_code) in enumerate(zip(code_list, new_code_list)):
+    for i, (new_code, fewshot) in enumerate(zip(new_code_list, codes_fewshot)):
         try:
 
             # Get code details from Neo4j
             code_details = code_specifier.get_code_information(
                 graph=notice_graph,
                 code=new_code
-                )
-
-            if USE_FEWSHOT:
-                code_fewshot = fewshot_sampler.sample_fewshot_lazy(
-                    fs=FS,
-                    population_path=POPULATION_PATH,
-                    code_column=CODE_COLUMN,
-                    code=code,
-                    label_column=LABEL_COLUMN,
-                    n_fewshot=N_FEWSHOT
                 )
 
             # Build prompts
@@ -150,7 +152,7 @@ if __name__ == "__main__":
 
             if USE_FEWSHOT:
                 user_prompt += fewshot_builder.add_fewshot_user_prompt(
-                    fewshot=code_fewshot,
+                    fewshot=fewshot,
                     language=LANGUAGE
                 )
 
