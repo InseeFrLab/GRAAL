@@ -1,303 +1,303 @@
-200 wordings have been generated in 20.48 sec.
+200 wordings have been generated in 19.62 sec.
+
+====================================
+Code: 43.41H
+Name: Travaux de couverture par éléments
+Result:
+0. Couverture toiture par éléments
+1. Installation gouttières et descentes pluviales
+2. Pose de systèmes anti-neige sur toits inclinés
+3. Travaux de couverture et d’étanchéité
+4. Réalisation de toitures en éléments
+5. Couverture : installation de conduits
+6. Pose de gouttières, zinguerie
+7. Intervention couverture, systèmes anti-neige
+8. Travaux de zinguerie et couverture
+9. Conduits de toiture et accessoires associés
+
+====================================
+Code: 71.11Y
+Name: Activités d'architecture
+Result:
+0. Architecture générale
+1. Conception de bâtiments
+2. Urbanisme et aménagement paysager
+3. Aménagement intérieur
+4. Conseil en architecture
+5. Études architecturales
+6. Maîtrise d'œuvre en architecture
+7. Réalisation de plans architecturaux
+8. Architecture et design d'espaces
+9. Architecture : missions diverses
 
 ====================================
 Code: 68.20H
 Name: Location et exploitation d'autres biens immobiliers propres ou loués
 Result:
-0. Gestion locative de parcelles pour résidences mobiles.
-1. Exploitation d'un parc immobilier dédié à l'habitation permanente.
-2. Développement de projets immobiliers locatifs pour compte propre.
-3. Location de terrains et de bâtiments à usage divers.
-4. Administration de biens immobiliers non destinés à l'hébergement temporaire.
-5. Investissement et gestion d'actifs immobiliers locatifs.
-6. Location d'emplacements pour caravanes en résidence principale.
-7. Opérations de location et de gestion de biens immobiliers.
-8. Promouvoir la construction de logements destinés à la location.
-9. Gestion de portefeuille immobilier non résidentiel.
+0. Location de surfaces commerciales.
+1. Exploitation de biens immobiliers en propre.
+2. Gestion locative de bureaux et locaux.
+3. Mise en location de bâtiments industriels.
+4. Location de hangars et entrepôts.
+5. Administration de parcelles bâties.
+6. Exploitation par location de fonds de commerce.
+7. Recherche et sélection de locataires.
+8. Gestion et valorisation de l’immobilier locatif.
+9. Location d'espaces pour animaux de compagnie.
 
 ====================================
-Code: 88.10H
-Name: Activités d’accueil ou d’accompagnement sans hébergement d’adultes en situation de handicap ou de personnes âgées
+Code: 96.22Y
+Name: Soins de beauté et autres activités de traitement esthétique
 Result:
-0. Soutien à l'autonomie des adultes fragilisés.
-1. Animation d'ateliers occupationnels pour personnes handicapées.
-2. Prise en charge de jour pour seniors en perte d'autonomie.
-3. Accompagnement social et éducatif d'adultes en situation de handicap.
-4. Services d'accompagnement quotidien pour adultes vulnérables.
-5. Organisation d'activités de stimulation pour personnes âgées.
-6. Centres de jour pour adultes présentant des troubles.
-7. Intervention spécialisée auprès d'une clientèle adulte handicapée.
-8. Programmes d'accompagnement personnalisé sans hébergement.
-9. Offre de répit pour les aidants d'adultes en situation de handicap.
-
-====================================
-Code: 68.20H
-Name: Location et exploitation d'autres biens immobiliers propres ou loués
-Result:
-0. Gestion locative d'espaces industriels et de leurs équipements.
-1. Exploitation d'un parc immobilier non résidentiel en propre.
-2. Location de toitures pour installations photovoltaïques.
-3. Mise à disposition d'emplacements dédiés aux mobil-homes résidentiels.
-4. Location et gestion de bureaux et de locaux commerciaux.
-5. Exploitation d'entrepôts et de centres de stockage.
-6. Développement de projets immobiliers pour location à long terme.
-7. Location d'installations pour pension d'animaux de compagnie.
-8. Gestion de biens immobiliers : location, exploitation et administration.
-9. Location d'espaces dans des bâtiments à vocation industrielle.
-
-====================================
-Code: 23.41Y
-Name: Fabrication d'articles céramiques à usage domestique ou ornemental
-Result:
-0. Production d'objets en céramique pour la maison.
-1. Atelier de fabrication de vaisselle en porcelaine.
-2. Conception et production d'articles de décoration céramique.
-3. Fabrication d’ustensiles de cuisine en grès.
-4. Spécialiste de la céramique fine pour l'habitat.
-5. Production industrielle de poteries utilitaires et décoratives.
-6. Création de statuettes et figurines en céramique.
-7. Fabrication d'objets céramiques pour la salle de bain.
-8. Entreprise de céramique artisanale pour la maison.
-9. Fabrication de produits céramiques pour l'équipement de la maison et l'ornementation.
-
-====================================
-Code: 25.61Y
-Name: Fabrication de coutellerie
-Result:
-0. Production de couverts de table.
-1. Fabrication artisanale de couteaux de cuisine.
-2. Atelier spécialisé dans la création de fourchettes et cuillères.
-3. Production industrielle de coutellerie domestique.
-4. Conception et réalisation d’ensembles de couverts.
-5. Activités de forge et de façonnage de lames pour couverts.
-6. Commercialisation de produits de coutellerie pour la maison.
-7. Fabrication de couverts en acier inoxydable.
-8. Production de couteaux à steak et de couverts de réception.
-9. Spécialiste de la coutellerie et de ses techniques de fabrication.
+0. Épilations, soins visage et manucure.
+1. Beauté des ongles et extensions de cils.
+2. Soins esthétiques corporels et capillaires.
+3. Services de maquillage permanent.
+4. Massages esthétiques et enveloppements.
+5. Conseils beauté et vente de produits cosmétiques.
+6. Institut de beauté et bien-être.
+7. Spécialiste en bronzage UV.
+8. Réalisation de soins esthétiques personnalisés.
+9. Techniques de modelage et de relaxation.
 
 ====================================
 Code: 68.20H
 Name: Location et exploitation d'autres biens immobiliers propres ou loués
 Result:
-0. Gestion du patrimoine immobilier locatif non résidentiel.
-1. Exploitation d'un parc immobilier de bureaux et de locaux commerciaux.
-2. Location et valorisation de terrains et de surfaces agricoles.
-3. Développement de projets immobiliers pour location à long terme.
-4. Mise à disposition d'espaces pour l'hébergement de compagnons animaux.
-5. Gestion locative de biens immobiliers propres et d'espaces loués.
-6. Exploitation d'un emplacement résidentiel pour mobil-homes.
-7. Location de toitures pour installations photovoltaïques.
-8. Administration et exploitation d'un portefeuille immobilier diversifié.
-9. Promotion immobilière de bâtiments destinés à la location.
+0. Exploitation d'un parc résidentiel mobile.
+1. Location de terrains pour installations de loisirs.
+2. Gestion locative de biens immobiliers divers.
+3. Location de surfaces à usage commercial ou professionnel.
+4. Exploitation de biens immobiliers en propre.
+5. Administration et gestion de biens immobiliers loués.
+6. Recherche et mise en location de biens immobiliers.
+7. Exploitation d’emplacements pour résidences mobiles.
+8. Location de bâtiments commerciaux et industriels.
+9. Gestion de portefeuille immobilier locatif.
 
 ====================================
-Code: 68.20H
-Name: Location et exploitation d'autres biens immobiliers propres ou loués
+Code: 88.99H
+Name: Toutes les autres activités d’action sociale sans hébergement n.c.a.
 Result:
-0. Gestion de portefeuille immobilier locatif résidentiel.
-1. Exploitation d'un parc immobilier de logements sociaux.
-2. Location de surfaces immobilières à usage divers.
-3. Développement et gestion de résidences mobiles.
-4. Investissement immobilier et location à long terme.
-5. Administration de biens immobiliers détenus en propriété.
-6. Location de toitures pour installations photovoltaïques.
-7. Location de bâtiments à usage commercial ou professionnel.
-8. Gestion locative d'immeubles et de terrains.
-9. Opérations immobilières liées à la location et à l'exploitation.
-
-====================================
-Code: 46.42Y
-Name: Commerce de gros d'habillement et de chaussures
-Result:
-0. Distribution en gros de vêtements pour professionnels.
-1. Fournisseur de chaussures pour détaillants.
-2. Commercialisation de collections d'habillement en gros.
-3. Vente en gros de prêt-à-porter et de chaussures.
-4. Approvisionnement de magasins en articles vestimentaires.
-5. Grossiste spécialisé dans l'habillement et la chaussure.
-6. Plateforme de distribution de parapluies pour le commerce.
-7. Négociation de contrats d'achat-vente de chaussures.
-8. Import-export de vêtements et de chaussures en gros.
-9. Central d'achat de vêtements et d'accessoires de mode.
-
-====================================
-Code: 85.40Y
-Name: Enseignement supérieur
-Result:
-0. Formation professionnelle continue pour adultes en reconversion.
-1. Développement de cursus universitaires spécialisés en ingénierie.
-2. Gestion pédagogique d'une filière de formation courte qualifiante.
-3. Encadrement de projets étudiants en licence professionnelle.
-4. Intervention ponctuelle en tant que formateur expert en gestion.
-5. Coordination de programmes d'études supérieures techniques.
-6. Préparation aux examens de certifications professionnelles de niveau 6.
-7. Conception de supports de cours pour les études de premier cycle.
-8. Suivi administratif des étudiants en formation professionnelle initiale.
-9. Maîtrise d'ouvrage pour la création d'un nouveau diplôme universitaire.
-
-====================================
-Code: 68.20H
-Name: Location et exploitation d'autres biens immobiliers propres ou loués
-Result:
-0. Gestion locative de terrains et de bâtiments commerciaux.
-1. Exploitation d'un parc immobilier de bureaux et de locaux industriels.
-2. Location de surfaces tertiaires à des professionnels.
-3. Recherche de locataires et administration de biens immobiliers.
-4. Développement d'un portefeuille immobilier locatif diversifié.
-5. Valorisation et mise en location de terrains agricoles.
-6. Location-gérance de biens immobiliers non résidentiels.
-7. Optimisation du rendement locatif d'actifs immobiliers.
-8. Administration de biens immobiliers et recouvrement des loyers.
-9. Investissement et exploitation immobilière à long terme.
+0. Aide à l'accès aux droits sociaux et aux allocations.
+1. Accompagnement des familles en difficulté : conseils et orientation.
+2. Services de médiation sociale et de soutien à la parentalité.
+3. Réhabilitation professionnelle pour personnes éloignées de l'emploi.
+4. Aide aux victimes de catastrophes naturelles et aux sinistrés.
+5. Collecte de fonds pour le financement d'actions sociales.
+6. Conseils budgétaires et prévention du surendettement.
+7. Soutien à l'intégration des populations immigrées et réfugiées.
+8. Activités de services d'adoption et de protection de l'enfance.
+9. Intervention sociale de proximité et développement local.
 
 ====================================
 Code: 70.20Y
 Name: Activités de conseil pour les affaires et autre conseil de gestion
 Result:
-0. Stratégie d'entreprise et optimisation des processus.
-1. Accompagnement à la transformation organisationnelle.
-2. Conseil en gestion de projet et amélioration de la performance.
-3. Audit opérationnel et recommandations pour l'efficacité.
-4. Diagnostic des pratiques managériales et plan d'action.
-5. Assistance à la direction pour la prise de décisions stratégiques.
-6. Conseil en restructuration d'entreprise et optimisation des coûts.
-7. Support à la mise en place de nouvelles stratégies commerciales.
-8. Analyse de marché et développement de plans d'affaires.
-9. Conseil pour l'amélioration de la rentabilité et de la croissance.
+0. Stratégie d'entreprise et conseil en gestion
+1. Conseil en organisation et management
+2. Accompagnement à la performance des entreprises
+3. Conseil pour les décisions stratégiques
+4. Conseil en restructuration d'entreprise
+5. Optimisation des processus métier conseil
+6. Conseil en gestion du changement
+7. Analyse de la rentabilité et conseil
+8. Conseil en développement commercial
+9. Amélioration de l'efficacité opérationnelle – conseil
 
 ====================================
-Code: 43.22G
-Name: Travaux d'installation d'eau et de gaz en tous locaux
+Code: 16.11Y
+Name: Sciage et rabotage du bois
 Result:
-0. Installation de réseaux de distribution de gaz pour établissements de santé.
-1. Maintenance préventive et corrective de systèmes d'arrosage automatique.
-2. Intervention de plomberie et installation d'équipements sanitaires.
-3. Conception et installation de systèmes de distribution de gaz en milieu hospitalier.
-4. Travaux de plomberie en locaux tertiaires et résidentiels.
-5. Installation de systèmes d'extinction automatique d'incendie.
-6. Rénovation de réseaux d'alimentation en eau et gaz.
-7. Dépannage urgent de plomberie et de fuites de gaz.
-8. Mise en conformité des installations sanitaires selon les normes en vigueur.
-9. Entretien régulier des équipements de plomberie et de gaz.
+0. Fabrication de lames de parquet massives.
+1. Sciage de bois pour l'industrie du parquet.
+2. Préparation de bois brut pour parquets.
+3. Rabotage de bois pour planchers.
+4. Production de tasseaux pour parquet.
+5. Découpe de bois en dimensions spécifiques pour parquets.
+6. Sciage et rabotage de bois : fabrication de supports de parquet.
+7. Opérations de sciage et rabotage en atelier de parquet.
+8. Sciage de bois pour la production de parquets non assemblés.
+9. Rabotage de bois pour obtenir des surfaces planes destinées au parquet.
+
+====================================
+Code: 43.32G
+Name: Travaux de menuiserie bois et PVC
+Result:
+0. Menuiserie bois et PVC
+1. Installation de fenêtres en PVC
+2. Pose de portes intérieures et extérieures
+3. Rénovation de menuiseries anciennes
+4. Menuisier poseur - aménagement intérieur
+5. Fabrication et pose de dormants de fenêtre
+6. Installation de menuiseries en bois
+7. Aménagement de terrasses bois
+8. Remplacement de fenêtres et portes
+9. Menuiserie générale : pose et installation
+
+====================================
+Code: 47.12H
+Name: Autre commerce de détail non spécialisé en magasin de moins de 2500 m² ou hors magasin
+Result:
+0. Commerce généraliste, vente au détail
+1. Vente non spécialisée, surface réduite
+2. Détail généraliste, magasin de proximité
+3. Commerce de détail, divers produits
+4. Vente au détail, assortiment varié
+5. Magasin généraliste, moins de 2500 m²
+6. Vente non spécialisée, hors magasin
+7. Commerce de proximité, produits divers
+8. Vente de produits variés, magasin
+9. Commerce général, vente directe
+
+====================================
+Code: 74.30Y
+Name: Activités de traduction et d'interprétation
+Result:
+0. services de traduction spécialisée
+1. interprétation simultanée congrès international
+2. traduction technique manuels utilisateurs
+3. traducteur-interprète indépendant
+4. prestations d'interprétation judiciaire
+5. traduction de documents officiels
+6. activité de traduction littéraire
+7. interprétariat lors de négociations commerciales
+8. traduction assermentée contrats
+9. services de traduction et d'interprétation
+
+====================================
+Code: 70.20Y
+Name: Activités de conseil pour les affaires et autre conseil de gestion
+Result:
+0. Assistance à la direction dans la définition des orientations stratégiques.
+1. Conseil en organisation et méthodes pour optimisation des processus.
+2. Accompagnement au changement et conduite de projets.
+3. Stratégie d'entreprise et assistance à la prise de décision.
+4. Optimisation de la performance opérationnelle et financière.
+5. Conseil en gestion des risques et conformité réglementaire.
+6. Mission d'audit organisationnel et proposition d'améliorations.
+7. Conseil pour la mise en place de nouvelles structures.
+8. Support aux entreprises dans leur développement commercial.
+9. Amélioration de l'efficacité des fonctions support.
+
+====================================
+Code: 95.31G
+Name: Réparation et entretien de véhicules automobiles légers (moins de 3,5 tonnes)
+Result:
+0. Entretien courant automobiles légères
+1. Réparation mécanique véhicules < 3.5t
+2. Maintenance périodique véhicules particuliers
+3. Véhicules tout-terrain : réparation et entretien
+4. Réparation carrosserie et châssis automobiles
+5. Diagnostic et réparation pannes automobiles
+6. Contrôle technique et réparations consécutives
+7. Intervention sur véhicules légers : entretien et réparation
+8. Réparation et remplacement pièces automobiles
+9. Atelier de réparation automobile : tous services
 
 ====================================
 Code: 68.20H
 Name: Location et exploitation d'autres biens immobiliers propres ou loués
 Result:
-0. Gestion locative de parcelles de terrain industriel.
-1. Exploitation d'un parc immobilier non résidentiel.
-2. Location d'espaces de stockage et de bureaux.
-3. Revenus fonciers issus de la mise en location de terrains.
-4. Aménagement et location d'espaces pour installations solaires.
-5. Investissement et location de biens immobiliers commerciaux.
-6. Développement d'un projet immobilier locatif à usage professionnel.
-7. Exploitation d'un patrimoine immobilier propre et location.
-8. Location de surfaces commerciales dans un bâtiment neuf.
-9. Gestion et valorisation d'actifs immobiliers non résidentiels.
+0. Gestion locative de parcelles pour mobil-homes résidentiels.
+1. Location d'entrepôts industriels et équipements associés.
+2. Exploitation de surfaces immobilières destinées à la pension canine.
+3. Mise à disposition de bâtiments pour activités manufacturières.
+4. Location de toitures pour installations photovoltaïques.
+5. Administration de biens immobiliers en propre et location.
+6. Exploitation et location d'espaces industriels.
+7. Location de bâtiments commerciaux et propriétés annexes.
+8. Gestion de patrimoine immobilier locatif diversifié.
+9. Location de surfaces immobilières pour usage professionnel.
 
 ====================================
-Code: 62.10Y
-Name: Activités de programmation informatique
+Code: 01.25Y
+Name: Culture d'autres fruits d'arbres ou d'arbustes et de fruits à coque
 Result:
-0. Développement et maintenance d'applications logicielles sur mesure.
-1. Conception de logiciels pour des besoins spécifiques.
-2. Programmation informatique et gestion de projets digitaux.
-3. Ingénierie logicielle : écriture, tests et mises à jour.
-4. Création de solutions numériques innovantes.
-5. Expertise en développement d'applications informatiques.
-6. Services de programmation et de personnalisation logicielle.
-7. Conception et implémentation de systèmes logiciels complexes.
-8. Développement d'applications distribuées et sécurisées.
-9. Maintenance corrective et évolutive de logiciels.
+0. Production de noyaux de fruits à coque.
+1. Culture de noisettiers biologiques.
+2. Activités agricoles : amandiers et vergers.
+3. Culture de fruits à coque pour l'industrie agroalimentaire.
+4. Production de plants fruitiers d'arbres et arbustes.
+5. Culture intensive de pistaches.
+6. Culture de fruits à coque et optimisation des rendements.
+7. Vergers de fruits à coque : récolte et conditionnement.
+8. Culture de fruits d'arbres et arbustes non spécifiés.
+9. Exploitation agricole : culture de fruits à coque.
 
 ====================================
-Code: 70.10Y
-Name: Activités des sièges sociaux
+Code: 68.20H
+Name: Location et exploitation d'autres biens immobiliers propres ou loués
 Result:
-0. Gestion administrative centralisée pour filiales.
-1. Coordination des services généraux d'une entreprise.
-2. Direction et administration de l'ensemble de l'organisation.
-3. Activités de support aux unités opérationnelles.
-4. Pilotage stratégique et contrôle de gestion interne.
-5. Organisation et supervision des ressources humaines.
-6. Administration et gestion de l'information de l'entreprise.
-7. Services administratifs et logistiques pour le groupe.
-8. Assistance à la direction générale et aux départements.
-9. Fonctions de siège social, incluant les affaires juridiques.
+0. location de surfaces pour installation de panneaux photovoltaïques
+1. gestion locative de toitures pour énergie solaire
+2. exploitation d'immeubles de rapport
+3. mise en location de biens immobiliers détenus
+4. la propriété et l'exploitation par location de bâtiments
+5. acquisition et exploitation de biens immobiliers
+6. revenus fonciers issus de locations
+7. baux immobiliers et gestion de patrimoine bâti
+8. administration de biens immobiliers et location
+9. location d'espaces immobiliers à des tiers
 
 ====================================
-Code: 73.11Y
-Name: Activités d'agence de publicité
+Code: 70.20Y
+Name: Activités de conseil pour les affaires et autre conseil de gestion
 Result:
-0. Conception et déploiement de stratégies publicitaires multicanales pour les entreprises.
-1. Agence spécialisée dans l'optimisation de la visibilité et de l’image de marque.
-2. Prestations complètes de conseil en communication et de création de campagnes marketing.
-3. Développement de concepts créatifs innovants pour le lancement de nouveaux produits.
-4. Gestion intégrée des campagnes publicitaires, de la planification à l'analyse des résultats.
-5. Elaboration de supports publicitaires percutants et adaptés aux différents médias.
-6. Coordination de l'achat d'espaces publicitaires et négociation avec les différents supports.
-7. Services de planification média et de gestion des relations avec les agences partenaires.
-8. Solutions sur mesure pour renforcer l'engagement client et stimuler les ventes.
-9. Agence proposant une offre complète de services publicitaires, du conseil à la production.
+0. Conseil en stratégie d'entreprise
+1. Accompagnement à la performance organisationnelle
+2. Optimisation des processus métier
+3. Conseil pour amélioration de la gestion
+4. Assistance au pilotage des opérations
+5. Conseil en management de transition
+6. Stratégie commerciale et développement
+7. Conseil en organisation et efficacité
+8. Accompagnement à la transformation digitale
+9. Conseil pour l'amélioration continue
 
 ====================================
-Code: 85.59H
-Name: Tous les autres enseignements n.c.a.
+Code: 01.48G
+Name: Apiculture
 Result:
-0. Animation de sessions de formation sur les logiciels bureautiques.
-1. Intervention pédagogique ponctuelle en vue d'une remise à niveau.
-2. Organisation de cycles de formation à la manipulation de produits spécifiques.
-3. Dispenser des formations courtes sur des compétences numériques de base.
-4. Accompagnement éducatif pour l'acquisition de techniques de communication.
-5. Formation pratique aux gestes de survie en milieu hostile.
-6. Enseignement des savoir-faire traditionnels en matière de confection textile.
-7. Conception et réalisation de modules de formation continue.
-8. Préparation et suivi de sessions de perfectionnement professionnel.
-9. Mise en œuvre de programmes de formation spécialisés sur demande.
+0. Production et commercialisation de miel.
+1. Exploitation apicole et produits de la ruche.
+2. Apiculture : élevage d'abeilles et transformation.
+3. Vente directe de cire d'abeille.
+4. Apithérapie et produits à base de venin d'abeille.
+5. Production de propolis pour usages variés.
+6. Rayons de miel : production et conditionnement.
+7. Apiculture et diversification des produits.
+8. Élevage d'abeilles et apiculture biologique.
+9. Production de produits apicoles et dérivés.
 
 ====================================
-Code: 68.20G
-Name: Location de logements
+Code: 68.20H
+Name: Location et exploitation d'autres biens immobiliers propres ou loués
 Result:
-0. Gestion locative d'appartements résidentiels
-1. Location de maisons pour habitation principale
-2. Bail de logements meublés longue durée
-3. Activité de location immobilière à usage d'habitation
-4. Location de biens immobiliers – logements
-5. Exploitation de portefeuille locatif résidentiel
-6. Location de logements vides pour résidence secondaire
-7. Services de location de biens immobiliers d'habitation
-8. Location de logements – activité professionnelle
-9. Location de biens immobiliers à des fins d'habitation.
+0. Gestion locative de biens immobiliers et terrains.
+1. Exploitation d'aires résidentielles pour mobil-homes.
+2. Location d'espaces industriels et de bâtiments techniques.
+3. Développement immobilier locatif de logements sociaux.
+4. Mise en location de surfaces commerciales construites.
+5. Location de biens immobiliers propres ou acquis.
+6. Exploitation d'emplacements pour caravanes résidentielles.
+7. Location de toitures pour installations photovoltaïques.
+8. Activités de location et d'exploitation de parcs immobiliers.
+9. Administration et gestion de patrimoine immobilier locatif.
 
 ====================================
-Code: 85.59H
-Name: Tous les autres enseignements n.c.a.
+Code: 86.22Y
+Name: Activités de médecine spécialisée
 Result:
-0. Cours de dégustation et d'initiation à l'œnologie.
-1. Formation professionnelle à la gestion du stress et de l'anxiété.
-2. Soutien scolaire personnalisé en mathématiques et français.
-3. Préparation intensive à la prise de parole devant un public.
-4. Ateliers de relaxation et de méditation pour particuliers.
-5. Formation complète de maître-nageur sauveteur.
-6. Cours de respiration et de pleine conscience.
-7. Soutien pédagogique ciblé pour les élèves en difficulté.
-8. Stages de perfectionnement en techniques de relaxation.
-9. Initiation à l'art de déguster les vins et les cépages.
-
-====================================
-Code: 66.30Y
-Name: Activités de gestion de fonds
-Result:
-0. Administration de portefeuilles d'investissement pour des clients institutionnels.
-1. Prestation de services de conservation et d'administration de valeurs mobilières.
-2. Gestion déléguée d'actifs financiers pour le compte de tiers.
-3. Supervision et optimisation de fonds communs de placement.
-4. Pilotage de stratégies d'investissement pour des régimes de retraite.
-5. Conseil en gestion de patrimoine et allocation d'actifs.
-6. Opérations de gestion de fonds incluant l'évaluation et le reporting.
-7. Services de fiducie pour la conservation d'actifs et la gestion successorale.
-8. Développement et suivi de placements financiers diversifiés.
-9. Gestion centralisée des opérations liées aux fonds d'investissement.
+0. PSYCHIATRIE CONSULTATIONS
+1. CENTRE VACCINATION GRIPPE
+2. ACTIVITE RADIOLOGIE DIAGNOSTIQUE
+3. MEDECIN SPECIALISTE SECTEUR 2
+4. INTERPRETATION IMAGES MEDICALES
+5. CONSULTATION CARDIOLOGIE
+6. MEDECINE SPECIALISEE SOINS
+7. IMMUNISATION ADULTES ENFANTS
+8. MEDECIN SPECIALISTE CHIRURGIE
+9. ANALYSE MEDICALE LABORATOIRE
 
 ====================================

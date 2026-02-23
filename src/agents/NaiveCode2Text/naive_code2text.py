@@ -16,7 +16,7 @@ from src.agents.NaiveCode2Text.config_naive import \
     RANDOM_INCLUDES_GEOM_PROB, RANDOM_INCLUDES_MIN, RANDOM_INCLUDES_MAX, \
     RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX, \
     GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF, \
-    LABEL_COLUMN, N_FEWSHOT
+    LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT
 from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator, fewshot_builder
 from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier, fewshot_sampler
 from langchain_neo4j import Neo4jGraph
@@ -96,11 +96,18 @@ if __name__ == "__main__":
     root_logger.info("Creating prompts...")
 
     # System prompt
-    system_prompt = prompt_builder.build_system_prompt(
-            prompt_path=PROMPT_PATH,
-            language=LANGUAGE,
-            nb_labels=NB_LABELS
-        )
+    if USE_FEWSHOT:
+        system_prompt = fewshot_builder.build_fewshot_system_prompt(
+                prompt_path=PROMPT_PATH,
+                language=LANGUAGE,
+                nb_labels=NB_LABELS
+            )
+    else:
+        system_prompt = prompt_builder.build_system_prompt(
+                prompt_path=PROMPT_PATH,
+                language=LANGUAGE,
+                nb_labels=NB_LABELS
+            )
 
     valid_items = []
 
@@ -114,14 +121,15 @@ if __name__ == "__main__":
                 code=new_code
                 )
 
-            code_fewshot = fewshot_sampler.sample_fewshot_lazy(
-                fs=FS,
-                population_path=POPULATION_PATH,
-                code_column=CODE_COLUMN,
-                code=code,
-                label_column=LABEL_COLUMN,
-                n_fewshot=N_FEWSHOT
-            )
+            if USE_FEWSHOT:
+                code_fewshot = fewshot_sampler.sample_fewshot_lazy(
+                    fs=FS,
+                    population_path=POPULATION_PATH,
+                    code_column=CODE_COLUMN,
+                    code=code,
+                    label_column=LABEL_COLUMN,
+                    n_fewshot=N_FEWSHOT
+                )
 
             # Build prompts
             user_prompt = prompt_builder.build_user_prompt(
@@ -140,10 +148,11 @@ if __name__ == "__main__":
                 random_examples_max=RANDOM_EXAMPLES_MAX
                 )
 
-            user_prompt += fewshot_builder.add_fewshot(
-                fewshot=code_fewshot,
-                language=LANGUAGE
-            )
+            if USE_FEWSHOT:
+                user_prompt += fewshot_builder.add_fewshot_user_prompt(
+                    fewshot=code_fewshot,
+                    language=LANGUAGE
+                )
 
             valid_items.append({
                 "code": new_code,

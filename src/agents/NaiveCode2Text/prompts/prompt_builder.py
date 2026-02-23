@@ -140,6 +140,7 @@ def build_system_prompt(
         suffix = "_en"
     else:
         logger.warn("Supported languages are English and French. Switching to English...")
+        suffix = "_en"
 
     # Importing prompt
     file_path = prompt_path + "system_prompt" + suffix + ".txt"

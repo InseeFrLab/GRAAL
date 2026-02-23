@@ -28,7 +28,7 @@ SAVE_BATCH_SIZE = 1000              # If choosing .parquet output format
 
 # LLM Hyperparameters
 MODEL = None
-TEMPERATURE = 0.8
+TEMPERATURE = 1.4
 LANGUAGE = "French"
 GENERATION_BATCH_SIZE = 20
 
@@ -37,5 +37,6 @@ N_CODES = 20                 # Number of codes to sample, multiple of GENERATION
 NB_LABELS = 10                  # Number of labels to generate per code
 
 # Few-shot specifications:
+USE_FEWSHOT = True
 LABEL_COLUMN = "libelle"
-N_FEWSHOT = 3
+N_FEWSHOT = 6

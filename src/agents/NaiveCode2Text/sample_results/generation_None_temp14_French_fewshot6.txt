@@ -1,0 +1,303 @@
+200 wordings have been generated in 19.84 sec.
+
+====================================
+Code: 81.22Y
+Name: Autres activités de nettoyage des bâtiments et nettoyage industriel
+Result:
+0. Nettoyage industriel de locaux spécifiques, prestations.
+1. Services de nettoyage spécialisés pour bâtiments tertiaires.
+2. Exploitation d'une entreprise multiservices de propreté.
+3. Opérations de dégraissage et de désinfection d'ateliers.
+4. Nettoyage industriel de sols, murs et équipements.
+5. Entretien de locaux techniques, espaces sensibles.
+6. Activités combinées de nettoyage et de maintenance.
+7. Prestation de nettoyage pour sites industriels exigeants.
+8. Nettoyage de conduits spéciaux, ramonage divers.
+9. Autres travaux de propreté non classés ailleurs.
+
+====================================
+Code: 68.20G
+Name: Location de logements
+Result:
+0. Location de biens immobiliers résidentiels
+1. Location longue durée de logements
+2. Bailleurs de biens immobiliers
+3. Location de maisons et appartements
+4. Gestion locative de biens immobiliers
+5. Location meublée pour usage principal
+6. Investissement locatif immobilier
+7. Loueur de logements non professionnel
+8. Bail à long terme – Résidentiel
+9. Location immobilière annuelle et plus
+
+====================================
+Code: 46.19H
+Name: Autres activités d'intermédiaire non spécialisé du commerce de gros
+Result:
+0. Intermédiaire commerce de gros varié
+1. Activités d'agent commercial généraliste
+2. Courtier en produits divers
+3. Mandataire commercial polyvalent
+4. Négociation grossiste : prestations d'intermédiation
+5. Support commercial B2B multisecteur
+6. Services d'intermédiaire en commerce interentreprises
+7. Représentation commerciale quelques soit les produits.
+8. Prospection & vente pour compte de tiers
+9. Prestation d’intermédiation commerciale concourrente
+
+====================================
+Code: 85.59H
+Name: Tous les autres enseignements n.c.a.
+Result:
+0. Soutien scolaire spécifique aux élèves en difficulté.
+1. Intervention pédagogique thématiques variées non référencées ailleurs.
+2. Modules de formation en bureautique de base.
+3. Cours d'informatique pour seniors.
+4. Ateliers de développement des compétences oratoires.
+5. Formation aux outils numériques.
+6. Accompagnement personnalisé en apprentissage.
+7. Organisation de déclinaisons de formations
+8. Formations pratiques en techniques de survie.
+9. Préparation à la prise de parole en public.
+
+====================================
+Code: 01.48J
+Name: Élevage d'animaux de compagnie et d'autres animaux n.c.a.
+Result:
+0. Élevage de lapins angoras
+1. Production de lapins à fourrure
+2. Élevage d'animaux domestiques à fourrure
+3. Vente d’animaux de compagnie
+4. Elevage d'animauxélevage de chat persan
+5. Elevage sélectionné de lapins
+6. Élevage de petits mammifères
+7. Animaux à fourrure élevé
+8. Élevage d'espèces à fourrure
+9. Vente directe d'élevages de qualité
+
+====================================
+Code: 46.42Y
+Name: Commerce de gros d'habillement et de chaussures
+Result:
+0. Grossiste en prêt-à-porter et chaussures.
+1. Commerce de gros habillement sportif.
+2. Vente en gros accessoires vestimentaires.
+3. Négoce de vêtements et chaussures en gros.
+4. Import-export tissus, habillement.
+5. Fournisseur wholesale vêtements et chaussures.
+6. Distribution en gros d’articles d’habillement.
+7. Achat revente vêtements chaussures en gros.
+8. Grossiste articles de mode et chaussures.
+9. Commerce de gros de vêtements de sport.
+
+====================================
+Code: 85.69Y
+Name: Activités de soutien à l'enseignement n.c.a.
+Result:
+0. Soutien scolaire et préparation aux examens.
+1. Conseil pédagogique et élaboration de supports de cours.
+2. Bilans d'orientation et accompagnement personnalisé.
+3. Organisation de sessions de remédiation scolaire.
+4. Évaluation des acquis et suivi des progrès.
+5. Expertise CAPET sur dossier de candidature.
+6. Programmes de soutien à l'apprentissage en entreprise.
+7. CONSEILS FORMATION PROFESSIONNELLE - secteur public.
+8. Tests de connaissances et validation des compétences.
+9. Accompagnement en orientation professionnelle (jeunes).
+
+====================================
+Code: 46.90Y
+Name: Commerce de gros non spécialisé
+Result:
+0. distribution de marchandises diverses
+1. vente en gros multi-produits
+2. achat revente généraliste
+3. logistique et commercialisation produits variés
+4. import export vente aux professionnels
+5. grossiste non spécialisé
+6. activité d'achat et de vente
+7. société de commerce polyvalente
+8. achat-vente produits non spécifiques
+9. prestations de vente en gros
+
+====================================
+Code: 68.20H
+Name: Location et exploitation d'autres biens immobiliers propres ou loués
+Result:
+0. la mise en location espaces dédiés garde animaux
+1. acquisition, gestion et location de biens issus du patrimoine
+2. administration et valorisation du parc immobilier propre
+3. location de surfaces pour accueil de compagnons à 4 pattes
+4. location d'espaces affectés aux animaux de compagnie
+5. gestion locative d'immeubles et y afférents pour animaux
+6. mise à disposition de biens immobiliers et utiles
+7. souscription, location, vente, de tout bien immobilier
+8. exploitation de patrimoine immobilier bâti et non bâti pour garde animaux.
+9. achat, administration, amélioration et location espaces pension.
+
+====================================
+Code: 69.20Y
+Name: Activités de comptabilité, de tenue de comptes et d’audit ; conseil fiscal
+Result:
+0. Tenue de comptabilité générale et analytique.
+1. Préparation des déclarations fiscales professionnelles
+2. Conseils en matière de comptabilité et fiscalité.
+3. Services de facturation pour petites et moyennes entreprises.
+4. Révision et contrôle des comptes annuels.
+5. Assistance pour contrôles fiscaux.
+6. Comptabilité des salaires et charges sociales.
+7. Déclarations de TVA et impôt sur les sociétés.
+8. Activités comptables et de conseil aux entreprises.
+9. Obligations fiscales activité de services.
+
+====================================
+Code: 68.20G
+Name: Location de logements
+Result:
+0. Gestion locative de biens immobiliers
+1. Location de logements – annuelle et plus
+2. Mise à disposition de maisons et appartements
+3. Bail à long terme de résidences principales
+4. Location de biens résidentiels meublés
+5. Propriétaire bailleur – location classique
+6. Location de logements non hôteliers
+7. Procédure de location longue durée
+8. Investissement locatif – biens immobiliers
+9. Administration de locations – utilisation durable
+
+====================================
+Code: 47.21Y
+Name: Commerce de détail de fruits et légumes
+Result:
+0. Commerce de fruits frais et légumes de saison.
+1. Distribution en détail de produits légumiers.
+2. Fourniture de fruits et légumes pour le secteur alimentaire.
+3. Vente directe de fruits et légumes locaux.
+4. Magasin spécialisé dans les produits de la terre.
+5. Commercialisation de végétaux frais, y compris préparations.
+6. Approvisionnement en fruits et légumes pour collectivités.
+7. Vente en gros léger de fruits et de légumes.
+8. Commerce de fruits et légumes en circuit court.
+9. Produits frais : fruits, légumes, et dérivés.
+
+====================================
+Code: 46.19H
+Name: Autres activités d'intermédiaire non spécialisé du commerce de gros
+Result:
+0. Intermédiaire commerce de gros produits divers
+1. Courtage vente B2B
+2. Commercialisation diversifiée
+3. Agents commerciaux tous produits
+4. Activités d'intermédiation commerce
+5. Prospection et négociation B2B
+6. Vente en gros par mandataire
+7. Agent commercial multi secteurs
+8. Recherche de clientèle professionnelle
+9. Achat et revente marchandises diverses
+
+====================================
+Code: 68.20H
+Name: Location et exploitation d'autres biens immobiliers propres ou loués
+Result:
+0. Acquisition et gestion d'un parc immobilier locatif.
+1. Exploitation d’immeubles en propre ou location.
+2. Gestion locative de biens immobiliers divers.
+3. Achat, vente, administration de biens immobiliers.
+4. Promouvoir la construction de logements locatifs.
+5. Détenir et gérer un patrimoine immobilier locatif.
+6. Construction d'immeubles pour exploitation propre.
+7. Location de surfaces commerciales ou résidentielles.
+8. Amélioration et exploitation du patrimoine bâti.
+9. Opérer une gestion immobilière complète.
+
+====================================
+Code: 58.13Y
+Name: Édition de revues et de périodiques
+Result:
+0. Rédaction d'articles pour magazine spécialisé
+1. Publication de trimestriels scientifiques
+2. Édition de newsletters thématiques
+3. Rédaction et mise en page de revues
+4. Conception éditoriale de périodiques
+5. Coordination d'une revue trimestrielle
+6. Réalisation de supports rédactionnels pour presse
+7. Mise en contenu de magazines
+8. Rédaction d’articles de fond
+9. Édition périodique d’informations
+
+====================================
+Code: 70.20Y
+Name: Activités de conseil pour les affaires et autre conseil de gestion
+Result:
+0. Conseil en stratégie d'entreprise pour optimisation des coûts.
+1. Analyse de la performance opérationnelle et recommandations.
+2. Accompagnement à la transformation digitale des organisations.
+3. Définition de plans d'actions pour amélioration de la rentabilité industriel.
+4. Conseil pour évolution des processus internes.
+5. L’élaboration de business plans et études de faisabilité.
+6. Support à la mise en place de nouvelles organisations.
+7. Amélioration de l'efficacité organisationnelle et opérationnelle.
+8. Diagnostic de management et recommandations d’amélioration.
+9. Conseil pour une gestion plus dynamique et efficace.
+
+====================================
+Code: 68.20G
+Name: Location de logements
+Result:
+0. Location de biens immobiliers résidentiels
+1. Gestion locative d'appartements
+2. Bail de logements : habitation principale
+3. Loueur de maisons vides
+4. Exploitation de logements meublés
+5. Mise en location de résidences secondaires
+6. Administration de parcs immobiliers d'habitation
+7. Location à long terme : revenus fonciers
+8. Propriétaire bailleur : activité location
+9. Loueur non professionnel, biens immobiliers
+
+====================================
+Code: 71.11Y
+Name: Activités d'architecture
+Result:
+0. Étude de faisabilité architecture.
+1. Conseil en urbanisme et aménagement paysager.
+2. Architecture intérieure : réaménagement des locaux.
+3. Maîtrise d'œuvre en construction.
+4. Agence d'architectes – conception et suivi.
+5. SCHEMA de MASSE – ÉTUDE URBAINE
+6. Mission d’architecte pour projet neuf.
+7. PLANS – LES COÛTS – ÉCHÉANCIER
+8. Urbaniste/architecte – ESQUISSES et PAC.
+9. Conception architecture et assistance MOA.
+
+====================================
+Code: 10.71H
+Name: Fabrication de pain et d'autres produits de boulangerie-pâtisserie associée à leur vente au détail
+Result:
+0. Fabrication de pains spéciaux et de viennoiseries pour la vente directe.
+1. Boulangerie proposant pâtisseries fraîches et gâteaux sur commande.
+2. Atelier de fabrication de pain et de produits de boulangerie-pâtisserie.
+3. Pâtisserie-boulangerie artisanale, commerce de détail.
+4. Vente de pains frais et de produits de boulangerie associés.
+5. Production boulangère et vente de petites préparations sucrées.
+6. Fabrication et vente au détail de tartes et de gaufres.
+7. Artisan boulanger-pâtissier, production et commercialisation.
+8. Production de pains, viennoiseries, petite pâtisserie et vente.
+9. Boulangerie proposant des créations de pâtisseries originales.
+
+====================================
+Code: 73.11Y
+Name: Activités d'agence de publicité
+Result:
+0. Développement de concepts publicitaires innovants et gestion complète de campagnes multi-supports.
+1. Stratégie de communication intégrée : conseil, création, production et achat d’espaces.
+2. Agence spécialisée en branding et identité visuelle : création de logos, chartes graphiques.
+3. Réalisation de supports de communication percutants pour le secteur agroalimentaire.
+4. Campagnes publicitaires ciblées pour le lancement de nouveaux produits et services.
+5. Services créatifs : conception de slogans, visuels, storyboards.
+6. Gestion de projets publicitaires : coordination des équipes internes et externes.
+7. Production de matériel publicitaire digital : bannières, vidéos, animations.
+8. Conseil éditorial et création de contenus pour les réseaux sociaux et plateformes web.
+9. Accompagnement personnalisé des clients, de l'élaboration du message à la diffusion.
+
+====================================
