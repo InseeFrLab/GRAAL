@@ -8,7 +8,17 @@ def build_fewshot_system_prompt(
         language: str = "English",
         nb_labels: int = 10,
         ) -> str:
+    """
+    Import system prompt for fewshots with the correct language and specify the number of labels.
 
+    Args:
+        prompt_path (str): The path for importation.
+        language (str): English or French.
+        nb_labels (int): The number of labels to generate.
+
+    Returns:
+        str: The system prompt.
+    """
     if language == "French":
         suffix = "_fr"
     elif language == "English":
@@ -31,6 +41,16 @@ def add_fewshot_user_prompt(
         fewshot: list,
         language: str = "English"
         ) -> str:
+    """
+    Add few-shot to user prompt with the correct language.
+
+    Args:
+        fewshot (list): The list of exampls to give for few-shot.
+        language (str): English or French.
+
+    Returns:
+        str: The text to add to user prompt.
+    """
 
     if len(fewshot) == 0:
         return ""
