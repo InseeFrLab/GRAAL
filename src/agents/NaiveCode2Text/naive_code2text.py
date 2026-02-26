@@ -16,7 +16,8 @@ from src.agents.NaiveCode2Text.config_naive import \
     RANDOM_INCLUDES_GEOM_PROB, RANDOM_INCLUDES_MIN, RANDOM_INCLUDES_MAX, \
     RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX, \
     GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF, \
-    LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT
+    LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT, EXHAUSTIVE_SAMPLING, N_SAMPLES_PER_CODE, \
+    MODEL_NAME
 from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator, fewshot_builder
 from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier, fewshot_sampler
 from langchain_neo4j import Neo4jGraph
@@ -54,18 +55,45 @@ if __name__ == "__main__":
         token=os.environ["AWS_SESSION_TOKEN"]
     )
 
+    # Neo4j connection
+    root_logger.info("Connecting to Neo4j graph...")
+    notice_graph = Neo4jGraph(
+        url=os.environ["NEO4J_URL"],
+        username=os.environ["NEO4J_USERNAME"],
+        password=os.environ["NEO4J_PWD"]
+    )
+
     # LLM_API_KEY = os.environ["LLM_API_KEY"]
     URL_GENERATION_API = os.environ["URL_GENERATION_API"]
     LLM_CLIENT = AsyncOpenAI(base_url=URL_GENERATION_API)
 
     # Sampling from original data
+    code_list = []
+
     root_logger.info("Sampling from data...")
-    code_list = code_sampler.sample_codes_lazy(
-        fs=FS,
-        population_path=POPULATION_PATH,
-        code_column=CODE_COLUMN,
-        n_codes=N_CODES
-    )
+    if EXHAUSTIVE_SAMPLING:
+        code_list += code_sampler.get_all_codes(
+                        graph=notice_graph,
+                        n_samples_per_code=N_SAMPLES_PER_CODE
+                    )
+
+        N_EXHAUSTIVE = len(code_list)
+
+        if N_EXHAUSTIVE >= N_CODES:
+            root_logger.warn("Exhaustive sampling requested, but N_CODES is too low.")
+            root_logger.warn("Keeping exhaustivity, but sampling 0 code randomly.")
+            N_CODES = 0
+
+        else:
+            N_CODES -= N_EXHAUSTIVE
+
+    if N_CODES > 0:
+        code_list += code_sampler.sample_codes_lazy(
+                        fs=FS,
+                        population_path=POPULATION_PATH,
+                        code_column=CODE_COLUMN,
+                        n_codes=N_CODES
+                    )
 
     # NAF to NACE
     if CONVERT_NAF_TO_NACE:
@@ -79,17 +107,19 @@ if __name__ == "__main__":
     else:
         new_code_list = code_list
 
-    # Neo4j connection
-    root_logger.info("Connecting to Neo4j graph...")
-    notice_graph = Neo4jGraph(
-        url=os.environ["NEO4J_URL"],
-        username=os.environ["NEO4J_USERNAME"],
-        password=os.environ["NEO4J_PWD"]
-    )
-
     # Define an automatic name for output
-    file_name = f"generation_{MODEL}_temp{TEMPERATURE}_{LANGUAGE}_fewshot{N_FEWSHOT}"\
-                .replace(":", "-").replace(".", "") + OUTPUT_FORMAT
+    if EXHAUSTIVE_SAMPLING:
+        exhaust_string = "_exhaustive"
+    else:
+        exhaust_string = ""
+
+    if MODEL_NAME is None and MODEL_NAME:
+        MODEL_NAME = MODEL
+        if MODEL_NAME is None:
+            MODEL_NAME = ""
+
+    file_name = f"generation_{MODEL_NAME}_temp{TEMPERATURE}_{LANGUAGE}_fewshot{N_FEWSHOT}"\
+                .replace(":", "-").replace(".", "") + exhaust_string + OUTPUT_FORMAT
     FINAL_PATH = OUTPUT_PATH + file_name
 
     # Few-shot sampling

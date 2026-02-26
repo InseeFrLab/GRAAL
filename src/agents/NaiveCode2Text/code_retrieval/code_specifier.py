@@ -1,8 +1,8 @@
-from src.neo4j_graph.graph import Graph
+from langchain_neo4j import Neo4jGraph
 
 
 def get_code_information(
-        graph: Graph,
+        graph: Neo4jGraph,
         code: str
         ) -> dict:
     """
