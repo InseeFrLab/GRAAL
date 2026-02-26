@@ -72,10 +72,12 @@ if __name__ == "__main__":
 
     root_logger.info("Sampling from data...")
     if EXHAUSTIVE_SAMPLING:
-        code_list += code_sampler.get_all_codes(
+        code_list += list(code_sampler.get_all_codes(
                         graph=notice_graph,
                         n_samples_per_code=N_SAMPLES_PER_CODE
-                    )
+                    ))
+
+        code_list = [code_specifier.to_bad_NAF(code) for code in code_list]
 
         N_EXHAUSTIVE = len(code_list)
 
@@ -88,12 +90,12 @@ if __name__ == "__main__":
             N_CODES -= N_EXHAUSTIVE
 
     if N_CODES > 0:
-        code_list += code_sampler.sample_codes_lazy(
+        code_list += list(code_sampler.sample_codes_lazy(
                         fs=FS,
                         population_path=POPULATION_PATH,
                         code_column=CODE_COLUMN,
                         n_codes=N_CODES
-                    )
+                    ))
 
     # NAF to NACE
     if CONVERT_NAF_TO_NACE:
@@ -101,7 +103,7 @@ if __name__ == "__main__":
         new_code_list = [code_specifier.NAF_to_NACE(code) for code in code_list]
 
     elif CONVERT_TO_PROPER_NAF:
-        root_logger.info("Transforming codes from NAF to NACE...")
+        root_logger.info("Transforming codes to proper NAF...")
         new_code_list = [code_specifier.to_proper_NAF(code) for code in code_list]
 
     else:
