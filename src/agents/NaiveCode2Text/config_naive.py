@@ -30,7 +30,7 @@ SAVE_BATCH_SIZE = 1000              # If choosing .parquet output format
 MODEL_NAME = "Qwen2.5-32B-Instruct"       # For file name
 
 # LLM Hyperparameters
-MODEL = None
+MODEL = "google/gemma-3-27b-it"
 TEMPERATURE = 1.4
 LANGUAGE = "French"
 GENERATION_BATCH_SIZE = 20

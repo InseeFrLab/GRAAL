@@ -1,7 +1,6 @@
 import polars as pl
 import s3fs
 import numpy as np
-from langchain_neo4j import Neo4jGraph
 
 
 def sample_codes(
@@ -70,35 +69,3 @@ def sample_codes_lazy(
     df = sampled.collect()
 
     return df[code_column].to_numpy()
-
-
-def get_all_codes(
-        graph: Neo4jGraph,
-        n_samples_per_code: int
-        ) -> np.ndarray:
-    """
-    Sample codes with replacement using lazyframes from Polars.
-
-    Args:
-        fs (S3FileSystem): The filesystem for importation.
-        population_path (str): The path of the parquet file of the population.
-        code_column (str): The name of the column for codes.
-        n_codes (int): The number of codes to sample.
-
-    Returns:
-        numpy.ndarray: An array of n_codes codes sampled with replacement.
-    """
-
-    query = """
-        MATCH (n)
-        WHERE n.FINAL = 1
-        RETURN DISTINCT n.CODE;
-        """
-
-    result = graph.query(query)
-
-    if not result:
-        print("No result in get_code_information")
-        return ()
-
-    return [r["n.CODE"] for r in result]

@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     root_logger.info("Sampling from data...")
     if EXHAUSTIVE_SAMPLING:
-        code_list += list(code_sampler.get_all_codes(
+        code_list += list(code_specifier.get_all_codes(
                         graph=notice_graph,
                         n_samples_per_code=N_SAMPLES_PER_CODE
                     ))
