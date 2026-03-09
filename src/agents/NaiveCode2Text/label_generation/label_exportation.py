@@ -1,9 +1,74 @@
 import logging
+import re
 
 import pandas as pd
 import s3fs
 
 logger = logging.getLogger(__name__)
+
+
+def create_file_name(
+        output_path: str,
+        output_format: str,
+        temperature: float,
+        language: str,
+        exhaustive_sampling: bool = False,
+        use_fewshot: bool = False,
+        n_fewshot: int = 0,
+        model_name: str = None,
+        model: str = None,
+        ) -> str:
+    """
+    Create the full output_path with an automatic name representing the config inputs.
+
+    Args:
+        output_path (str): the folder to upload the file in
+        output_format (str): the format (.txt or .parquet)
+        temperature: float,
+        language: str,
+        exhaustive_sampling: bool = False,
+        use_fewshot: bool = False,
+        n_fewshot: int = 0,
+        model_name: str = None,
+        model: str = None,
+
+    Returns:
+        bool: True if the file has been correctly saved.
+    """
+
+    temp_string = f"_temp{temperature}".replace(".", "")
+
+    if model_name is None and model_name:
+        model_string = "_" + model
+        if model_name is None:
+            model_string = ""
+    else:
+        model_string = "_" + model_name
+
+    model_string = re.sub(r"[^a-zA-Z0-9_-]", "-", model_string)
+
+    if use_fewshot:
+        if n_fewshot > 0:
+            fewshot_string = f"_fewshot{n_fewshot}"
+        else:
+            fewshot_string = "_fewshot"
+    else:
+        fewshot_string = ""
+
+    if exhaustive_sampling:
+        exhaust_string = "_exhaustive"
+    else:
+        exhaust_string = ""
+
+    file_name = "generation" + model_string + temp_string + fewshot_string + exhaust_string
+
+    assert output_format in [".txt", ".parquet"], "Output format should be either .txt or .parquet"
+
+    file_name += output_format
+
+    final_path = output_path + file_name + output_format
+
+    return final_path
 
 
 def export_to_txt(
@@ -74,22 +139,17 @@ def export_to_parquet(
     """
 
     # Basic validation
-    if not (len(codes) == len(names) == len(labels)):
-        raise "Codes, names, and labels must have the same length."
-        return False
+    assert (len(codes) == len(names) == len(labels)), \
+        "Codes, names, and labels must have the same length."
 
-    if len(codes) == 0:
-        raise "Empty input: nothing to export."
-        return False
+    assert len(codes) != 0, "Empty input: nothing to export."
 
     # Flatten structure
     rows = []
 
     for code, name, generated_labels in zip(codes, names, labels):
 
-        if not isinstance(generated_labels, list):
-            raise "Labels must be stored in a list."
-            return False
+        assert isinstance(generated_labels, list), "Labels must be stored in a list."
 
         for label in generated_labels:
             rows.append({

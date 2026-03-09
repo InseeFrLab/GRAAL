@@ -1,6 +1,5 @@
 import polars as pl
 import s3fs
-import numpy as np
 
 
 def sample_codes_lazy(
@@ -8,7 +7,7 @@ def sample_codes_lazy(
         population_path: str,
         code_column: str,
         n_codes: int
-        ) -> np.ndarray:
+        ) -> list:
     """
     Sample codes with replacement using lazyframes from Polars.
 
@@ -19,7 +18,7 @@ def sample_codes_lazy(
         n_codes (int): The number of codes to sample.
 
     Returns:
-        numpy.ndarray: An array of n_codes codes sampled with replacement.
+        list: A list of n_codes codes sampled with replacement.
     """
 
     with fs.open(population_path, 'rb') as f:
@@ -41,4 +40,4 @@ def sample_codes_lazy(
 
     df = sampled.collect()
 
-    return df[code_column].to_numpy()
+    return df[code_column].to_list()

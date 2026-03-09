@@ -75,30 +75,30 @@ if __name__ == "__main__":
 
     root_logger.info("Sampling from data...")
     if EXHAUSTIVE_SAMPLING:
-        code_list += list(code_specifier.get_all_codes(
+        code_list += code_specifier.get_all_codes(
                         graph=notice_graph,
                         n_samples_per_code=MIN_SAMPLES_PER_CODE
-                    ))
+                    )
 
         code_list = [NAF_preprocessing.to_bad_NAF(code) for code in code_list]
 
         N_EXHAUSTIVE = len(code_list)
 
         if N_EXHAUSTIVE >= N_CODES:
-            root_logger.warn("Exhaustive sampling requested, but N_CODES is too low.")
-            root_logger.warn("Keeping exhaustivity, but sampling 0 code randomly.")
+            root_logger.warn(f"""Exhaustive sampling requested, but N_CODES is too low:
+N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
             N_CODES = 0
 
         else:
             N_CODES -= N_EXHAUSTIVE
 
     if N_CODES > 0:
-        code_list += list(code_sampler.sample_codes_lazy(
+        code_list += code_sampler.sample_codes_lazy(
                         fs=FS,
                         population_path=POPULATION_PATH,
                         code_column=CODE_COLUMN,
                         n_codes=N_CODES
-                    ))
+                    )
 
     # NAF to NACE
     if CONVERT_NAF_TO_NACE:
@@ -113,25 +113,17 @@ if __name__ == "__main__":
         new_code_list = code_list
 
     # Define an automatic name for output
-    if EXHAUSTIVE_SAMPLING:
-        exhaust_string = "_exhaustive"
-    else:
-        exhaust_string = ""
-
-    if USE_FEWSHOT:
-        fewshot_string = f"_fewshot{N_FEWSHOT}"
-    else:
-        fewshot_string = ""
-
-    if MODEL_NAME is None and MODEL_NAME:
-        MODEL_NAME = MODEL
-        if MODEL_NAME is None:
-            MODEL_NAME = ""
-
-    file_name = f"generation_{MODEL_NAME}_temp{TEMPERATURE}_{LANGUAGE}"\
-                .replace(":", "-").replace(".", "").replace("/", "-") \
-                + fewshot_string + exhaust_string + OUTPUT_FORMAT
-    FINAL_PATH = OUTPUT_PATH + file_name
+    FINAL_PATH = label_exportation.create_file_name(
+        output_path=OUTPUT_PATH,
+        output_format=OUTPUT_FORMAT,
+        temperature=TEMPERATURE,
+        language=LANGUAGE,
+        exhaustive_sampling=EXHAUSTIVE_SAMPLING,
+        use_fewshot=USE_FEWSHOT,
+        n_fewshot=N_FEWSHOT,
+        model_name=MODEL_NAME,
+        model=MODEL,
+        )
 
     # Few-shot sampling
     if USE_FEWSHOT:
@@ -242,8 +234,33 @@ if __name__ == "__main__":
                 })
 
         except Exception as e:
-            root_logger.warning(f"Batch generation failed, skipping... Details: {e}")
+            root_logger.warning(f"Batch generation failed, retrying... Details: {e}")
             root_logger.info(traceback.format_exc())
+            try:
+                generations = asyncio.run(
+                    label_generator.ask_model_multiple(
+                        system_prompt=system_prompt,
+                        user_prompts=prompts,
+                        llm_client=LLM_CLIENT,
+                        model=MODEL,
+                        temperature=TEMPERATURE,
+                        LabelGeneration=LabelGenerationModel,
+                        max_concurrency=len(prompts)
+                    )
+                )
+
+                for item, generation in zip(batch, generations):
+                    results_buffer.append({
+                        "code": item["code"],
+                        "name": item["name"],
+                        "labels": generation.labels
+                    })
+
+                root_logger.info("The new trial was succesful.")
+
+            except Exception as ex:
+                root_logger.warning(f"Batch generation failed, skipping... Details: {ex}")
+                root_logger.info(traceback.format_exc())
 
         if OUTPUT_FORMAT == ".parquet" and len(results_buffer) >= SAVE_BATCH_SIZE:
             root_logger.info("Saving intermediate results...")
