@@ -8,6 +8,7 @@ import asyncio
 from dotenv import load_dotenv
 import s3fs
 from openai import AsyncOpenAI
+from langchain_neo4j import Neo4jGraph
 
 from src.agents.NaiveCode2Text.config_naive import \
     MODEL, TEMPERATURE, OUTPUT_PATH, N_CODES, POPULATION_PATH, CODE_COLUMN, \
@@ -18,9 +19,11 @@ from src.agents.NaiveCode2Text.config_naive import \
     GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF, \
     LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT, EXHAUSTIVE_SAMPLING, MIN_SAMPLES_PER_CODE, \
     MODEL_NAME
-from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator, fewshot_builder
-from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier, fewshot_sampler
-from langchain_neo4j import Neo4jGraph
+from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
+from src.agents.NaiveCode2Text.data_preprocessing import NAF_preprocessing
+from src.agents.NaiveCode2Text.fewshot import fewshot_prompt_builder, fewshot_sampler
+from src.agents.NaiveCode2Text.label_generation import label_generator, label_exportation
+from src.agents.NaiveCode2Text.prompt_creation import prompt_builder
 
 # Logger
 root_logger = logging.getLogger()
@@ -77,7 +80,7 @@ if __name__ == "__main__":
                         n_samples_per_code=MIN_SAMPLES_PER_CODE
                     ))
 
-        code_list = [code_specifier.to_bad_NAF(code) for code in code_list]
+        code_list = [NAF_preprocessing.to_bad_NAF(code) for code in code_list]
 
         N_EXHAUSTIVE = len(code_list)
 
@@ -100,11 +103,11 @@ if __name__ == "__main__":
     # NAF to NACE
     if CONVERT_NAF_TO_NACE:
         root_logger.info("Transforming codes from NAF to NACE...")
-        new_code_list = [code_specifier.NAF_to_NACE(code) for code in code_list]
+        new_code_list = [NAF_preprocessing.NAF_to_NACE(code) for code in code_list]
 
     elif CONVERT_TO_PROPER_NAF:
         root_logger.info("Transforming codes to proper NAF...")
-        new_code_list = [code_specifier.to_proper_NAF(code) for code in code_list]
+        new_code_list = [NAF_preprocessing.to_proper_NAF(code) for code in code_list]
 
     else:
         new_code_list = code_list
@@ -115,14 +118,19 @@ if __name__ == "__main__":
     else:
         exhaust_string = ""
 
+    if USE_FEWSHOT:
+        fewshot_string = f"_fewshot{N_FEWSHOT}"
+    else:
+        fewshot_string = ""
+
     if MODEL_NAME is None and MODEL_NAME:
         MODEL_NAME = MODEL
         if MODEL_NAME is None:
             MODEL_NAME = ""
 
-    file_name = f"generation_{MODEL_NAME}_temp{TEMPERATURE}_{LANGUAGE}_fewshot{N_FEWSHOT}"\
+    file_name = f"generation_{MODEL_NAME}_temp{TEMPERATURE}_{LANGUAGE}"\
                 .replace(":", "-").replace(".", "").replace("/", "-") \
-                + exhaust_string + OUTPUT_FORMAT
+                + fewshot_string + exhaust_string + OUTPUT_FORMAT
     FINAL_PATH = OUTPUT_PATH + file_name
 
     # Few-shot sampling
@@ -142,7 +150,7 @@ if __name__ == "__main__":
 
     # System prompt
     if USE_FEWSHOT:
-        system_prompt = fewshot_builder.build_fewshot_system_prompt(
+        system_prompt = fewshot_prompt_builder.build_fewshot_system_prompt(
                 prompt_path=PROMPT_PATH,
                 language=LANGUAGE,
                 nb_labels=NB_LABELS
@@ -184,7 +192,7 @@ if __name__ == "__main__":
                 )
 
             if USE_FEWSHOT:
-                user_prompt += fewshot_builder.add_fewshot_user_prompt(
+                user_prompt += fewshot_prompt_builder.add_fewshot_user_prompt(
                     fewshot=fewshot,
                     language=LANGUAGE
                 )
@@ -245,7 +253,7 @@ if __name__ == "__main__":
                 names = [r["name"] for r in results_buffer]
                 labels = [r["labels"] for r in results_buffer]
 
-                label_generator.export_to_parquet(
+                label_exportation.export_to_parquet(
                     codes=codes,
                     names=names,
                     labels=labels,
@@ -268,7 +276,7 @@ if __name__ == "__main__":
         names = [r["name"] for r in results_buffer]
         labels = [r["labels"] for r in results_buffer]
 
-        label_generator.export_to_txt(
+        label_exportation.export_to_txt(
             codes=codes,
             names=names,
             labels=labels,
@@ -284,7 +292,7 @@ if __name__ == "__main__":
             names = [r["name"] for r in results_buffer]
             labels = [r["labels"] for r in results_buffer]
 
-            label_generator.export_to_parquet(
+            label_exportation.export_to_parquet(
                 codes=codes,
                 names=names,
                 labels=labels,
