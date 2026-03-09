@@ -16,7 +16,7 @@ from src.agents.NaiveCode2Text.config_naive import \
     RANDOM_INCLUDES_GEOM_PROB, RANDOM_INCLUDES_MIN, RANDOM_INCLUDES_MAX, \
     RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX, \
     GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF, \
-    LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT, EXHAUSTIVE_SAMPLING, N_SAMPLES_PER_CODE, \
+    LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT, EXHAUSTIVE_SAMPLING, MIN_SAMPLES_PER_CODE, \
     MODEL_NAME
 from src.agents.NaiveCode2Text.prompts import prompt_builder, label_generator, fewshot_builder
 from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier, fewshot_sampler
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         password=os.environ["NEO4J_PWD"]
     )
 
-    # LLM_API_KEY = os.environ["LLM_API_KEY"]
+    # Connecting to Generation Client
     URL_GENERATION_API = os.environ["URL_GENERATION_API"]
     LLM_CLIENT = AsyncOpenAI(base_url=URL_GENERATION_API)
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     if EXHAUSTIVE_SAMPLING:
         code_list += list(code_specifier.get_all_codes(
                         graph=notice_graph,
-                        n_samples_per_code=N_SAMPLES_PER_CODE
+                        n_samples_per_code=MIN_SAMPLES_PER_CODE
                     ))
 
         code_list = [code_specifier.to_bad_NAF(code) for code in code_list]
@@ -121,7 +121,8 @@ if __name__ == "__main__":
             MODEL_NAME = ""
 
     file_name = f"generation_{MODEL_NAME}_temp{TEMPERATURE}_{LANGUAGE}_fewshot{N_FEWSHOT}"\
-                .replace(":", "-").replace(".", "") + exhaust_string + OUTPUT_FORMAT
+                .replace(":", "-").replace(".", "").replace("/", "-") \
+                + exhaust_string + OUTPUT_FORMAT
     FINAL_PATH = OUTPUT_PATH + file_name
 
     # Few-shot sampling
