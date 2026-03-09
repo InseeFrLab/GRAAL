@@ -119,23 +119,27 @@ class Graph:
             password=neo4j_config.password,
             enhanced_schema=True,
         )
-    
-        self.emb_model = OpenAIEmbeddings(
-            model=os.environ["EMBEDDING_MODEL"],
-            openai_api_base=os.environ["URL_EMBEDDING_API"],
-            openai_api_key=os.environ["OPENAI_API_KEY"],
-        )
 
-        self.db = Neo4jVector.from_existing_graph(
-            graph=self.graph,
-            embedding=self.emb_model,
-            index_name="id",
-            node_label="Chunk",
-            text_node_properties=["text"],
-            keyword_index_name="text",
-            embedding_node_property="embedding",
-            search_type="vector",
-        )
+        try:
+            self.emb_model = OpenAIEmbeddings(
+                model=os.environ["EMBEDDING_MODEL"],
+                openai_api_base=os.environ["URL_EMBEDDING_API"],
+                openai_api_key=os.environ["OPENAI_API_KEY"],
+            )
+
+            self.db = Neo4jVector.from_existing_graph(
+                graph=self.graph,
+                embedding=self.emb_model,
+                index_name="id",
+                node_label="Chunk",
+                text_node_properties=["text"],
+                keyword_index_name="text",
+                embedding_node_property="embedding",
+                search_type="vector",
+            )
+
+        except Exception as e: 
+            logger.info(f"Not able to connect to the embedder: {e}")
 
     # ------------------------------------------------------------------
     # Get tools

@@ -24,8 +24,6 @@ from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
 from src.main import classify_navigator
 
-
-
 # %% Config
 N_CODES = 20
 K_NN = 1
@@ -46,7 +44,8 @@ fs = s3fs.S3FileSystem(
     client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
     key=os.environ["AWS_ACCESS_KEY_ID"], 
     secret=os.environ["AWS_SECRET_ACCESS_KEY"], 
-    token=os.environ["AWS_SESSION_TOKEN"])
+    token=os.environ["AWS_SESSION_TOKEN"],
+    )
 
 graph = Graph(neo4j_config)
 
