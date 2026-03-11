@@ -9,7 +9,8 @@
 import os
 import numpy as np
 import plotly.graph_objects as go
-from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
+
 import polars as pl
 import umap
 import pacmap
@@ -25,28 +26,43 @@ from sklearn.manifold import TSNE
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
 from src.main import classify_navigator
+import logging
 
+logger = logging.getLogger(__name__)
 
 # %% Config
+load_dotenv(override=True)
+
 N_CODES = 20
 K_NN = 1
 PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
 COLUMNS = ["libelle", "nace2025"]
 
 REDUCTION_METHOD = "umap"  # Options: "umap", "pacmap", "tsne", "pca"
+# %%
+print(
+    os.getenv('EMBEDDING_MODEL'), 
+    os.getenv('URL_EMBEDDING_API'), 
+    os.getenv('OPENAI_API_KEY')
+    )
+
+
+# %%
+from langchain_openai import OpenAIEmbeddings
 
 emb_model = OpenAIEmbeddings(
-        model=os.environ['EMBEDDING_MODEL'],
-        openai_api_base=os.environ['URL_EMBEDDING_API'],
-        openai_api_key="EMPTY",
-        tiktoken_enabled=False,
-    )
+    model=os.getenv("EMBEDDING_MODEL"),
+    openai_api_base=os.getenv("URL_EMBEDDING_API"), 
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    check_embedding_ctx_length=False,
+)
 
 fs = s3fs.S3FileSystem(
     client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
     key=os.environ["AWS_ACCESS_KEY_ID"], 
     secret=os.environ["AWS_SECRET_ACCESS_KEY"], 
-    token=os.environ["AWS_SESSION_TOKEN"])
+    token=os.environ["AWS_SESSION_TOKEN"]
+)
 
 graph = Graph(neo4j_config)
 
@@ -85,12 +101,7 @@ for idx, record in enumerate(results):
 
 n_nace_nodes = len(embeddings)
 
-
-
 # %%
-import os
-import s3fs
-
 fs = s3fs.S3FileSystem(
     client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
     key = os.environ["AWS_ACCESS_KEY_ID"], 
@@ -142,14 +153,7 @@ for i, (label, label_emb, target_code) in enumerate(zip(labels, labels_embedding
 embeddings = np.array(embeddings)
 
 # %%
-load_dotenv(override=True)
-%env MAX_TURNS=30
-# %env GENERATION_MODEL=google/gemma-3-27b-it
-%env OPENAI_BASE_URL=vllm-generation2.user.lab.sspcloud.fr
-%env OPENAI_API_KEY=EMPTY
-
 logger.info(f"Environment: {os.environ['GENERATION_MODEL']}, {os.environ['OPENAI_BASE_URL']}, {os.environ['OPENAI_API_KEY']}")
-
 
 # %% Classification by the navigator
 from src.config import neo4j_config
