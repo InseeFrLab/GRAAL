@@ -10,20 +10,13 @@ import s3fs
 from openai import AsyncOpenAI
 from langchain_neo4j import Neo4jGraph
 
-from src.agents.NaiveCode2Text.config_naive import \
-    MODEL, TEMPERATURE, OUTPUT_PATH, N_CODES, POPULATION_PATH, CODE_COLUMN, \
-    OUTPUT_FORMAT, SAVE_BATCH_SIZE, LANGUAGE, NB_LABELS, PROMPT_PATH, \
-    INCLUDES_DIVIDER, EXAMPLES_DIVIDER, EXCLUDE_DIVIDER, RANDOM_SPEC_SAMPLING, \
-    RANDOM_INCLUDES_GEOM_PROB, RANDOM_INCLUDES_MIN, RANDOM_INCLUDES_MAX, \
-    RANDOM_EXAMPLES_GEOM_PROB, RANDOM_EXAMPLES_MIN, RANDOM_EXAMPLES_MAX, \
-    GENERATION_BATCH_SIZE, CONVERT_NAF_TO_NACE, CONVERT_TO_PROPER_NAF, \
-    LABEL_COLUMN, N_FEWSHOT, USE_FEWSHOT, EXHAUSTIVE_SAMPLING, MIN_SAMPLES_PER_CODE, \
-    MODEL_NAME
+from src.agents.NaiveCode2Text import config_naive as cfg
 from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifier
 from src.agents.NaiveCode2Text.data_preprocessing import NAF_preprocessing
 from src.agents.NaiveCode2Text.fewshot import fewshot_prompt_builder, fewshot_sampler
 from src.agents.NaiveCode2Text.label_generation import label_generator, label_exportation
-from src.agents.NaiveCode2Text.prompt_creation import prompt_builder
+from src.agents.NaiveCode2Text.prompt_creation import system_prompt_builder, \
+    exhaustive_user_prompt_builder, random_user_prompt_builder
 
 # Logger
 root_logger = logging.getLogger()
@@ -46,8 +39,12 @@ root_logger.addHandler(handler)
 load_dotenv(override=True)
 
 if __name__ == "__main__":
+
+    # ======================== INIT ==========================
+    root_logger.info("Initialization...")
+
     # Clock for speed testing
-    if OUTPUT_FORMAT == ".txt":
+    if cfg.OUTPUT_FORMAT == ".txt":
         start = time.perf_counter()
 
     # Access configurations
@@ -59,8 +56,7 @@ if __name__ == "__main__":
     )
 
     # Neo4j connection
-    root_logger.info("Connecting to Neo4j graph...")
-    notice_graph = Neo4jGraph(
+    NOTICE_GRAPH = Neo4jGraph(
         url=os.environ["NEO4J_URL"],
         username=os.environ["NEO4J_USERNAME"],
         password=os.environ["NEO4J_PWD"]
@@ -70,88 +66,84 @@ if __name__ == "__main__":
     URL_GENERATION_API = os.environ["URL_GENERATION_API"]
     LLM_CLIENT = AsyncOpenAI(base_url=URL_GENERATION_API)
 
-    # Sampling from original data
+    # Model set up
+    LabelGenerationModel = label_generator.build_label_generation_model(cfg.N_LABELS_PER_GEN)
+
+    # Automatic name for output
+    FINAL_PATH = label_exportation.create_file_name(
+        output_path=cfg.OUTPUT_PATH,
+        output_format=cfg.OUTPUT_FORMAT,
+        temperature=cfg.TEMPERATURE,
+        language=cfg.LANGUAGE,
+        exhaustive_sampling=cfg.EXHAUSTIVE_SAMPLING,
+        use_fewshot=cfg.USE_FEWSHOT,
+        n_fewshot=cfg.N_FEWSHOT,
+        model_name=cfg.MODEL_NAME,
+        model=cfg.MODEL,
+        )
+
+    # ======================== SAMPLING CODES ==========================
+    root_logger.info("Sampling from data...")
+
     code_list = []
 
-    root_logger.info("Sampling from data...")
-    if EXHAUSTIVE_SAMPLING:
+    if cfg.EXHAUSTIVE_SAMPLING:
         code_list += code_specifier.get_all_codes(
-                        graph=notice_graph,
-                        n_samples_per_code=MIN_SAMPLES_PER_CODE
+                        graph=NOTICE_GRAPH,
+                        n_samples_per_code=cfg.MIN_PROMPTS_PER_CODE
                     )
 
         code_list = [NAF_preprocessing.to_bad_NAF(code) for code in code_list]
 
         N_EXHAUSTIVE = len(code_list)
 
-        if N_EXHAUSTIVE >= N_CODES:
-            root_logger.warn(f"""Exhaustive sampling requested, but N_CODES is too low:
-N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
-            N_CODES = 0
-
-        else:
-            N_CODES -= N_EXHAUSTIVE
-
-    if N_CODES > 0:
+    if cfg.N_RANDOM_CODES > 0:
         code_list += code_sampler.sample_codes_lazy(
                         fs=FS,
-                        population_path=POPULATION_PATH,
-                        code_column=CODE_COLUMN,
-                        n_codes=N_CODES
+                        population_path=cfg.POPULATION_PATH,
+                        code_column=cfg.CODE_COLUMN,
+                        n_codes=cfg.N_RANDOM_CODES
                     )
 
     # NAF to NACE
-    if CONVERT_NAF_TO_NACE:
+    if cfg.CONVERT_NAF_TO_NACE:
         root_logger.info("Transforming codes from NAF to NACE...")
         new_code_list = [NAF_preprocessing.NAF_to_NACE(code) for code in code_list]
 
-    elif CONVERT_TO_PROPER_NAF:
+    elif cfg.CONVERT_TO_PROPER_NAF:
         root_logger.info("Transforming codes to proper NAF...")
         new_code_list = [NAF_preprocessing.to_proper_NAF(code) for code in code_list]
 
     else:
         new_code_list = code_list
 
-    # Define an automatic name for output
-    FINAL_PATH = label_exportation.create_file_name(
-        output_path=OUTPUT_PATH,
-        output_format=OUTPUT_FORMAT,
-        temperature=TEMPERATURE,
-        language=LANGUAGE,
-        exhaustive_sampling=EXHAUSTIVE_SAMPLING,
-        use_fewshot=USE_FEWSHOT,
-        n_fewshot=N_FEWSHOT,
-        model_name=MODEL_NAME,
-        model=MODEL,
-        )
-
-    # Few-shot sampling
-    if USE_FEWSHOT:
+    # ======================== FEW-SHOT ==========================
+    if cfg.USE_FEWSHOT:
         root_logger.info("Sampling examples for few-shot...")
         codes_fewshot = fewshot_sampler.sample_fewshot_lazy_multi(
             fs=FS,
-            population_path=POPULATION_PATH,
-            code_column=CODE_COLUMN,
+            population_path=cfg.POPULATION_PATH,
+            code_column=cfg.CODE_COLUMN,
             codes=code_list,
-            label_column=LABEL_COLUMN,
-            n_fewshot=N_FEWSHOT
+            label_column=cfg.LABEL_COLUMN,
+            n_fewshot=cfg.N_FEWSHOT
         )
 
-    # Prompt generation
+    # ======================== PROMPT CREATION ==========================
     root_logger.info("Creating prompts...")
 
     # System prompt
-    if USE_FEWSHOT:
+    if cfg.USE_FEWSHOT:
         system_prompt = fewshot_prompt_builder.build_fewshot_system_prompt(
-                prompt_path=PROMPT_PATH,
-                language=LANGUAGE,
-                nb_labels=NB_LABELS
+                prompt_path=cfg.PROMPT_PATH,
+                language=cfg.LANGUAGE,
+                nb_labels=cfg.N_LABELS_PER_GEN
             )
     else:
-        system_prompt = prompt_builder.build_system_prompt(
-                prompt_path=PROMPT_PATH,
-                language=LANGUAGE,
-                nb_labels=NB_LABELS
+        system_prompt = system_prompt_builder.build_system_prompt(
+                prompt_path=cfg.PROMPT_PATH,
+                language=cfg.LANGUAGE,
+                nb_labels=cfg.N_LABELS_PER_GEN
             )
 
     valid_items = []
@@ -162,55 +154,78 @@ N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
 
             # Get code details from Neo4j
             code_details = code_specifier.get_code_information(
-                graph=notice_graph,
+                graph=NOTICE_GRAPH,
                 code=new_code
                 )
 
-            # Build prompts
-            user_prompt = prompt_builder.build_user_prompt(
-                code_details=code_details,
-                language=LANGUAGE,
-                nb_labels=NB_LABELS,
-                includes_divider=INCLUDES_DIVIDER,
-                examples_divider=EXAMPLES_DIVIDER,
-                excludes_divider=EXCLUDE_DIVIDER,
-                random_spec_sampling=RANDOM_SPEC_SAMPLING,
-                random_includes_geom_prob=RANDOM_INCLUDES_GEOM_PROB,
-                random_includes_min=RANDOM_INCLUDES_MIN,
-                random_includes_max=RANDOM_INCLUDES_MAX,
-                random_examples_geom_prob=RANDOM_EXAMPLES_GEOM_PROB,
-                random_examples_min=RANDOM_EXAMPLES_MIN,
-                random_examples_max=RANDOM_EXAMPLES_MAX
+            # First for the exhaustivity part
+            if cfg.EXHAUSTIVE_SAMPLING and i <= N_EXHAUSTIVE:
+                user_prompts = exhaustive_user_prompt_builder.build_user_prompts(
+                    code_details=code_details,
+                    language=cfg.LANGUAGE,
+                    nb_labels=cfg.N_LABELS_PER_GEN,
+                    includes_divider=cfg.INCLUDES_DIVIDER,
+                    examples_divider=cfg.EXAMPLES_DIVIDER,
+                    excludes_divider=cfg.EXCLUDE_DIVIDER,
+                    n_spec=cfg.N_SPEC_PER_PROMPT
                 )
 
-            if USE_FEWSHOT:
-                user_prompt += fewshot_prompt_builder.add_fewshot_user_prompt(
-                    fewshot=fewshot,
-                    language=LANGUAGE
-                )
+                for user_prompt in user_prompts:
+                    if cfg.USE_FEWSHOT:
+                        user_prompt += fewshot_prompt_builder.add_fewshot_user_prompt(
+                            fewshot=fewshot,
+                            language=cfg.LANGUAGE
+                        )
 
-            valid_items.append({
-                "code": new_code,
-                "name": code_details["name"],
-                "prompt": user_prompt
-            })
+                    valid_items.append({
+                        "code": new_code,
+                        "name": code_details["name"],
+                        "prompt": user_prompt
+                    })
+
+            # For the random part
+            else:
+                user_prompt = random_user_prompt_builder.build_user_prompt(
+                    code_details=code_details,
+                    language=cfg.LANGUAGE,
+                    nb_labels=cfg.N_LABELS_PER_GEN,
+                    includes_divider=cfg.INCLUDES_DIVIDER,
+                    examples_divider=cfg.EXAMPLES_DIVIDER,
+                    excludes_divider=cfg.EXCLUDE_DIVIDER,
+                    random_includes_geom_prob=cfg.RANDOM_INCLUDES_GEOM_PROB,
+                    random_includes_min=cfg.RANDOM_INCLUDES_MIN,
+                    random_includes_max=cfg.RANDOM_INCLUDES_MAX,
+                    random_examples_geom_prob=cfg.RANDOM_EXAMPLES_GEOM_PROB,
+                    random_examples_min=cfg.RANDOM_EXAMPLES_MIN,
+                    random_examples_max=cfg.RANDOM_EXAMPLES_MAX
+                    )
+
+                if cfg.USE_FEWSHOT:
+                    user_prompt += fewshot_prompt_builder.add_fewshot_user_prompt(
+                        fewshot=fewshot,
+                        language=cfg.LANGUAGE
+                    )
+
+                valid_items.append({
+                    "code": new_code,
+                    "name": code_details["name"],
+                    "prompt": user_prompt
+                })
 
         except Exception as e:
             root_logger.warning(f"Error preparing code {new_code}, skipping...\nDetails: {e}")
             root_logger.info(traceback.format_exc())
             continue
 
-    # Model set up
-    root_logger.info("Generating labels...")
-
-    LabelGenerationModel = label_generator.build_label_generation_model(NB_LABELS)
+    # ======================== LABEL GENERATION ==========================
+    root_logger.info(f"Generating {len(valid_items)*cfg.N_LABELS_PER_GEN} labels...")
 
     results_buffer = []
 
-    for i in range(0, len(valid_items), GENERATION_BATCH_SIZE):
-        root_logger.info(f"Processing batch {i//GENERATION_BATCH_SIZE}...")
+    for i in range(0, len(valid_items), cfg.GENERATION_BATCH_SIZE):
+        root_logger.info(f"Processing batch {i//cfg.GENERATION_BATCH_SIZE}...")
 
-        batch = valid_items[i:i + GENERATION_BATCH_SIZE]
+        batch = valid_items[i:i + cfg.GENERATION_BATCH_SIZE]
         prompts = [item["prompt"] for item in batch]
 
         try:
@@ -219,8 +234,8 @@ N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
                     system_prompt=system_prompt,
                     user_prompts=prompts,
                     llm_client=LLM_CLIENT,
-                    model=MODEL,
-                    temperature=TEMPERATURE,
+                    model=cfg.MODEL,
+                    temperature=cfg.TEMPERATURE,
                     LabelGeneration=LabelGenerationModel,
                     max_concurrency=len(prompts)
                 )
@@ -242,8 +257,8 @@ N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
                         system_prompt=system_prompt,
                         user_prompts=prompts,
                         llm_client=LLM_CLIENT,
-                        model=MODEL,
-                        temperature=TEMPERATURE,
+                        model=cfg.MODEL,
+                        temperature=cfg.TEMPERATURE,
                         LabelGeneration=LabelGenerationModel,
                         max_concurrency=len(prompts)
                     )
@@ -262,7 +277,8 @@ N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
                 root_logger.warning(f"Batch generation failed, skipping... Details: {ex}")
                 root_logger.info(traceback.format_exc())
 
-        if OUTPUT_FORMAT == ".parquet" and len(results_buffer) >= SAVE_BATCH_SIZE:
+        # ======================== INTERMEDIATE SAVE ==========================
+        if cfg.OUTPUT_FORMAT == ".parquet" and len(results_buffer) >= cfg.SAVE_BATCH_SIZE:
             root_logger.info("Saving intermediate results...")
 
             try:
@@ -286,7 +302,9 @@ N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
 
     end = time.perf_counter()
 
-    if OUTPUT_FORMAT == ".txt":
+    # ======================== FINAL SAVE ==========================
+
+    if cfg.OUTPUT_FORMAT == ".txt":
         root_logger.info("Saving results to txt...")
 
         codes = [r["code"] for r in results_buffer]
@@ -301,7 +319,7 @@ N_CODES<={N_EXHAUSTIVE}. Keeping exhaustivity, but sampling 0 code randomly.""")
             generation_time=end-start
             )
 
-    if OUTPUT_FORMAT == ".parquet" and results_buffer:
+    if cfg.OUTPUT_FORMAT == ".parquet" and results_buffer:
         root_logger.info("Saving final remaining results...")
 
         try:

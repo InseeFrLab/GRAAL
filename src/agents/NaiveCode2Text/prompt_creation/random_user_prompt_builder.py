@@ -1,3 +1,7 @@
+"""
+Use to pick specifications randomly from code information.
+"""
+
 import logging
 
 import numpy.random as npr
@@ -116,42 +120,6 @@ def split_spec_and_select(
     return final_spec
 
 
-def build_system_prompt(
-        prompt_path: str,
-        language: str = "English",
-        nb_labels: int = 10,
-        ) -> str:
-    """
-    Import system prompt with the correct language and specify the number of labels.
-
-    Args:
-        prompt_path (str): The path for importation.
-        language (str): English or French.
-        nb_labels (int): The number of labels to generate.
-
-    Returns:
-        str: The system prompt.
-    """
-
-    # Selecting language
-    if language == "French":
-        suffix = "_fr"
-    elif language == "English":
-        suffix = "_en"
-    else:
-        logger.warn("Supported languages are English and French. Switching to English...")
-        suffix = "_en"
-
-    # Importing prompt
-    file_path = prompt_path + "system_prompt" + suffix + ".txt"
-    with open(file=file_path, mode='r') as f:
-        system_prompt = f.read()
-
-    # Indicating the correct number of labels
-    system_prompt = system_prompt.replace("{nb_labels}", str(nb_labels))
-    return system_prompt
-
-
 def build_user_prompt(
         code_details: dict,
         language: str = "English",
@@ -159,7 +127,6 @@ def build_user_prompt(
         includes_divider: str = "\n-",
         examples_divider: str = "\n",
         excludes_divider: str = "\n",
-        random_spec_sampling: bool = False,
         random_includes_geom_prob: float = 0.7,
         random_includes_min: int = 1,
         random_includes_max: int = None,
@@ -214,7 +181,7 @@ def build_user_prompt(
 
             all_includes += all_includes_also
 
-        if random_spec_sampling and len(all_includes) >= 2:
+        if len(all_includes) >= 2:
             # Select includes randomly
             random_includes = split_spec_and_select(
                 all_spec=all_includes,
