@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime
 
 import pandas as pd
 import s3fs
@@ -36,6 +37,8 @@ def create_file_name(
         bool: True if the file has been correctly saved.
     """
 
+    date = datetime.today().strftime('%Y-%m-%d')
+
     temp_string = f"_temp{temperature}".replace(".", "")
 
     if model_name is None and model_name:
@@ -60,11 +63,9 @@ def create_file_name(
     else:
         exhaust_string = ""
 
-    file_name = "generation" + model_string + temp_string + fewshot_string + exhaust_string
+    file_name = date + model_string + temp_string + fewshot_string + exhaust_string
 
     assert output_format in [".txt", ".parquet"], "Output format should be either .txt or .parquet"
-
-    file_name += output_format
 
     final_path = output_path + file_name + output_format
 

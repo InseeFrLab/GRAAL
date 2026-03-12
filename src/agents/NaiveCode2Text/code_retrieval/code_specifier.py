@@ -63,16 +63,16 @@ def get_code_information(
     OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
     WITH node, parent, collect({code: child.CODE, name: child.NAME}) as children
     RETURN node.CODE as code,
-    node.LEVEL as level,
-    node.NAME as name,
-    node.text as description,
-    node.Includes as includes,
-    node.IncludesAlso as includes_also,
-    node.Excludes as excludes,
-    node.Implementation_rule as implementation_rule,
-    parent.CODE as parent_code,
-    children,
-    size(children) as children_count
+           node.LEVEL as level,
+           node.NAME as name,
+           node.text as description,
+           node.Includes as includes,
+           node.IncludesAlso as includes_also,
+           node.Excludes as excludes,
+           node.Implementation_rule as implementation_rule,
+           parent.CODE as parent_code,
+           children,
+           size(children) as children_count
     """
     result = graph.query(query, params={"code": code})
 
@@ -81,3 +81,63 @@ def get_code_information(
         return []
 
     return result[0]
+
+
+def get_code_list_information(
+        graph: Neo4jGraph,
+        code_list: list[str]
+        ) -> dict:
+    """
+    Retrieve code specifications from a Neo4j graph for multiple codes.
+
+    Args:
+        graph (Neo4jGraph): The Neo4j graph.
+        code_list (list[str]): List of codes to retrieve.
+
+    Returns:
+        dict: Dictionary of code information keyed by code.
+    """
+
+    if not code_list:
+        return {}
+
+    query = """
+    MATCH (node)
+    WHERE node.CODE IN $code_list
+    OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
+    OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
+    WITH node, parent, collect({code: child.CODE, name: child.NAME}) AS children
+    RETURN node.CODE AS code,
+           node.LEVEL AS level,
+           node.NAME AS name,
+           node.text AS description,
+           node.Includes AS includes,
+           node.IncludesAlso AS includes_also,
+           node.Excludes AS excludes,
+           node.Implementation_rule AS implementation_rule,
+           parent.CODE AS parent_code,
+           children,
+           size(children) AS children_count
+    """
+
+    result = graph.query(query, params={"code_list": code_list})
+
+    if not result:
+        logger.warn("No result in get_code_list_information")
+        return {}
+
+    # Transformer la liste de résultats en dictionnaire de dictionnaires
+    code_dict = {}
+    for record in result:
+        code_key = record["code"]
+        code_dict[code_key] = {
+            "level": record["level"],
+            "name": record["name"],
+            "description": record["description"],
+            "includes": record["includes"],
+            "includes_also": record["includes_also"],
+            "excludes": record["excludes"],
+            "implementation_rule": record["implementation_rule"]
+        }
+
+    return code_dict

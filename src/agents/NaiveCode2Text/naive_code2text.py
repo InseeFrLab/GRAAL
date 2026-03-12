@@ -129,6 +129,15 @@ if __name__ == "__main__":
             n_fewshot=cfg.N_FEWSHOT
         )
 
+    # ======================== CODE DETAILS ==========================
+    root_logger.info("Getting details of every code...")
+    unique_codes = list(set(new_code_list))
+
+    code_details = code_specifier.get_code_list_information(
+                graph=NOTICE_GRAPH,
+                code_list=unique_codes
+                )
+
     # ======================== PROMPT CREATION ==========================
     root_logger.info("Creating prompts...")
 
@@ -152,16 +161,10 @@ if __name__ == "__main__":
     for i, (new_code, fewshot) in enumerate(zip(new_code_list, codes_fewshot)):
         try:
 
-            # Get code details from Neo4j
-            code_details = code_specifier.get_code_information(
-                graph=NOTICE_GRAPH,
-                code=new_code
-                )
-
             # First for the exhaustivity part
             if cfg.EXHAUSTIVE_SAMPLING and i <= N_EXHAUSTIVE:
                 user_prompts = exhaustive_user_prompt_builder.build_user_prompts(
-                    code_details=code_details,
+                    code_details=code_details[new_code],
                     language=cfg.LANGUAGE,
                     nb_labels=cfg.N_LABELS_PER_GEN,
                     includes_divider=cfg.INCLUDES_DIVIDER,
@@ -221,9 +224,12 @@ if __name__ == "__main__":
     root_logger.info(f"Generating {len(valid_items)*cfg.N_LABELS_PER_GEN} labels...")
 
     results_buffer = []
+    n_batches = len(valid_items) // cfg.GENERATION_BATCH_SIZE
+    if len(valid_items) % cfg.GENERATION_BATCH_SIZE > 0:
+        n_batches += 1
 
     for i in range(0, len(valid_items), cfg.GENERATION_BATCH_SIZE):
-        root_logger.info(f"Processing batch {i//cfg.GENERATION_BATCH_SIZE}...")
+        root_logger.info(f"Processing batch {(i // cfg.GENERATION_BATCH_SIZE) + 1}/{n_batches}...")
 
         batch = valid_items[i:i + cfg.GENERATION_BATCH_SIZE]
         prompts = [item["prompt"] for item in batch]

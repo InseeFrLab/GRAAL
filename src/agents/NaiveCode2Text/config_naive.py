@@ -1,7 +1,7 @@
 # Main specifications
 EXHAUSTIVE_SAMPLING = True
 USE_FEWSHOT = True
-N_RANDOM_CODES = 20000          # Number of codes to sample randomly
+N_RANDOM_CODES = 0              # Number of codes to sample randomly
 N_LABELS_PER_GEN = 10           # Number of labels in one LLM generation
 N_FEWSHOT = 6
 
@@ -9,10 +9,10 @@ N_FEWSHOT = 6
 OUTPUT_PATH = "projet-ape/synthetic_data_test/naive/NAF2025_FR/"
 OUTPUT_FORMAT = ".parquet"                      # .txt or .parquet
 SAVE_BATCH_SIZE = 1000                          # If choosing .parquet output format
-MODEL_NAME = "Qwen/Qwen2.5-32B-Instruct"        # For file name
+MODEL_NAME = "google/gemma-3-27b-it"            # For file name
 
 # LLM Hyperparameters
-MODEL = None
+MODEL = "google/gemma-3-27b-it"
 TEMPERATURE = 1.4
 LANGUAGE = "French"
 GENERATION_BATCH_SIZE = 20
@@ -29,7 +29,7 @@ EXAMPLES_DIVIDER = "\n"
 EXCLUDE_DIVIDER = "\n"
 
 # For prompt creation
-PROMPT_PATH = "src/agents/NaiveCode2Text/prompts/"
+PROMPT_PATH = "src/agents/NaiveCode2Text/prompt_creation/"
 
 # For exhaustivity
 MIN_PROMPTS_PER_CODE = 5
