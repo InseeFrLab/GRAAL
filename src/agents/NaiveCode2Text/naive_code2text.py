@@ -1,6 +1,5 @@
 import os
 import logging
-from logging.handlers import RotatingFileHandler
 import time
 import traceback
 import asyncio
@@ -22,11 +21,7 @@ from src.agents.NaiveCode2Text.prompt_creation import system_prompt_builder, \
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
 
-handler = RotatingFileHandler(
-    "naive_code2text.log",
-    maxBytes=10_000_000,  # 10MB
-    backupCount=5
-)
+handler = logging.StreamHandler()
 
 formatter = logging.Formatter(
     "%(asctime)s | %(levelname)s | %(message)s"
@@ -49,7 +44,7 @@ if __name__ == "__main__":
 
     # Access configurations
     FS = s3fs.S3FileSystem(
-        client_kwargs={'endpoint_url': os.environ["AWS_ENDPOINT_URL"]},
+        client_kwargs={'endpoint_url': "https://" + os.environ["AWS_S3_ENDPOINT"]},
         key=os.environ["AWS_ACCESS_KEY_ID"],
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         token=os.environ["AWS_SESSION_TOKEN"]
