@@ -154,12 +154,14 @@ if __name__ == "__main__":
 
     # User prompt
     for i, (new_code, fewshot) in enumerate(zip(new_code_list, codes_fewshot)):
+        code_spec = code_details[new_code]
+
         try:
 
             # First for the exhaustivity part
             if cfg.EXHAUSTIVE_SAMPLING and i <= N_EXHAUSTIVE:
                 user_prompts = exhaustive_user_prompt_builder.build_user_prompts(
-                    code_details=code_details[new_code],
+                    code_details=code_spec,
                     language=cfg.LANGUAGE,
                     nb_labels=cfg.N_LABELS_PER_GEN,
                     includes_divider=cfg.INCLUDES_DIVIDER,
@@ -177,14 +179,14 @@ if __name__ == "__main__":
 
                     valid_items.append({
                         "code": new_code,
-                        "name": code_details["name"],
+                        "name": code_spec["name"],
                         "prompt": user_prompt
                     })
 
             # For the random part
             else:
                 user_prompt = random_user_prompt_builder.build_user_prompt(
-                    code_details=code_details,
+                    code_details=code_spec,
                     language=cfg.LANGUAGE,
                     nb_labels=cfg.N_LABELS_PER_GEN,
                     includes_divider=cfg.INCLUDES_DIVIDER,
@@ -206,7 +208,7 @@ if __name__ == "__main__":
 
                 valid_items.append({
                     "code": new_code,
-                    "name": code_details["name"],
+                    "name": code_spec["name"],
                     "prompt": user_prompt
                 })
 
