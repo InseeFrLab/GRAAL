@@ -1,0 +1,5 @@
+defaults:
+  - generation_type: short
+  - fewshot: few-shot
+  - llm: gemma
+  - notice: naf2025

@@ -1,0 +1,61 @@
+# Main arguments
+main:
+  exhaustive_sampling: true
+  use_fewshot: true
+  n_random_codes: 0
+  n_labels_per_gen: 10
+  language: "French"
+
+# Export
+export:
+  output_path: "projet-ape/synthetic_data_test/naive/NAF2025_FR/"
+  output_format: ".parquet"                     # .txt or .parquet
+  save_batch_size: 1000                         # If choosing .parquet output format
+  model_name: "google/gemma-3-27b-it"           # For file name
+
+# LLM Hyperparameters
+llm:
+  model: "google/gemma-3-27b-it"
+  temperature: 1.4
+  generation_batch_size: 20                     # Depends on GPU performances
+
+# Code sampling
+sampling:
+  population_path: "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+  code_column: "nace2025"
+
+naf:
+  convert_naf_to_nace: false
+  convert_to_proper_naf: true
+
+# Specification parsing
+spec:
+  includes_divider: "\n-"
+  examples_divider: "\n"
+  exclude_divider: "\n"
+
+# Prompt creation
+prompt:
+  prompt_path: "src/agents/NaiveCode2Text/prompt_creation/"
+
+# Exhaustivity
+exhaustivity:
+  min_prompts_per_code: 5
+  n_spec_per_prompt: 5          # Number of includes/examples per prompt
+
+# Randomization
+random:
+  includes:
+    geom_prob: 0.3
+    min: 1
+    max: null                   # null = up to the max number of includes
+
+  examples:
+    geom_prob: 0.2
+    min: 1
+    max: null                   # null = up to the max number of includes
+
+# Few-shot
+fewshot:
+  n_fewshot: 6
+  label_column: "libelle"

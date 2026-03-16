@@ -1,0 +1,25 @@
+main:
+  language: "English"
+  use_fewshot: false              # No English-written data availabale
+
+# Code sampling (taking from NAF)
+sampling:
+  population_path: "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+  code_column: "nace2025"
+
+naf:
+  convert_naf_to_nace: true
+  convert_to_proper_naf: false
+
+# Specification parsing
+spec:
+  includes_divider: "\n-"
+  examples_divider: "\n"
+  exclude_divider: "\n"
+
+# Few-shot
+fewshot:
+  label_column: "libelle"
+
+export:
+  output_path: "projet-ape/synthetic_data_test/naive/NACE2025_EN/"

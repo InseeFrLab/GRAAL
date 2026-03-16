@@ -167,14 +167,14 @@ def export_to_parquet(
             existing_df = pd.read_parquet(file_path)
             df = pd.concat([existing_df, df], ignore_index=True)
         except FileNotFoundError:
-            logger.info(f"No file found at location{file_path}, creating...")
+            logger.info(f"No file found at location {file_path}, creating...")
     else:
         try:
             with fs.open(file_path, 'rb') as f:
                 existing_df = pd.read_parquet(f)
             df = pd.concat([existing_df, df], ignore_index=True)
         except FileNotFoundError:
-            logger.info(f"No file found at location{file_path}, creating...")
+            logger.info(f"No file found at location {file_path}, creating...")
 
     df.to_parquet(
         file_path,

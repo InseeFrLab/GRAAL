@@ -1,0 +1,24 @@
+main:
+  language: "French"
+
+# Code sampling
+sampling:
+  population_path: "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+  code_column: "nace2025"
+
+naf:
+  convert_naf_to_nace: false
+  convert_to_proper_naf: true
+
+# Specification parsing
+spec:
+  includes_divider: "\n-"
+  examples_divider: "\n"
+  exclude_divider: "\n"
+
+# Few-shot
+fewshot:
+  label_column: "libelle"
+
+export:
+  output_path: "projet-ape/synthetic_data_test/naive/NAF2025_FR/"

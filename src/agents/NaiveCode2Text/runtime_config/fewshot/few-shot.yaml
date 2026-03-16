@@ -1,0 +1,5 @@
+main:
+  use_fewshot: true
+
+fewshot:
+  n_fewshot: 6
