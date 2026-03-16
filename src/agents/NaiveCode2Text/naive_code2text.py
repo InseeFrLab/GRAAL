@@ -21,7 +21,7 @@ from src.agents.NaiveCode2Text.prompt_creation import system_prompt_builder, \
 
 @hydra.main(
     version_base=None,
-    config_path="src/agents/NaiveCode2Text/runtime_config",
+    config_path="runtime_config",
     config_name="config"
     )
 def main(cfg: DictConfig):
