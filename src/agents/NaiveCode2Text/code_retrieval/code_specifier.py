@@ -131,7 +131,7 @@ def get_code_list_information(
     for record in result:
         code_key = record["code"]
         code_dict[code_key] = {
-            "level": record["level"],
+            "code": code_key,
             "name": record["name"],
             "description": record["description"],
             "includes": record["includes"],
