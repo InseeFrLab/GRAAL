@@ -5,10 +5,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 from langchain_neo4j import Neo4jGraph, Neo4jVector
-from langchain_openai import OpenAIEmbeddings
 from pydantic import BaseModel
 
 from agents import function_tool
+from src.neo4j_graph.graph_builder.utils.embed_manager import get_embedding_model
 
 logger = logging.getLogger(__name__)
 load_dotenv(override=True)
@@ -119,6 +119,9 @@ class Graph:
             password=neo4j_config.password,
             enhanced_schema=True,
         )
+    
+        # Use the custom embedding manager that works with the deployed Qwen API
+        self.emb_model = get_embedding_model()
 
         try:
             self.emb_model = OpenAIEmbeddings(
@@ -154,11 +157,45 @@ class Graph:
         """
         return make_tools(self)
 
-    async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
-        retrieval = await self.db.asimilarity_search(
-            f"query : {activity}", k=top_k, filter={"FINAL": 1}
-        )
-        return [item.metadata["CODE"] for item in retrieval]
+    def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
+        """
+        Retrieve the closest codes to an activity description using vector similarity search.
+        
+        Args:
+            activity: Description of the activity
+            top_k: Number of top results to return (default: 5)
+            
+        Returns:
+            List of CODE values for the closest matches
+        """
+        try:
+            retrieval = self.db.similarity_search(
+                f"query : {activity}", k=top_k, filter={"FINAL": 1}
+            )
+            return [item.metadata["CODE"] for item in retrieval]
+        except Exception as e:
+            logger.warning(f"Vector search failed: {e}. Falling back to basic search.")
+            return []
+
+    async def get_closest_codes_async(self, activity: str, top_k: int = 5) -> List[str]:
+        """
+        Async version: Retrieve the closest codes to an activity description using vector similarity search.
+        
+        Args:
+            activity: Description of the activity
+            top_k: Number of top results to return (default: 5)
+            
+        Returns:
+            List of CODE values for the closest matches
+        """
+        try:
+            retrieval = await self.db.asimilarity_search(
+                f"query : {activity}", k=top_k, filter={"FINAL": 1}
+            )
+            return [item.metadata["CODE"] for item in retrieval]
+        except Exception as e:
+            logger.warning(f"Vector search failed: {e}. Falling back to basic search.")
+            return []
 
     # ------------------------------------------------------------------
     # Cache management

@@ -1,0 +1,31 @@
+data:
+  data:
+    AWS_ACCESS_KEY_ID: TU8Z3OVTWO6CQA8S7BM0
+    AWS_DEFAULT_REGION: us-east-1
+    AWS_S3_ENDPOINT: minio.lab.sspcloud.fr
+    AWS_SECRET_ACCESS_KEY: e+rmocfJXGoFS69dqJx6kAENq37PgbIPRkSfhTTk
+    AWS_SESSION_TOKEN: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NLZXkiOiJUVThaM09WVFdPNkNRQThTN0JNMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sImF1ZCI6WyJtaW5pby1kYXRhbm9kZSIsIm9ueXhpYSIsImFjY291bnQiXSwiYXV0aF90aW1lIjoxNzcxMjM0MjYzLCJhenAiOiJvbnl4aWEiLCJlbWFpbCI6InRoZW8uZmVycnlAaW5zZWUuZnIiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZXhwIjoxNzcxODUxNjExLCJmYW1pbHlfbmFtZSI6IkZlcnJ5IiwiZ2l2ZW5fbmFtZSI6IlRoZW8iLCJncm91cHMiOlsiVVNFUl9PTllYSUEiLCJhcGUiLCJtb2RlbHMtaGYiLCJzc3BsYWIiXSwiaWF0IjoxNzcxMjQ2ODExLCJpc3MiOiJodHRwczovL2F1dGgubGFiLnNzcGNsb3VkLmZyL2F1dGgvcmVhbG1zL3NzcGNsb3VkIiwianRpIjoib25ydHJ0OjMwMDBlY2FkLWE5NDgtZTBiYS0yZTY0LTk2ZWIzNzc0MzFkMyIsImxvY2FsZSI6ImZyIiwibmFtZSI6IlRoZW8gRmVycnkiLCJwb2xpY3kiOiJzdHNvbmx5IiwicHJlZmVycmVkX3VzZXJuYW1lIjoidGhlb2YiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiIsInZpcCIsImRlZmF1bHQtcm9sZXMtc3NwY2xvdWQiXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwidmlwIiwiZGVmYXVsdC1yb2xlcy1zc3BjbG91ZCJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGdyb3VwcyBlbWFpbCIsInNpZCI6ImJmNGNjOWQyLWNiN2UtMDA2YS0wZmQ4LWZmNmVjOTVmN2RjYiIsInN1YiI6IjNlYTdiY2Q0LWJkMjMtNDA2Yy1hYmE2LWFmMzM3ZjBlMTAzNiIsInR5cCI6IkJlYXJlciJ9.9k6iWpXFN23SPAxOfHBj9qTJOep6DEk78dXGliWIz4mjbYiFXFDJWxkqIC73pwIR6F2KLXiCk0wliBGBU_tlMg
+    EMBEDDING_MODEL: Qwen/Qwen3-Embedding-8B
+    GENERATION_MODEL: gpt-oss:120b
+    LANGFUSE_HOST: https://langfuse.lab.sspcloud.fr
+    LANGFUSE_PUBLIC_KEY: pk-lf-99cb72d3-8957-42ef-b683-55e34cae0728
+    LANGFUSE_SECRET_KEY: sk-lf-33d17a81-4600-4ccf-a8e8-aa10c35cb1dd
+    MAX_TURNS: "15"
+    NEO4J_PWD: 8oatypa2fbt0cl0v83b6
+    NEO4J_URL: neo4j://neo4j-959343.projet-ape:7687
+    NEO4J_USERNAME: neo4j
+    OPENAI_API_KEY: sk-1e8e6b8a3f8c40af8ea8eee484c5845d
+    OPENAI_BASE_URL: https://llm.lab.sspcloud.fr/api
+    URL_EMBEDDING_API: https://vllm-embed2.user.lab.sspcloud.fr/v1
+  metadata:
+    created_time: "2026-02-16T14:56:57.66089018Z"
+    custom_metadata: null
+    deletion_time: ""
+    destroyed: false
+    version: 40
+lease_duration: 0
+lease_id: ""
+mount_type: kv
+renewable: false
+request_id: ca9f41b6-cf79-6bb2-c4bc-74b02936e17f
+warnings: null

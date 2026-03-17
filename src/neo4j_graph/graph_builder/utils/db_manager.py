@@ -1,6 +1,7 @@
 import logging
 
 from langchain_neo4j import Neo4jGraph, Neo4jVector
+from langchain_openai import OpenAIEmbeddings
 from neo4j import GraphDatabase
 
 from src.neo4j_graph.graph_builder.config import NEO4J_PWD, NEO4J_URL, NEO4J_USERNAME
@@ -8,7 +9,7 @@ from src.neo4j_graph.graph_builder.config import NEO4J_PWD, NEO4J_URL, NEO4J_USE
 logger = logging.getLogger(__name__)
 
 
-def create_vector_db(docs, embedding_model, clean_previous: bool = True) -> Neo4jVector:
+def create_vector_db(docs, embedding_model: OpenAIEmbeddings, clean_previous: bool = True) -> Neo4jVector:
     logger.info("Creating Neo4j vector DB with embeddings")
 
     if clean_previous:
@@ -19,6 +20,8 @@ def create_vector_db(docs, embedding_model, clean_previous: bool = True) -> Neo4
         command = "MATCH (n) DETACH DELETE n"
         logger.info("🧹 Cleaning previous vector DB. Running command " + command)
         execute_cypher_command(command)
+
+    logger.info(f"Embedding model: {embedding_model}")
 
     return Neo4jVector.from_documents(
         docs,

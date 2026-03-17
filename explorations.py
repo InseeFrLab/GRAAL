@@ -1,11 +1,5 @@
-
-# %% Reload les codes
-%load_ext autoreload
-%autoreload 2
-
-
-# %% Imports
-
+# %%
+# Imports
 import os
 import numpy as np
 import plotly.graph_objects as go
@@ -14,17 +8,27 @@ import polars as pl
 import umap
 import pacmap
 from plotly.subplots import make_subplots
+from dotenv import load_dotenv
 
 import s3fs
 from sklearn.neighbors import NearestNeighbors
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+import logging 
+
+# Load environment variables
+load_dotenv(override=True)
 
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
-from src.main import classify_navigator
 
+<<<<<<< HEAD
 # %% Config
+=======
+logger = logging.getLogger(__name__)
+
+# Configuration
+>>>>>>> c51812c (Fix: embedding Feat: local Neo4j)
 N_CODES = 20
 K_NN = 1
 
@@ -33,12 +37,15 @@ COLUMNS = ["libelle", "nace2025"]
 
 REDUCTION_METHOD = "umap"  # Options: "umap", "pacmap", "tsne", "pca"
 
-emb_model = OpenAIEmbeddings(
-        model=os.environ['EMBEDDING_MODEL'],
-        openai_api_base=os.environ['URL_EMBEDDING_API'],
-        openai_api_key="EMPTY",
-        tiktoken_enabled=False,
-    )
+print("Initializing embedding model...")
+from src.neo4j_graph.graph_builder.utils.embed_manager import get_embedding_model
+emb_model = get_embedding_model()
+print(f"✓ Embedding model initialized: {emb_model.__class__.__name__}")
+
+# Test embedding
+text = "Je mange des carottes"
+single_vector = emb_model.embed_query(text)
+print(f"✓ Sample embedding generated: {len(single_vector)} dimensions")
 
 fs = s3fs.S3FileSystem(
     client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
@@ -47,10 +54,14 @@ fs = s3fs.S3FileSystem(
     token=os.environ["AWS_SESSION_TOKEN"],
     )
 
+print("Initializing Neo4j graph...")
+print(f"Connecting to Neo4j with config: {neo4j_config}")
 graph = Graph(neo4j_config)
+print("✓ Graph initialized")
 
 
-# %% Récupération des données
+# Retrieve data from Neo4j
+print("\nFetching codes from Neo4j...")
 query = """
 MATCH path = (root)-[*]->(n)
 WHERE n.FINAL = 1
@@ -91,11 +102,11 @@ import os
 import s3fs
 
 fs = s3fs.S3FileSystem(
-    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
-    key = os.environ["AWS_ACCESS_KEY_ID"], 
-    secret = os.environ["AWS_SECRET_ACCESS_KEY"], 
-    token = os.environ["AWS_SESSION_TOKEN"])
-
+    client_kwargs={'endpoint_url': 'https://' + 'minio.lab.sspcloud.fr'},
+    key=os.environ["AWS_ACCESS_KEY_ID"],
+    secret=os.environ["AWS_SECRET_ACCESS_KEY"],
+    token=os.environ["AWS_SESSION_TOKEN"],
+)
 
 
 def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, n_codes: int):
@@ -113,11 +124,12 @@ def sample_codes(fs: s3fs.S3FileSystem, population_path: str, code_column: str, 
 
     sampled = df.select(code_column).sample(n=n_codes, with_replacement=True)
     
-    return sampled[code_column].to_numpy()
-
-    label_idx = n_nace_nodes + i
-    if target_code in codes_dict: 
-        label_to_code_idx[label_idx] = codes_dict[target_code]
+    # Convert to list of (label, target_code) tuples
+    codes_list = []
+    for row in sampled.rows():
+        codes_list.append(row)
+    
+    return codes_list
 
 codes = sample_codes(
     fs=fs,
@@ -125,8 +137,13 @@ codes = sample_codes(
     code_column=COLUMNS, 
     n_codes=N_CODES)
 
-labels, target_codes = zip(*codes)
+labels, target_codes = codes[0] if codes else ([], [])
+labels = [c[0] for c in codes]
+target_codes = [c[1] for c in codes]
+print(f"Generating embeddings for {len(labels)} labels...")
 labels_embeddings = emb_model.embed_documents(list(labels))
+print(f"✓ Generated {len(labels_embeddings)} label embeddings")
+
 label_to_code_idx = {}
 
 for i, (label, label_emb, target_code) in enumerate(zip(labels, labels_embeddings, target_codes)):
@@ -135,26 +152,17 @@ for i, (label, label_emb, target_code) in enumerate(zip(labels, labels_embedding
     paths.append(f"Libellé -> Code cible: {target_code}")
 
     label_idx = n_nace_nodes + i
-    if target_code in codes_dict: 
-        label_to_code_idx[label_idx] = codes_dict[target_code]
+    # Clean target code and find in dictionary
+    target_code_clean = str(target_code).replace(".", "").replace(" ", "")
+    if target_code_clean in codes_dict: 
+        label_to_code_idx[label_idx] = codes_dict[target_code_clean]
 
 embeddings = np.array(embeddings)
-
-
-# %% Classification by the navigator
-from src.config import neo4j_config
-from src.neo4j_graph.graph import Graph
-from src.main import classify_navigator
-
-graph = Graph(neo4j_config)
-
-results = await classify_navigator(labels)
-codes = [result.code.replace(".", "").replace(" ", "") for result in results]
-print(codes)
+print(f"\n✓ Total embeddings prepared: {len(embeddings)} (NACE: {n_nace_nodes}, Labels: {len(labels)})")
 
 
 
-# %% Calcul des k plus proches voisins parmi les codes NACE
+# Compute k-nearest neighbors among NACE codes
 def compute_knn_to_nace_codes(label_embeddings, nace_embeddings, label_start_idx, k=5):
     """
     Pour chaque libellé, trouve les k codes NACE les plus proches dans l'espace des embeddings.
@@ -264,12 +272,13 @@ def reduce_dimensions(embeddings, method="umap", random_state=42):
         raise ValueError(f"Méthode inconnue: {method}. Utilisez 'umap', 'pacmap', 'tsne', ou 'pca'")
 
 
-# Réduire les dimensions
+# Perform dimensionality reduction
+print(f"\nPerforming dimensionality reduction with {REDUCTION_METHOD.upper()}...")
 coords, method_name = reduce_dimensions(embeddings, method=REDUCTION_METHOD)
 X, Y = coords.T
+print(f"✓ Reduction completed with {method_name}")
 
-print(f"✓ Réduction terminée avec {method_name}")
-# %% Annoter visuellement les prédictions correctes
+# Visualize predictions
 
 fig = go.Figure()
 
@@ -351,9 +360,9 @@ fig.add_trace(go.Scatter(
     hovertemplate='%{text}<extra></extra>'
 ))
 
-accuracy = len(correct_predictions) / len(knn_edges) * 100
+accuracy = len(correct_predictions) / len(knn_edges) * 100 if len(knn_edges) > 0 else 0
 fig.update_layout(
-    title=f"k-NN vs Ground Truth (Accuracy: {accuracy:.1f}%), DR method = {REDUC}",
+    title=f"k-NN vs Ground Truth (Accuracy: {accuracy:.1f}%), DR method = {method_name}",
     xaxis_title="UMAP 1",
     yaxis_title="UMAP 2",
     width=1400,
@@ -371,11 +380,10 @@ fig.update_layout(
 )
 
 fig.show()
-
-# %%
 fig.write_html("umap_visualization.html")
+print(f"✓ Saved visualization to umap_visualization.html")
 
-# %% Visualisation comparative des 4 méthodes avec lignes vertes
+# Create comparison plot with all 4 dimensionality reduction methods
 def create_comparison_plot(embeddings, nace_embeddings, label_embeddings, 
                           n_nace_nodes, names, paths, knn_edges, label_to_code_idx):
     """
@@ -392,9 +400,12 @@ def create_comparison_plot(embeddings, nace_embeddings, label_embeddings,
     
     n_correct = len(correct_predictions)
     n_total = len(label_to_code_idx)
-    accuracy = n_correct / n_total * 100
+    accuracy = (n_correct / n_total * 100) if n_total > 0 else 0
     
-    print(f"\n✓ Prédictions correctes: {n_correct}/{n_total} = {accuracy:.1f}%\n")
+    if n_total > 0:
+        print(f"\n✓ Prédictions correctes: {n_correct}/{n_total} = {accuracy:.1f}%\n")
+    else:
+        print("\n⚠️ Aucun mapping label->code disponible (n_total=0), impossible de calculer la précision.\n")
     
     # Calculer les coordonnées pour chaque méthode
     all_coords = {}
@@ -584,26 +595,9 @@ fig_comparison = create_comparison_plot(
 )
 
 fig_comparison.show()
-
-
-# %%
 fig_comparison.write_html("comparison_all_methods.html")
+print(f"✓ Saved comparison visualization to comparison_all_methods.html")
+
+print("\n✅ Exploration completed successfully!")
 
 # %%
-
-from src.config import neo4j_config
-from src.navigator.navigator import Navigator
-from src.utils.logging import configure_logging
-from src.utils.parser import parse_args
-navigator = Navigator(neo4j_config)
-tools = navigator.get_tools()
-
-# %%
-print(tools)
-# %%
-navigator._cached_get_parent(navigator.current_code)
-# %%
-navigator.current_code='01'
-# 
-# %%
-tools[2]
