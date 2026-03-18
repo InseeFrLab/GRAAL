@@ -32,8 +32,6 @@ Présentation détaillée du framework GRAAL, de la méthodologie et des résult
 - **Base de données** : Neo4j avec extension vectorielle
 - **Modèles d'embedding** : Qwen 3 (7.6B paramètres)
 - **Agents** : OpenAI Agents framework
-- **Visualisation** : Plotly, UMAP, PaCMAP, t-SNE
-- **Infrastructure** : Python, Quarto, GitHub Pages
 
 ## État du projet
 
