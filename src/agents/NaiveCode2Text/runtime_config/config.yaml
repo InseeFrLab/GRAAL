@@ -1,5 +1,5 @@
 defaults:
-  - generation_type@_global_: short
+  - generation_type@_global_: terminal
   - fewshot@_global_: few-shot
   - llm@_global_: gemma
   - notice@_global_: naf2025
