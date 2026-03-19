@@ -31,6 +31,7 @@ def main(cfg: DictConfig):
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
 
+    root_logger.handlers.clear()
     handler = logging.StreamHandler()
 
     formatter = logging.Formatter(
