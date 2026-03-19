@@ -32,7 +32,7 @@ naf:
 spec:
   includes_divider: "\n-"
   examples_divider: "\n"
-  exclude_divider: "\n"
+  excludes_divider: "\n"
 
 # Prompt creation
 prompt:
