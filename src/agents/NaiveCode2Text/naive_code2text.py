@@ -46,7 +46,7 @@ def main(cfg: DictConfig):
     root_logger.info("Initialization...")
 
     # Clock for speed testing
-    if cfg["export"]["output_format"] == ".txt":
+    if cfg["export"]["output_format"] in [".txt", "terminal"]:
         start = time.perf_counter()
 
     # Access configurations
@@ -334,7 +334,21 @@ def main(cfg: DictConfig):
             generation_time=end-start
             )
 
-    if cfg["export"]["output_format"] == ".parquet" and results_buffer:
+    elif cfg["export"]["output_format"] == "terminal":
+        root_logger.info("Printing the results...")
+
+        codes = [r["code"] for r in results_buffer]
+        names = [r["name"] for r in results_buffer]
+        labels = [r["labels"] for r in results_buffer]
+
+        label_exportation.print_in_terminal(
+            codes=codes,
+            names=names,
+            labels=labels,
+            generation_time=end-start
+            )
+
+    elif cfg["export"]["output_format"] == ".parquet" and results_buffer:
         root_logger.info("Saving final remaining results...")
 
         try:

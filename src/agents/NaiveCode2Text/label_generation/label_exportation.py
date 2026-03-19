@@ -24,7 +24,7 @@ def create_file_name(
 
     Args:
         output_path (str): the folder to upload the file in
-        output_format (str): the format (.txt or .parquet)
+        output_format (str): the format (.txt, .parquet or terminal)
         temperature: float,
         language: str,
         exhaustive_sampling: bool = False,
@@ -36,6 +36,8 @@ def create_file_name(
     Returns:
         bool: True if the file has been correctly saved.
     """
+    if output_format == "terminal":
+        return ""
 
     date = datetime.today().strftime('%Y-%m-%d')
 
@@ -182,5 +184,47 @@ def export_to_parquet(
         index=False,
         filesystem=fs
     )
+
+    return True
+
+
+def print_in_terminal(
+        codes: list,
+        names: list,
+        labels: list,
+        generation_time: float
+        ) -> bool:
+    """
+    Save results to file .txt
+    The number of codes used for generation should not exceed 100.
+    Else, upload in .parquet format
+
+    Args:
+        codes (list): List of codes generated.
+        names (list): List of names for the codes generated
+        labels (list of lists): List of labels for each code
+        file_path (str): The .txt file path.
+        generation_time (float): The time it took to generate.
+
+    Returns:
+        bool: True if the file has been correctly saved.
+    """
+    if len(labels) == 0 or len(labels) > 100:
+        return False
+
+    nb_labels = len(labels) * len(labels[0])
+
+    logger.info(f"{nb_labels} wordings have been generated in {generation_time:.2f} sec.\n\n")
+    logger.info("=" * 36 + "\n")
+
+    for code, name, generated_labels in zip(codes, names, labels):
+        logger.info(f"Code: {code}\n")
+        logger.info(f"Name: {name}\n")
+        logger.info("Result:\n")
+
+        for j, label in enumerate(generated_labels):
+            logger.info(f"{j}. {label}\n")
+
+        logger.info("\n" + "=" * 36 + "\n")
 
     return True

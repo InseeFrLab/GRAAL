@@ -1,5 +1,5 @@
 defaults:
-  - generation_type: short
-  - fewshot: few-shot
-  - llm: gemma
-  - notice: naf2025
+  - generation_type@_global_: short
+  - fewshot@_global_: few-shot
+  - llm@_global_: gemma
+  - notice@_global_: naf2025
