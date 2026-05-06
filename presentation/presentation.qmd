@@ -1,6 +1,6 @@
 ---
 title: "GRAAL: Graph-based Research with Agents for Automatic Labelling"
-subtitle: "Classification automatique dans des nomenclatures statistiques par approche agentique"
+subtitle: "Automatic classification in statistical nomenclatures using an agentic approach"
 author:
   - name: Meilame Tayebjee
     email: meilame.tayebjee@insee.fr
@@ -9,35 +9,34 @@ author:
   - name: Théo Ferry
     email: theo.ferry@insee.fr
     affiliations:
-      - name: Insee, SSP Lab 
+      - name: Insee, SSP Lab
 date: "04/02/2026"
 date-format: "D MMMM YYYY"
 slide-number: true
-# uncomment for French presentations:
-# lang: fr-FR
 # for blind readers:
 slide-tone: false
 chalkboard: # press the B key to toggle chalkboard
   theme: whiteboard
-# uncomment to use the multiplex mode:
-# multiplex: true
 format:
   onyxia-revealjs:
     output-file: index.html
+    css: custom.css
+    font-size: 30px
+  beamer:
+    output-file: presentation.pdf
 controls: true
 ascii: true
 ---
 
 
-## Plan
+## Outline
+
+1. **Context**. Challenges of automatic coding
+2. **The GRAAL framework**. Multi-agent architecture
+3. **Perspectives**. Future developments
 
 
-1. **Contexte**. Défis de la codification automatique
-2. **Le framework GRAAL**. Architecture multi-agents
-3. **Perspectives**. Développements futurs
-
-
-# 1️⃣ **Contexte**: le cas d'usage de la codification automatique
+# 1️⃣ **Context**: the automatic coding use case
 
 ##
 
@@ -45,110 +44,101 @@ ascii: true
 
 ::: {.column width="80%"}
 
-**NAF** : Nomenclature statistique des Activités économiques
+**NAF** : Statistical Nomenclature of Economic Activities
 
-- ~700 codes finaux
-- Structure hiérarchique sur 5 niveaux
+- ~700 final codes
+- Hierarchical structure over 5 levels
 
 **COICOP** : *Classification of Individual Consumption by Purpose*
 
-- ~300 à ~1000 selon la granularité employée
-- Structure hiérarchique sur 5 niveaux
+- ~300 to ~1000 depending on granularity
+- Hierarchical structure over 5 levels
 :::
 
 ::: {.column width="20%"}
 ```{mermaid}
 flowchart TD
-  A["Agriculture, sylviculture et pêche"]
-  
-  D01["Culture et production animale"]
-  
-  G011["Cultures non permanentes"]
-  
-  C0111["Culture de céréales"]
-  
+  A["Agriculture, forestry and fishing"]
+
+  D01["Crop and animal production"]
+
+  G011["Non-permanent crops"]
+
+  C0111["Growing of cereals"]
+
   A --> D01 --> G011 --> C0111
 ```
 :::
 
 ::::
-## Défis
 
-- A l'heure actuelle, apprentissage supervisé classique, avec des modèles de *deep learning* (PyTorch)
-  - Frugal, performant et rapide, *production-ready*... 😎 
-  - ... mais nécessite entre 100k et 1M de données labellisées 🫨
+## Challenges
+
+- Currently: classical supervised learning with *deep learning* models (PyTorch)
+  - Frugal, performant and fast, *production-ready*... 😎
+  - ... but requires between 100k and 1M labelled data points 🫨
 
 
-## Une approche MLOps grandement facilitée par Onyxia mais encore incomplète {.scrollable}
+## MLOps: facilitated by Onyxia, but still incomplete
 
-:::{.incremental}
-- **Data** : Stockage S3 (Datalab), versionnage avec MLFlow Datasets ✅
-- **Modèle** : développement internalisé et distribution de l’architecture via le package  
-  [*torchTextClassifiers*](https://github.com/InseeFrLab/torchTextClassifiers), entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅
-- **Déploiement** : FastAPI déployé via conteneurisation (Docker) ✅
-- **Monitoring** : c’est là que le bât blesse ❌  
-  - Investissements humains nécessaires, pas toujours faits
-  - **Comment contrôler le modèle en production sans annotation humaine continue ?**
-:::
+- **Data**: S3 storage (Datalab), versioning with MLFlow Datasets ✅
+- **Model**: in-house development and distribution via
+  [*torchTextClassifiers*](https://github.com/InseeFrLab/torchTextClassifiers), parallelised training with Argo Workflows, model storage with MLFlow ✅
+- **Deployment**: FastAPI deployed via containerisation (Docker) ✅
+- **Monitoring**: this is where it falls short ❌
+  - Requires human investment, not always done
+  - **How to monitor the model in production without continuous human annotation?**
 
-## Le besoin de s'affranchir des données labellisées {.scrollable}
+## The need to move away from labelled data
 
-:::{.incremental}
-- Comment faire quand on ne peut pas avoir / n'a pas assez de données labellisées ?
-- Comment faire quand la nomenclature est mise à jour par le métier ?
-  - Il faut recoder les données existantes
-- Comment faire quand nos données labellisées ne sont pas fiables ?
-   - et qu'idéalement on veuille les corriger...
-:::
+- What to do when labelled data is unavailable or insufficient?
+- What to do when the nomenclature is updated?
+  - Existing data needs to be re-coded
+- What to do when our labelled data is unreliable?
+   - and ideally we want to correct it...
 
----
+## A first zero-shot approach: RAG
 
-:::{.incremental}
-- Une première approche **zero-shot** : [**le Retrieval-Augmented Generation (RAG)**]{.orange}
-    - Knowledge base = les notices officielles pour chaque code
-    - Très bonne première solution mais...
-      - dépendance au chunking...
-      - dépendance au modèle d'embedding...
-      - saturation du contexte avec les notices...
-      - on compare embedding de *notice* à un embedding de *libellé*...
-      - pas de traçabilité, pas de raisonnement...
-      - pas de prise en compte de la hiérarchie !
-:::
+- A first **zero-shot** approach: [**Retrieval-Augmented Generation (RAG)**]{.orange}
+    - Knowledge base = official descriptions for each code
+    - A good first solution, but...
+      - dependency on chunking
+      - dependency on the embedding model
+      - context saturation with descriptions
+      - comparing a *description* embedding to a *label* embedding
+      - no traceability, no reasoning
+      - no consideration of the hierarchy!
 
-## Objectifs
+## Objectives
 
-- On ne veut plus d'embeddings
-- On veut du *reasoning*: le LLM peut/doit justifier ses choix (*chain of thought*)
-  - Plutôt que lui *imposer du contexte* comme dans un RAG, laisser le modèle **compléter son contexte dynamiquement** ([**= agent !**]{.orange})
-  - Idéalement, avec un raisonnement autour de la hiérarchie
+- No more embeddings
+- We want *reasoning*: the LLM can/must justify its choices (*chain of thought*)
+  - Rather than *imposing context* as in a RAG, let the model **complete its context dynamically** ([**= agent!**]{.orange})
+  - Ideally, with reasoning around the hierarchy
 
-# 2️⃣ **Le framework GRAAL** 
+# 2️⃣ **The GRAAL framework**
 
-## Neo4j : une *graph database* {.scrollable}
+## Neo4j: a *graph database*
+
 ```{mermaid}
 graph TD
   ROOT["Root"]
 
-  %% Sections
   J["CODE: J<br/>LEVEL: 1"]
   A["CODE: A<br/>LEVEL: 1"]
 
-  %% Divisions
   J60["CODE: J60<br/>LEVEL: 2"]
   J61["CODE: J61<br/>LEVEL: 2"]
   A01["CODE: A01<br/>LEVEL: 2"]
 
-  %% Groupes
   J60_1["CODE: J60.1<br/>LEVEL: 3"]
   J60_2["CODE: J60.2<br/>LEVEL: 3"]
   A01_1["CODE: A01.1<br/>LEVEL: 3"]
 
-  %% Classes
   J60_11["CODE: J60.11<br/>LEVEL: 4"]
   J60_12["CODE: J60.12<br/>LEVEL: 4"]
   A01_11["CODE: A01.11<br/>LEVEL: 4"]
 
-  %% Relations HAS_PARENT
   J -->|HAS_PARENT| ROOT
   A -->|HAS_PARENT| ROOT
 
@@ -165,10 +155,9 @@ graph TD
   A01_11 -->|HAS_PARENT| A01_1
 ```
 
-## Utilisation du graph comme support pour des agents
+## Using the graph as a foundation for agents
 
-
-- On définit un ensemble d'outils **commun à tous les agents**: 
+- We define a set of tools **shared by all agents**:
     - get_code_information
     - get_current_children
     - get_current_siblings
@@ -176,118 +165,93 @@ graph TD
     - go_to_child
     - etc.
 
-- Ils utilisent tous la syntaxe Neo4j
+- They all use Neo4j syntax
 
-## Les agents {.scrollable}
+## The agents
 
-- Un agent = un prompt, un type d'input et d'output, et des tools
-- Les *closers*
-  - *CodeChooser*: 
-  - *MatchVerifier*:
+- An agent = a prompt, an input/output type, and tools
+- The *closers*: **CodeChooser**, **MatchVerifier**
+- *Text2Code* (classifier): the **Navigator** inherits from *Text2Code*
+- *Code2Text* (synthetic data generator)
 
-    ```{python}
-    #| echo: true
-    #| code-fold: true
-    #| eval: false
+## MatchVerifier — example implementation
 
-    class MatchVerifier(BaseAgent):
-        def __init__(self, graph: Graph):
-            super().__init__(graph)
-
-        def get_agent_name(self) -> str:
-            return "MatchVerifier Agent"
-
-        def get_instructions(self) -> str:
-            return """
-                    Tu es un agent spécialisé dans la vérification de la validité d'une correspondance entre un libellé textuel et le code qui lui a été associé. Tu as accès à des outils pour interroger une base de données de nomenclature statistique structurée en graph database Neo4j.
-                """
-
-        def get_output_type(self):
-            return MatchVerificationResult
-
-        def build_prompt(self, match_verification_input: MatchVerificationInput) -> str:
-            """
-            Construire le prompt pour l'agent de vérification de correspondance.
-            """
-            prompt = f"""
-            Vérifie si le code suivant correspond bien à l'activité décrite.
-
-            Activité : {match_verification_input.activity}
-
-            Code proposé : {match_verification_input.code}
-            Explication proposée : {match_verification_input.proposed_explanation}
-
-            Réponds en fournissant :
-            1. Un booléen indiquant si la correspondance est valide.
-            2. Un niveau de confiance entre 0 et 1.
-            3. Une explication concise de ta décision.
-            """
-            return prompt
-    ```
-
-
-- *Text2Code* (classifieur)
-  - le *Navigator* est un agent qui hérite de *Text2Code*
-- *Code2Text* (générateur de données synthétiques)
-
-
-## Exemple de classification par *Navigator*
-
-::: {.panel-tabset}
-
-### Input
 ```python
-description = """
-Entreprise de fabrication artisanale de pains spéciaux 
-et viennoiseries, avec vente directe en boutique
-"""
+class MatchVerifier(BaseAgent):
+    def get_instructions(self) -> str:
+        return """You are an agent specialised in verifying
+                  the validity of a match between a label
+                  and a code in a Neo4j nomenclature graph."""
+
+    def build_prompt(self, input: MatchVerificationInput) -> str:
+        return f"""Verify whether the code matches the activity.
+        Activity: {input.activity}
+        Proposed code: {input.code}
+        Explanation: {input.proposed_explanation}
+        Respond with: validity (bool), confidence (0-1), explanation."""
 ```
 
-### Output
+## Classification example with *Navigator*
+
+:::: {.columns}
+
+::: {.column width="40%"}
+**Input**
+```python
+description = """
+Artisan bakery producing
+specialty breads and pastries,
+with direct in-store sales
+"""
+```
+:::
+
+::: {.column width="60%"}
+**Output**
 ```json
 {
   "code": "10.71Z",
-  "label": "Fabrication de pain et pâtisserie fraîche",
+  "label": "Manufacture of bread
+            and fresh pastry goods",
   "confidence": 0.94,
-  "path": ["C", "10", "10.7", "10.71", "10.71Z"],
-  "justification": "Fabrication artisanale (C) de produits 
-                    de boulangerie (10.7) avec vente directe : ce code correspond donc au libellé fourni."
+  "path": ["C","10","10.7","10.71","10.71Z"],
+  "justification": "Artisan manufacturing (C)
+    of bakery products (10.7)
+    with direct sales."
 }
 ```
 :::
 
+::::
 
-## Evaluation {.scrollable}
+## Evaluation
 
-:::{.incremental}
-- **Evaluer un agent classifieur**
-  - Si on fait confiance à notre dataset de test : évaluation straightforward
-  - **Sinon : évaluation manuelle !**
-    - Prédiction *ground truth*, prédiction du classifieur, jugement du *CodeChooser* et du *MatchVerifier* mis bout à bout
-    - Evaluation conjointe de tous les composants
-- **Evaluer la génération de données synthétiques**
-  - moins évident
-  - réentraîner un modèle sur un dataset synthétique et voir si on atteint des perfs équivalentes sur le même test set
-:::
+- **Evaluating a classifier agent**
+  - If we trust our test dataset: straightforward evaluation
+  - **Otherwise: manual evaluation!**
+    - Ground truth prediction, classifier prediction, *CodeChooser* and *MatchVerifier* judgements combined
+    - Joint evaluation of all components
+- **Evaluating synthetic data generation**
+  - Less straightforward
+  - Retrain a model on a synthetic dataset and check whether equivalent performance is reached on the same test set
 
 ## Perspectives
 
-- Un cahier des charges respecté
-  - Plus *d'embeddings*
-  - Du raisonnement et de la traçabilité
-  - **Utilisable pour n'importe quelle nomenclature** : il suffit de créer une base Neo4j avec les notices et tout fonctionne !
-    - GRAAL n'est qu'un distributeurs de tools, de prompts et de structures d'appels au LLM (validation input/output)
-- **La tâche principale va être l'évaluation** 🎯
+- Requirements met
+  - No more *embeddings*
+  - Reasoning and traceability
+  - **Usable for any nomenclature**: just create a Neo4j database with the descriptions and everything works!
+    - GRAAL is just a distributor of tools, prompts and LLM call structures (input/output validation)
+- **The main task ahead is evaluation** 🎯
 
---- 
+## What will we do with it?
 
-- **On va en faire quoi ?**
-  - Un modèle agentique est trop lourd pour la production (pas encore de GPU, temps d'inférence trop élevé...)
-  - Cependant, GRAAL peut être utilisé pour:
-    - **Monitoring du modèle déployé: *MatchVerifier* analyse les logs de l'API et évalue le modèle en continu, appelle le *Navigator* si besoin de recoder...**
-    - Recodage d'une base (même workflow que le monitoring)
-    - Génération de données synthétiques (*Code2Text*)
+- An agentic model is too heavy for production (no GPU yet, inference time too high...)
+- However, GRAAL can be used for:
+  - **Monitoring the deployed model**: *MatchVerifier* analyses API logs, evaluates the model continuously, calls the *Navigator* if re-coding is needed
+  - **Re-coding a database** (same workflow as monitoring)
+  - **Synthetic data generation** (*Code2Text*)
 
 
-##  Merci de votre attention !
+## Thank you for your attention!
 🔗 [github.com/InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL)
