@@ -1,93 +1,114 @@
 [
   {
-    "objectID": "index.html#plan",
-    "href": "index.html#plan",
+    "objectID": "index.html#outline",
+    "href": "index.html#outline",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Plan",
-    "text": "Plan\n\nContexte. Défis de la codification automatique\nLe framework GRAAL. Architecture multi-agents\nPerspectives. Développements futurs"
+    "section": "Outline",
+    "text": "Outline\n\nContext. Challenges of automatic coding\nThe GRAAL framework. Multi-agent architecture\nPerspectives. Future developments"
   },
   {
     "objectID": "index.html#section",
     "href": "index.html#section",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
     "section": "",
-    "text": "NAF : Nomenclature statistique des Activités économiques\n\n~700 codes finaux\nStructure hiérarchique sur 5 niveaux\n\nCOICOP : Classification of Individual Consumption by Purpose\n\n~300 à ~1000 selon la granularité employée\nStructure hiérarchique sur 5 niveaux\n\n\n\n\n\n\n\nflowchart TD\n  A[\"Agriculture, sylviculture et pêche\"]\n  \n  D01[\"Culture et production animale\"]\n  \n  G011[\"Cultures non permanentes\"]\n  \n  C0111[\"Culture de céréales\"]\n  \n  A --&gt; D01 --&gt; G011 --&gt; C0111"
+    "text": "NAF : Statistical Nomenclature of Economic Activities\n\n~700 final codes\nHierarchical structure over 5 levels\n\nCOICOP : Classification of Individual Consumption by Purpose\n\n~300 to ~1000 depending on granularity\nHierarchical structure over 5 levels\n\n\n\n\n\n\n\nflowchart TD\n  A[\"Agriculture, forestry and fishing\"]\n\n  D01[\"Crop and animal production\"]\n\n  G011[\"Non-permanent crops\"]\n\n  C0111[\"Growing of cereals\"]\n\n  A --&gt; D01 --&gt; G011 --&gt; C0111"
   },
   {
-    "objectID": "index.html#défis",
-    "href": "index.html#défis",
+    "objectID": "index.html#challenges",
+    "href": "index.html#challenges",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Défis",
-    "text": "Défis\n\nA l’heure actuelle, apprentissage supervisé classique, avec des modèles de deep learning (PyTorch)\n\nFrugal, performant et rapide, production-ready… 😎\n… mais nécessite entre 100k et 1M de données labellisées 🫨"
+    "section": "Challenges",
+    "text": "Challenges\n\nCurrently: classical supervised learning with deep learning models (PyTorch)\n\nFrugal, performant and fast, production-ready… 😎\n… but requires between 100k and 1M labelled data points 🫨"
   },
   {
-    "objectID": "index.html#une-approche-mlops-grandement-facilitée-par-onyxia-mais-encore-incomplète",
-    "href": "index.html#une-approche-mlops-grandement-facilitée-par-onyxia-mais-encore-incomplète",
+    "objectID": "index.html#mlops-facilitated-by-onyxia-but-still-incomplete",
+    "href": "index.html#mlops-facilitated-by-onyxia-but-still-incomplete",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Une approche MLOps grandement facilitée par Onyxia mais encore incomplète",
-    "text": "Une approche MLOps grandement facilitée par Onyxia mais encore incomplète\n\nData : Stockage S3 (Datalab), versionnage avec MLFlow Datasets ✅\nModèle : développement internalisé et distribution de l’architecture via le package\ntorchTextClassifiers, entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅\nDéploiement : FastAPI déployé via conteneurisation (Docker) ✅\nMonitoring : c’est là que le bât blesse ❌\n\nInvestissements humains nécessaires, pas toujours faits\nComment contrôler le modèle en production sans annotation humaine continue ?"
+    "section": "MLOps: facilitated by Onyxia, but still incomplete",
+    "text": "MLOps: facilitated by Onyxia, but still incomplete\n\nData: S3 storage (Datalab), versioning with MLFlow Datasets ✅\nModel: in-house development and distribution via torchTextClassifiers, parallelised training with Argo Workflows, model storage with MLFlow ✅\nDeployment: FastAPI deployed via containerisation (Docker) ✅\nMonitoring: this is where it falls short ❌\n\nRequires human investment, not always done\nHow to monitor the model in production without continuous human annotation?"
   },
   {
-    "objectID": "index.html#le-besoin-de-saffranchir-des-données-labellisées",
-    "href": "index.html#le-besoin-de-saffranchir-des-données-labellisées",
+    "objectID": "index.html#the-need-to-move-away-from-labelled-data",
+    "href": "index.html#the-need-to-move-away-from-labelled-data",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Le besoin de s’affranchir des données labellisées",
-    "text": "Le besoin de s’affranchir des données labellisées\n\nComment faire quand on ne peut pas avoir / n’a pas assez de données labellisées ?\nComment faire quand la nomenclature est mise à jour par le métier ?\n\nIl faut recoder les données existantes\n\nComment faire quand nos données labellisées ne sont pas fiables ?\n\net qu’idéalement on veuille les corriger…"
+    "section": "The need to move away from labelled data",
+    "text": "The need to move away from labelled data\n\nWhat to do when labelled data is unavailable or insufficient?\nWhat to do when the nomenclature is updated?\n\nExisting data needs to be re-coded\n\nWhat to do when our labelled data is unreliable?\n\nand ideally we want to correct it…"
   },
   {
-    "objectID": "index.html#objectifs",
-    "href": "index.html#objectifs",
+    "objectID": "index.html#a-first-zero-shot-approach-rag",
+    "href": "index.html#a-first-zero-shot-approach-rag",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Objectifs",
-    "text": "Objectifs\n\nOn ne veut plus d’embeddings\nOn veut du reasoning: le LLM peut/doit justifier ses choix (chain of thought)\n\nPlutôt que lui imposer du contexte comme dans un RAG, laisser le modèle compléter son contexte dynamiquement (= agent !)\nIdéalement, avec un raisonnement autour de la hiérarchie"
+    "section": "A first zero-shot approach: RAG",
+    "text": "A first zero-shot approach: RAG\n\nA first zero-shot approach: Retrieval-Augmented Generation (RAG)\n\nKnowledge base = official descriptions for each code\nA good first solution, but…\n\ndependency on chunking\ndependency on the embedding model\ncontext saturation with descriptions\ncomparing a description embedding to a label embedding\nno traceability, no reasoning\nno consideration of the hierarchy!"
   },
   {
-    "objectID": "index.html#neo4j-une-graph-database",
-    "href": "index.html#neo4j-une-graph-database",
+    "objectID": "index.html#objectives",
+    "href": "index.html#objectives",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Neo4j : une graph database",
-    "text": "Neo4j : une graph database\n\n\n\n\n\ngraph TD\n  ROOT[\"Root\"]\n\n  %% Sections\n  J[\"CODE: J&lt;br/&gt;LEVEL: 1\"]\n  A[\"CODE: A&lt;br/&gt;LEVEL: 1\"]\n\n  %% Divisions\n  J60[\"CODE: J60&lt;br/&gt;LEVEL: 2\"]\n  J61[\"CODE: J61&lt;br/&gt;LEVEL: 2\"]\n  A01[\"CODE: A01&lt;br/&gt;LEVEL: 2\"]\n\n  %% Groupes\n  J60_1[\"CODE: J60.1&lt;br/&gt;LEVEL: 3\"]\n  J60_2[\"CODE: J60.2&lt;br/&gt;LEVEL: 3\"]\n  A01_1[\"CODE: A01.1&lt;br/&gt;LEVEL: 3\"]\n\n  %% Classes\n  J60_11[\"CODE: J60.11&lt;br/&gt;LEVEL: 4\"]\n  J60_12[\"CODE: J60.12&lt;br/&gt;LEVEL: 4\"]\n  A01_11[\"CODE: A01.11&lt;br/&gt;LEVEL: 4\"]\n\n  %% Relations HAS_PARENT\n  J --&gt;|HAS_PARENT| ROOT\n  A --&gt;|HAS_PARENT| ROOT\n\n  J60 --&gt;|HAS_PARENT| J\n  J61 --&gt;|HAS_PARENT| J\n  A01 --&gt;|HAS_PARENT| A\n\n  J60_1 --&gt;|HAS_PARENT| J60\n  J60_2 --&gt;|HAS_PARENT| J60\n  A01_1 --&gt;|HAS_PARENT| A01\n\n  J60_11 --&gt;|HAS_PARENT| J60_1\n  J60_12 --&gt;|HAS_PARENT| J60_1\n  A01_11 --&gt;|HAS_PARENT| A01_1"
+    "section": "Objectives",
+    "text": "Objectives\n\nNo more embeddings\nWe want reasoning: the LLM can/must justify its choices (chain of thought)\n\nRather than imposing context as in a RAG, let the model complete its context dynamically (= agent!)\nIdeally, with reasoning around the hierarchy"
   },
   {
-    "objectID": "index.html#utilisation-du-graph-comme-support-pour-des-agents",
-    "href": "index.html#utilisation-du-graph-comme-support-pour-des-agents",
+    "objectID": "index.html#neo4j-a-graph-database",
+    "href": "index.html#neo4j-a-graph-database",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Utilisation du graph comme support pour des agents",
-    "text": "Utilisation du graph comme support pour des agents\n\nOn définit un ensemble d’outils commun à tous les agents:\n\nget_code_information\nget_current_children\nget_current_siblings\ngo_to_parent\ngo_to_child\netc.\n\nIls utilisent tous la syntaxe Neo4j"
+    "section": "Neo4j: a graph database",
+    "text": "Neo4j: a graph database\n\n\n\n\n\ngraph TD\n  ROOT[\"Root\"]\n\n  J[\"CODE: J&lt;br/&gt;LEVEL: 1\"]\n  A[\"CODE: A&lt;br/&gt;LEVEL: 1\"]\n\n  J60[\"CODE: J60&lt;br/&gt;LEVEL: 2\"]\n  J61[\"CODE: J61&lt;br/&gt;LEVEL: 2\"]\n  A01[\"CODE: A01&lt;br/&gt;LEVEL: 2\"]\n\n  J60_1[\"CODE: J60.1&lt;br/&gt;LEVEL: 3\"]\n  J60_2[\"CODE: J60.2&lt;br/&gt;LEVEL: 3\"]\n  A01_1[\"CODE: A01.1&lt;br/&gt;LEVEL: 3\"]\n\n  J60_11[\"CODE: J60.11&lt;br/&gt;LEVEL: 4\"]\n  J60_12[\"CODE: J60.12&lt;br/&gt;LEVEL: 4\"]\n  A01_11[\"CODE: A01.11&lt;br/&gt;LEVEL: 4\"]\n\n  J --&gt;|HAS_PARENT| ROOT\n  A --&gt;|HAS_PARENT| ROOT\n\n  J60 --&gt;|HAS_PARENT| J\n  J61 --&gt;|HAS_PARENT| J\n  A01 --&gt;|HAS_PARENT| A\n\n  J60_1 --&gt;|HAS_PARENT| J60\n  J60_2 --&gt;|HAS_PARENT| J60\n  A01_1 --&gt;|HAS_PARENT| A01\n\n  J60_11 --&gt;|HAS_PARENT| J60_1\n  J60_12 --&gt;|HAS_PARENT| J60_1\n  A01_11 --&gt;|HAS_PARENT| A01_1"
   },
   {
-    "objectID": "index.html#les-agents",
-    "href": "index.html#les-agents",
+    "objectID": "index.html#using-the-graph-as-a-foundation-for-agents",
+    "href": "index.html#using-the-graph-as-a-foundation-for-agents",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Les agents",
-    "text": "Les agents\n\nUn agent = un prompt, un type d’input et d’output, et des tools\nLes closers\n\nCodeChooser:\nMatchVerifier:\n\n\nCode\nclass MatchVerifier(BaseAgent):\n    def __init__(self, graph: Graph):\n        super().__init__(graph)\n\n    def get_agent_name(self) -&gt; str:\n        return \"MatchVerifier Agent\"\n\n    def get_instructions(self) -&gt; str:\n        return \"\"\"\n                Tu es un agent spécialisé dans la vérification de la validité d'une correspondance entre un libellé textuel et le code qui lui a été associé. Tu as accès à des outils pour interroger une base de données de nomenclature statistique structurée en graph database Neo4j.\n            \"\"\"\n\n    def get_output_type(self):\n        return MatchVerificationResult\n\n    def build_prompt(self, match_verification_input: MatchVerificationInput) -&gt; str:\n        \"\"\"\n        Construire le prompt pour l'agent de vérification de correspondance.\n        \"\"\"\n        prompt = f\"\"\"\n        Vérifie si le code suivant correspond bien à l'activité décrite.\n\n        Activité : {match_verification_input.activity}\n\n        Code proposé : {match_verification_input.code}\n        Explication proposée : {match_verification_input.proposed_explanation}\n\n        Réponds en fournissant :\n        1. Un booléen indiquant si la correspondance est valide.\n        2. Un niveau de confiance entre 0 et 1.\n        3. Une explication concise de ta décision.\n        \"\"\"\n        return prompt\n\n\n\nText2Code (classifieur)\n\nle Navigator est un agent qui hérite de Text2Code\n\nCode2Text (générateur de données synthétiques)"
+    "section": "Using the graph as a foundation for agents",
+    "text": "Using the graph as a foundation for agents\n\nWe define a set of tools shared by all agents:\n\nget_code_information\nget_current_children\nget_current_siblings\ngo_to_parent\ngo_to_child\netc.\n\nThey all use Neo4j syntax"
   },
   {
-    "objectID": "index.html#exemple-de-classification-par-navigator",
-    "href": "index.html#exemple-de-classification-par-navigator",
+    "objectID": "index.html#the-agents",
+    "href": "index.html#the-agents",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Exemple de classification par Navigator",
-    "text": "Exemple de classification par Navigator\n\nInputOutput\n\n\ndescription = \"\"\"\nEntreprise de fabrication artisanale de pains spéciaux \net viennoiseries, avec vente directe en boutique\n\"\"\"\n\n\n{\n  \"code\": \"10.71Z\",\n  \"label\": \"Fabrication de pain et pâtisserie fraîche\",\n  \"confidence\": 0.94,\n  \"path\": [\"C\", \"10\", \"10.7\", \"10.71\", \"10.71Z\"],\n  \"justification\": \"Fabrication artisanale (C) de produits \n                    de boulangerie (10.7) avec vente directe : ce code correspond donc au libellé fourni.\"\n}"
+    "section": "The agents",
+    "text": "The agents\n\nAn agent = a prompt, an input/output type, and tools\nThe closers: CodeChooser, MatchVerifier\nText2Code (classifier): the Navigator inherits from Text2Code\nCode2Text (synthetic data generator)"
+  },
+  {
+    "objectID": "index.html#matchverifier-example-implementation",
+    "href": "index.html#matchverifier-example-implementation",
+    "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
+    "section": "MatchVerifier — example implementation",
+    "text": "MatchVerifier — example implementation\nclass MatchVerifier(BaseAgent):\n    def get_instructions(self) -&gt; str:\n        return \"\"\"You are an agent specialised in verifying\n                  the validity of a match between a label\n                  and a code in a Neo4j nomenclature graph.\"\"\"\n\n    def build_prompt(self, input: MatchVerificationInput) -&gt; str:\n        return f\"\"\"Verify whether the code matches the activity.\n        Activity: {input.activity}\n        Proposed code: {input.code}\n        Explanation: {input.proposed_explanation}\n        Respond with: validity (bool), confidence (0-1), explanation.\"\"\""
+  },
+  {
+    "objectID": "index.html#classification-example-with-navigator",
+    "href": "index.html#classification-example-with-navigator",
+    "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
+    "section": "Classification example with Navigator",
+    "text": "Classification example with Navigator\n\n\nInput\ndescription = \"\"\"\nArtisan bakery producing\nspecialty breads and pastries,\nwith direct in-store sales\n\"\"\"\n\nOutput\n{\n  \"code\": \"10.71Z\",\n  \"label\": \"Manufacture of bread\n            and fresh pastry goods\",\n  \"confidence\": 0.94,\n  \"path\": [\"C\",\"10\",\"10.7\",\"10.71\",\"10.71Z\"],\n  \"justification\": \"Artisan manufacturing (C)\n    of bakery products (10.7)\n    with direct sales.\"\n}"
   },
   {
     "objectID": "index.html#evaluation",
     "href": "index.html#evaluation",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
     "section": "Evaluation",
-    "text": "Evaluation\n\nEvaluer un agent classifieur\n\nSi on fait confiance à notre dataset de test : évaluation straightforward\nSinon : évaluation manuelle !\n\nPrédiction ground truth, prédiction du classifieur, jugement du CodeChooser et du MatchVerifier mis bout à bout\nEvaluation conjointe de tous les composants\n\n\nEvaluer la génération de données synthétiques\n\nmoins évident\nréentraîner un modèle sur un dataset synthétique et voir si on atteint des perfs équivalentes sur le même test set"
+    "text": "Evaluation\n\nEvaluating a classifier agent\n\nIf we trust our test dataset: straightforward evaluation\nOtherwise: manual evaluation!\n\nGround truth prediction, classifier prediction, CodeChooser and MatchVerifier judgements combined\nJoint evaluation of all components\n\n\nEvaluating synthetic data generation\n\nLess straightforward\nRetrain a model on a synthetic dataset and check whether equivalent performance is reached on the same test set"
   },
   {
     "objectID": "index.html#perspectives",
     "href": "index.html#perspectives",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
     "section": "Perspectives",
-    "text": "Perspectives\n\nUn cahier des charges respecté\n\nPlus d’embeddings\nDu raisonnement et de la traçabilité\nUtilisable pour n’importe quelle nomenclature : il suffit de créer une base Neo4j avec les notices et tout fonctionne !\n\nGRAAL n’est qu’un distributeurs de tools, de prompts et de structures d’appels au LLM (validation input/output)\n\n\nLa tâche principale va être l’évaluation 🎯"
+    "text": "Perspectives\n\nRequirements met\n\nNo more embeddings\nReasoning and traceability\nUsable for any nomenclature: just create a Neo4j database with the descriptions and everything works!\n\nGRAAL is just a distributor of tools, prompts and LLM call structures (input/output validation)\n\n\nThe main task ahead is evaluation 🎯"
   },
   {
-    "objectID": "index.html#merci-de-votre-attention",
-    "href": "index.html#merci-de-votre-attention",
+    "objectID": "index.html#what-will-we-do-with-it",
+    "href": "index.html#what-will-we-do-with-it",
     "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
-    "section": "Merci de votre attention !",
-    "text": "Merci de votre attention !\n🔗 github.com/InseeFrLab/GRAAL"
+    "section": "What will we do with it?",
+    "text": "What will we do with it?\n\nAn agentic model is too heavy for production (no GPU yet, inference time too high…)\nHowever, GRAAL can be used for:\n\nMonitoring the deployed model: MatchVerifier analyses API logs, evaluates the model continuously, calls the Navigator if re-coding is needed\nRe-coding a database (same workflow as monitoring)\nSynthetic data generation (Code2Text)"
+  },
+  {
+    "objectID": "index.html#thank-you-for-your-attention",
+    "href": "index.html#thank-you-for-your-attention",
+    "title": "GRAAL: Graph-based Research with Agents for Automatic Labelling",
+    "section": "Thank you for your attention!",
+    "text": "Thank you for your attention!\n🔗 github.com/InseeFrLab/GRAAL"
   }
 ]

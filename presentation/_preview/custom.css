@@ -1,0 +1,18 @@
+.reveal, .reveal .slides {
+    font-size: 30px !important;
+}
+
+body:before {
+    content: "";
+    display: block;
+    position: fixed;
+    bottom: 1em;
+    left: 5em;
+    width: 150px;
+    height: 150px;
+    background-image: url(iaos-logo.png);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 1000;
+}
