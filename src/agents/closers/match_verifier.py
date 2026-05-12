@@ -17,7 +17,7 @@ class MatchVerificationResult(BaseModel):
 
 class MatchVerificationInput(BaseModel):
     activity: str = Field(description="The textual label of the activity to verify")
-    code: str = Field(description="The code that has been associated with the activity")
+    code: str = Field(description="The final NACE code (is_final=1) reached after navigating the hierarchy")
     proposed_explanation: str = Field(description="The explanation provided for the proposed code")
     proposed_confidence: float = Field(
         description="The confidence level of the proposed match, between 0 and 1", ge=0, le=1

@@ -36,16 +36,16 @@ async def classify_navigator(
     
     # TODO: add the management for exp_name
     navigator = Navigator(neo4j_config)
-    
+    classifier = NavigatorAgenticClassifier(navigator)
+
     results = []
     for q in queries:
+        navigator.reset_to_root()
         logger.info(f"Classifying: {q}")
         logger.info(f'Current position of the navigator: {navigator.current_code}')
-        classifier = NavigatorAgenticClassifier(navigator)
         result = await classifier(q)
         results.append(result)
         logger.info(f"Le résultat de la classification est : {result}")
-        navigator.reset_to_root()
     
     # Return single result or list based on input type
     return results[0] if is_single else results
