@@ -229,7 +229,7 @@ def main(cfg: DictConfig):
             continue
 
     # ======================== LABEL GENERATION ==========================
-    root_logger.info(f"Generating {len(valid_items)*cfg["main"]["n_labels_per_gen"]} labels...")
+    root_logger.info(f"""Generating {len(valid_items)*cfg["main"]["n_labels_per_gen"]} labels...""")
 
     results_buffer = []
     n_batches = len(valid_items) // cfg["llm"]["generation_batch_size"]
@@ -238,7 +238,7 @@ def main(cfg: DictConfig):
 
     for i in range(0, len(valid_items), cfg["llm"]["generation_batch_size"]):
         root_logger.info(
-            f"Processing batch {(i // cfg["llm"]["generation_batch_size"]) + 1}/{n_batches}..."
+            f"""Processing batch {(i // cfg["llm"]["generation_batch_size"]) + 1}/{n_batches}..."""
         )
 
         batch = valid_items[i:i + cfg["llm"]["generation_batch_size"]]

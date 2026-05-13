@@ -29,7 +29,6 @@ spec:
         args:
           - |
             set -e
-            set -x
 
             echo "=== Vault authentication ==="
 
@@ -45,6 +44,8 @@ spec:
                 | .[]')
 
             echo "=== Secrets loaded ==="
+
+            set -x
 
             # clone repo
             git clone -b mateom https://github.com/InseeFrLab/GRAAL.git

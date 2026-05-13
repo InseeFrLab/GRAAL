@@ -4,7 +4,7 @@ main:
 # Code sampling
 sampling:
   population_path: "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
-  code_column: "nace2025"
+  code_column: "naf2025"
 
 naf:
   convert_naf_to_nace: false

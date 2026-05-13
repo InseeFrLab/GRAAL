@@ -1,6 +1,6 @@
 main:
   language: "English"
-  use_fewshot: false              # No English-written data availabale
+  use_fewshot: false              # No English-written data available
 
 # Code sampling (taking from NAF)
 sampling:
