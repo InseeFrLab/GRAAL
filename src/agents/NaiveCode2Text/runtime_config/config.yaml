@@ -1,5 +1,6 @@
 defaults:
   - generation_type@_global_: terminal
   - fewshot@_global_: few-shot
-  - llm@_global_: gemma
+  - llm@_global_: gemma4
   - notice@_global_: naf2025
+  - retext@_global_: fast

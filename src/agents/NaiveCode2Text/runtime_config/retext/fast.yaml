@@ -1,0 +1,4 @@
+retext:
+  max_iterations: 20
+  discrimination_threshold: 0.7
+  discrim_api_url: "https://labelguard.lab.sspcloud.fr"
