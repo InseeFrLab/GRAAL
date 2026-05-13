@@ -38,7 +38,7 @@ def to_bad_NAF(
         code: str
         ) -> str:
     """
-    For the case of proper NAF code format (DD.DDL), transform it into bad NAF (DD.DDL).
+    For the case of proper NAF code format (DD.DDL), transform it into bad NAF (DDDDL).
 
     Args:
         code (str): The code in proper NAF format to transform.

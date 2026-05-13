@@ -115,7 +115,7 @@ def build_single_user_prompt(
             for exclude in excludes:
                 user_prompt += "\n" + exclude
 
-        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic" \
+        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic " \
             + "labels that strictly correspond to this code, fully complying with the official" \
             + " description."
 

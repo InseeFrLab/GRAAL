@@ -163,13 +163,14 @@ def main(cfg: DictConfig):
     valid_items = []
 
     # User prompt
-    for i, (new_code, fewshot) in enumerate(zip(new_code_list, codes_fewshot)):
+    for i, new_code in enumerate(new_code_list):
+        fewshot = codes_fewshot[i] if cfg["main"]["use_fewshot"] else None
         code_spec = code_details[new_code]
 
         try:
 
             # First for the exhaustivity part
-            if cfg["main"]["exhaustive_sampling"] and i <= N_EXHAUSTIVE:
+            if cfg["main"]["exhaustive_sampling"] and i < N_EXHAUSTIVE:
                 user_prompts = exhaustive_user_prompt_builder.build_user_prompts(
                     code_details=code_spec,
                     language=cfg["main"]["language"],
