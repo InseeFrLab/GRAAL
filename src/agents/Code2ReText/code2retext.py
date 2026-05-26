@@ -7,8 +7,10 @@ import asyncio
 from dotenv import load_dotenv
 import requests
 import s3fs
-from openai import AsyncOpenAI
 from langchain_neo4j import Neo4jGraph
+from langchain_openai import ChatOpenAI
+from qdrant_client import QdrantClient
+from openai import OpenAI
 import hydra
 from omegaconf import DictConfig
 
@@ -16,9 +18,14 @@ from src.agents.NaiveCode2Text.code_retrieval import code_sampler, code_specifie
 from src.agents.NaiveCode2Text.data_preprocessing import NAF_preprocessing
 from src.agents.NaiveCode2Text.fewshot import fewshot_prompt_builder, fewshot_sampler
 from src.agents.NaiveCode2Text.label_generation import label_exportation
-from src.agents.NaiveCode2Text.prompt_creation import system_prompt_builder, \
+from src.agents.NaiveCode2Text.prompt_creation import \
     exhaustive_user_prompt_builder, random_user_prompt_builder
-from src.agents.Code2ReText import regenerator
+from src.agents.Code2ReText import regenerator, langfuse_prompt
+
+# CONFIGURATION LANGFUSE
+os.environ["LANGFUSE_PUBLIC_KEY"] = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
+os.environ["LANGFUSE_SECRET_KEY"] = os.environ.get("LANGFUSE_SECRET_KEY", "")
+os.environ["LANGFUSE_HOST"] = os.environ["LANGFUSE_BASE_URL"]
 
 
 @hydra.main(
@@ -60,21 +67,40 @@ def main(cfg: DictConfig):
         token=os.environ["AWS_SESSION_TOKEN"]
     )
 
-    # Neo4j connection
     NOTICE_GRAPH = Neo4jGraph(
         url=os.environ["NEO4J_URL"],
         username=os.environ["NEO4J_USERNAME"],
         password=os.environ["NEO4J_PWD"]
     )
 
-    # Connecting to Generation Client
-    LLM_API_URL = os.environ["LLM_URL"]
-    LLM_API_KEY = os.environ["LLM_API_KEY"]
+    GEN_CLIENT = ChatOpenAI(
+        model=cfg["llm"]["model"],
+        temperature=cfg["llm"]["temperature"],
+        openai_api_key=os.environ["LLM_API_KEY"],
+        openai_api_base=os.environ["LLM_URL"],
+    )
 
-    LLM_CLIENT = AsyncOpenAI(base_url=LLM_API_URL, api_key=LLM_API_KEY)
+    QDRANT_CLIENT = QdrantClient(
+        url="http://qdrant:6333",
+        api_key=os.environ["QDRANT_API_KEY"],
+        timeout=120
+    )
+    QDRANT_COLLECTION = cfg["retext"]["qdrant_collection"]
+
+    EMBED_CLIENT = OpenAI(
+        base_url=os.environ["LLM_URL"],
+        api_key=os.environ["LLM_API_KEY"]
+    )
+    EMBED_MODEL = "qwen3-embedding-8b"
     DISCRIM_URL = cfg["retext"]["discrim_api_url"] + "/predict_proba"
-    # Model set up
-    LabelGenerationModel = regenerator.build_label_generation_model(
+
+    REGENERATOR = regenerator.ReGenerator(
+        gen_client=GEN_CLIENT,
+        qdrant_client=QDRANT_CLIENT,
+        qdrant_collection=QDRANT_COLLECTION,
+        embed_client=EMBED_CLIENT,
+        embed_model=EMBED_MODEL,
+        discrim_url=DISCRIM_URL,
         nb_labels=cfg["main"]["n_labels_per_gen"]
     )
 
@@ -150,19 +176,12 @@ def main(cfg: DictConfig):
     # ======================== PROMPT CREATION ==========================
     root_logger.info("Creating prompts...")
 
-    # System prompt
-    if cfg["main"]["use_fewshot"]:
-        system_prompt = fewshot_prompt_builder.build_fewshot_system_prompt(
-                prompt_path=cfg["prompt"]["prompt_path"],
-                language=cfg["main"]["language"],
-                nb_labels=cfg["main"]["n_labels_per_gen"]
-            )
-    else:
-        system_prompt = system_prompt_builder.build_system_prompt(
-                prompt_path=cfg["prompt"]["prompt_path"],
-                language=cfg["main"]["language"],
-                nb_labels=cfg["main"]["n_labels_per_gen"]
-            )
+    system_prompt = langfuse_prompt.build_system_prompt(
+            prompt_path=cfg["prompt"]["prompt_path"],
+            language=cfg["main"]["language"],
+            nb_labels=cfg["main"]["n_labels_per_gen"],
+            use_fewshot=cfg["main"]["use_fewshot"]
+        )
 
     valid_items = []
 
@@ -246,18 +265,17 @@ def main(cfg: DictConfig):
 
         batch = valid_items[i:i + cfg["llm"]["generation_batch_size"]]
         prompts = [item["prompt"] for item in batch]
+        codes = [item["code"] for item in batch]
+        code_names = [item["name"] for item in batch]
 
         try:
             generations = asyncio.run(
-                regenerator.ask_model_multiple_agentic(
+                REGENERATOR.run_multiple_agents(
                     system_prompt=system_prompt,
                     user_prompts=prompts,
-                    llm_client=LLM_CLIENT,
-                    model=cfg["llm"]["model"],
-                    temperature=cfg["llm"]["temperature"],
-                    LabelGeneration=LabelGenerationModel,
-                    max_concurrency=len(prompts),
-                    max_iterations=cfg["retext"]["max_iterations"]
+                    codes=codes,
+                    code_names=code_names,
+                    max_concurrency=len(prompts)
                 )
             )
 
@@ -275,15 +293,12 @@ def main(cfg: DictConfig):
             root_logger.info(traceback.format_exc())
             try:
                 generations = asyncio.run(
-                    regenerator.ask_model_multiple_agentic(
+                    REGENERATOR.run_multiple_agents(
                         system_prompt=system_prompt,
                         user_prompts=prompts,
-                        llm_client=LLM_CLIENT,
-                        model=cfg["llm"]["model"],
-                        temperature=cfg["llm"]["temperature"],
-                        LabelGeneration=LabelGenerationModel,
-                        max_concurrency=len(prompts),
-                        max_iterations=cfg["retext"]["max_iterations"]
+                        codes=codes,
+                        code_names=code_names,
+                        max_concurrency=len(prompts)
                     )
                 )
 
