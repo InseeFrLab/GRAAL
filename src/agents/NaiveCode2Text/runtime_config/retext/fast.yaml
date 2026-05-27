@@ -6,3 +6,6 @@ retext:
 
 prompt:
   prompt_path: "system/retext/"
+
+main:
+  n_labels_per_gen: 5

@@ -1,8 +1,0 @@
-retext:
-  max_retries: 10
-  discrimination_threshold: 0.5
-  discrim_api_url: "https://labelguard.lab.sspcloud.fr"
-  qdrant_collection: "original_cleaned"
-
-prompt:
-  prompt_path: "system/retext/"

@@ -232,7 +232,7 @@ def build_user_prompt(
 
     # For French
     elif language == "French":
-        user_prompt = "Je souhaite générer des libellés correspondant au code suivant :"
+        user_prompt = "Génère des libellés correspondant au code suivant :"
 
         user_prompt += f"\n\nCode : {code_details["code"]}"
 

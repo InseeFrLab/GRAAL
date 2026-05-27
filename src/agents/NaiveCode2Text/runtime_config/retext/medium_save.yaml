@@ -1,0 +1,28 @@
+retext:
+  max_iterations: 20
+  discrimination_threshold: 0.7
+  discrim_api_url: "https://labelguard.lab.sspcloud.fr"
+  qdrant_collection: "original_cleaned"
+
+prompt:
+  prompt_path: "system/retext/"
+
+main:
+  exhaustive_sampling: false
+  n_random_codes: 200
+  n_labels_per_gen: 20
+
+random:
+  includes:
+    geom_prob: 0.3
+    min: 1
+    max: null                   # null = up to the max number of includes
+
+  examples:
+    geom_prob: 0.2
+    min: 1
+    max: null                   # null = up to the max number of includes
+
+export:
+  output_format: ".parquet"
+  save_batch_size: 1000

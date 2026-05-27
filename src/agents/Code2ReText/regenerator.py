@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Type, Literal
+from typing import List, Type, Literal, Optional
 from typing_extensions import TypedDict
 from pydantic import BaseModel, Field, create_model
 
@@ -7,25 +7,61 @@ import httpx
 from qdrant_client import QdrantClient
 from openai import OpenAI
 
-# Imports LangChain & LangGraph
-from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.prebuilt import ToolNode
 from langfuse.langchain import CallbackHandler
+from langchain_core.runnables import RunnableConfig
 
 
-# Définition de l'état local au module
+# ==============================================================================
+# ÉTAT PARTAGÉ ENTRE LES DEUX AGENTS
+# ==============================================================================
+
 class AgentState(TypedDict):
-    messages: list
-    contexte_generation: dict
+    # Contexte de la tâche (immuable)
     code: str
     code_name: str
+    system_prompt_generator: str
+    user_prompt: str
 
+    # Messages du générateur
+    generator_messages: list
+
+    # Résultats intermédiaires
+    current_labels: List[str]           # dernière génération brute
+    discrimination_results: List[str]   # résultats bruts de discriminate_labels
+    invalid_indices: List[int]          # indices des libellés invalides
+    exact_match_indices: List[int]      # indices des libellés qui sont des copies exactes
+    human_examples: List[str]           # exemples humains récupérés depuis Qdrant
+
+    # Consignes dynamiques produites par le superviseur
+    supervisor_instructions: Optional[str]
+
+    # Contrôle de boucle
+    iteration: int
+    all_valid: bool
+
+
+# ==============================================================================
+# MODÈLES PYDANTIC
+# ==============================================================================
+
+class LabelList(BaseModel):
+    labels: List[str]
+
+
+# ==============================================================================
+# REGENERATOR
+# ==============================================================================
 
 class ReGenerator:
-    """Service utilitaire de génération de données synthétiques basé sur LangGraph."""
+    """
+    Architecture deux agents :
+    - Générateur  : génère des libellés selon le system prompt + consignes dynamiques.
+    - Superviseur : évalue, recherche des exemples humains, produit de nouvelles consignes.
+    La boucle s'arrête quand tous les libellés sont valides ou après max_iterations tours.
+    """
 
     def __init__(
         self,
@@ -35,7 +71,9 @@ class ReGenerator:
         embed_client: OpenAI,
         embed_model: str,
         discrim_url: str,
-        nb_labels: int
+        nb_labels: int,
+        max_iterations: int = 5,
+        discrimination_threshold: float = 0.7,
     ):
         self.langfuse_handler = CallbackHandler()
         self.gen_client = gen_client
@@ -44,188 +82,343 @@ class ReGenerator:
         self.embed_client = embed_client
         self.embed_model = embed_model
         self.discrim_url = discrim_url
-
-        self.discrimination_threshold = 0.7
+        self.nb_labels = nb_labels
+        self.max_iterations = max_iterations
+        self.discrimination_threshold = discrimination_threshold
 
         self.LabelGeneration = create_model(
             "LabelGeneration",
             labels=(List[str], Field(..., min_items=nb_labels, max_items=nb_labels))
         )
 
-        # Initialisation interne des composants du graphe
-        self.tools = self._init_tools()
-        self.tool_node = ToolNode(self.tools)
-        # On lie les outils au LLM injecté
-        self.gen_with_tools = self.gen_client.bind_tools(self.tools)
         self.graph = self._compile_graph()
 
-    def _init_tools(self) -> list:
-        """Définit les outils en accédant aux clients de l'instance."""
+    # ==========================================================================
+    # NŒUDS DU GÉNÉRATEUR
+    # ==========================================================================
 
-        @tool
-        async def discriminate_labels(texts: List[str]) -> List[str]:
-            """Évalue si les libellés ressemblent à de l'IA."""
-            # Sécurité au cas où le LLM envoie une chaîne imbriquée dans une liste de listes
-            if texts and isinstance(texts[0], list):
-                texts = [item for sublist in texts for item in sublist]
+    async def _generate(self, state: AgentState) -> dict:
+        """
+        Génère nb_labels libellés via structured output.
+        Si le superviseur a fourni des consignes, elles sont injectées
+        comme dernier message utilisateur avant la génération.
+        """
+        messages = list(state["generator_messages"])
 
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    self.discrim_url,
-                    json={"texts": texts},
-                    timeout=10.0
+        if state["supervisor_instructions"]:
+            messages.append({
+                "role": "user",
+                "content": state["supervisor_instructions"]
+            })
+
+        llm_structured = self.gen_client.with_structured_output(self.LabelGeneration)
+        result = await llm_structured.ainvoke(messages)
+
+        # On mémorise les messages enrichis pour les tours suivants
+        updated_messages = messages + [
+            {"role": "assistant", "content": str(result.labels)}
+        ]
+
+        return {
+            "generator_messages": updated_messages,
+            "current_labels": result.labels,
+            "supervisor_instructions": None,   # reset pour le prochain tour
+        }
+
+    # ==========================================================================
+    # NŒUDS DU SUPERVISEUR
+    # ==========================================================================
+
+    async def _discriminate(self, state: AgentState) -> dict:
+        """Appelle le discriminateur sur tous les libellés courants."""
+        labels = state["current_labels"]
+        iteration = state["iteration"]
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.discrim_url,
+                json={"texts": labels},
+                timeout=15.0
+            )
+
+        if response.status_code != 200:
+            # En cas d'erreur API, on considère tout comme valide pour ne pas bloquer
+            return {
+                "discrimination_results": [],
+                "invalid_indices": [],
+                "exact_match_indices": [],
+                "all_valid": True,
+            }
+
+        probs = [float(p) for p in response.json()]
+        invalid_indices = [i for i, p in enumerate(probs) if p >= self.discrimination_threshold]
+        nb_invalides = len(invalid_indices)
+
+        # --- ENVOI DES SCORES STRUCTURÉS À LANGFUSE ---
+        if hasattr(self, "langfuse_handler"):
+            # Demande au handler l'ID de la trace parente active pour cette coroutine
+            client = self.langfuse_handler.client
+            trace_id = client.get_current_trace_id()
+            
+            if trace_id:
+                # 1. Enregistrement du score spécifique au tour
+                client.score_current_trace(
+                    name=f"erreurs_tour_{iteration}",
+                    value=nb_invalides,
+                    data_type="NUMERIC"
                 )
 
-                # Vérification du statut de la réponse avant de parser
-                if response.status_code != 200:
-                    return [f"Erreur API ({response.status_code}): Impossible d'analyser ces textes."]
+                # 2. Si c'est le premier passage, situation initiale
+                if iteration == 0:
+                    client.score_current_trace(
+                        name="erreurs_initiales",
+                        value=nb_invalides,
+                        data_type="NUMERIC"
+                    )
 
-                res_json = response.json()
+        discrimination_results = [
+            f"{labels[i]} [score IA: {probs[i]:.3f}]" for i in range(len(labels))
+        ]
 
-                # Sécurité : Si l'API a renvoyé un dictionnaire d'erreur plutôt qu'une liste de probabilités
-                if isinstance(res_json, dict):
-                    return [f"Erreur format API: {res_json.get('detail', 'Réponse invalide')}" ]
+        return {
+            "discrimination_results": discrimination_results,
+            "invalid_indices": invalid_indices,
+            "exact_match_indices": [],          # sera rempli par _find_exact_matches
+            "all_valid": len(invalid_indices) == 0,
+        }
 
-                try:
-                    # On force la conversion en float pour éviter le conflit str/float
-                    probs = [float(p) for p in res_json]
-                except (ValueError, TypeError):
-                    return ["Erreur: L'API de discrimination n'a pas renvoyé des scores numériques valides."]
+    async def _find_exact_matches(self, state: AgentState) -> dict:
+        """
+        Parmi les libellés invalides, cherche ceux qui sont des copies exactes
+        de libellés existants dans Qdrant (FPR du discriminateur).
+        Effectue une recherche groupée : 3 à 5 exemples par libellé invalide,
+        retourne une liste désordonnée de libellés originaux.
+        """
+        invalid_indices = state["invalid_indices"]
+        if not invalid_indices:
+            return {"exact_match_indices": [], "human_examples": []}
 
-                # Construction des labels de validité
-                validity = ["détecté comme IA → à regénérer" if x >= self.discrimination_threshold else "détecté comme humain → à conserver" for x in probs]
+        labels = state["current_labels"]
+        invalid_labels = [labels[i] for i in invalid_indices]
 
-                return [text + ": " + valid for text, valid in zip(texts, validity)]
+        # Recherche groupée dans Qdrant
+        all_human_examples = []
+        exact_match_indices = []
 
-        @tool
-        async def get_human_examples(query: str, limit: int = 5) -> List[str]:
-            """Récupère des exemples réels de libellés humains depuis la base de données pour t'informer 
-            sur le style d'écriture à reproduire. À utiliser si tes propositions sont rejetées."""
+        for idx, label in zip(invalid_indices, invalid_labels):
             query_vector = self.embed_client.embeddings.create(
-                model=self.embed_model, input=query
+                model=self.embed_model, input=label
             ).data[0].embedding
 
             points = self.qdrant_client.query_points(
                 collection_name=self.qdrant_collection,
                 query=query_vector,
                 with_payload=True,
-                limit=limit
+                limit=5
             ).points
-            return [f"Exemple humain : {p.payload['label']}" for p in points]
 
-        return [discriminate_labels, get_human_examples]
+            retrieved = [p.payload["label"] for p in points]
+            all_human_examples.extend(retrieved)
 
-    # --- NŒUDS DE COMPORTEMENT DU GRAPHE ---
-    async def _call_model(self, state: AgentState):
-        """Nœud utilisant le LLM configuré avec ses outils."""
-        messages = state["messages"]
-        response = await self.gen_with_tools.ainvoke(messages)
-        return {"messages": [response]}
+            # Correspondance exacte (normalisation basique)
+            if any(label.strip().lower() == r.strip().lower() for r in retrieved):
+                exact_match_indices.append(idx)
 
-    async def _post_tool_guidance(self, state: AgentState) -> AgentState:
-        """Injecte un rappel de mission après chaque retour d'outil."""
-        last_messages = state["messages"]
+        # Dédoublonnage tout en préservant le désordre (ordre d'insertion)
+        seen = set()
+        deduped_examples = []
+        for ex in all_human_examples:
+            key = ex.strip().lower()
+            if key not in seen:
+                seen.add(key)
+                deduped_examples.append(ex)
 
-        # Vérifie si le dernier message est un tool result de discriminate
-        last = last_messages[-1]
-        is_discrimination_result = (
-            hasattr(last, "name") and last.name == "discriminate_labels"
+        return {
+            "exact_match_indices": exact_match_indices,
+            "human_examples": deduped_examples,
+        }
+
+    async def _build_supervisor_instructions(self, state: AgentState) -> dict:
+        """
+        Nœud Superviseur (LLM) : Analyse de manière critique les défauts des libellés,
+        croise avec les exemples humains et génère des consignes textuelles intelligentes
+        sans copier les originaux.
+        """
+        invalid_indices = state["invalid_indices"]
+        exact_match_indices = state["exact_match_indices"]
+        labels = state["current_labels"]
+        human_examples = state["human_examples"]
+        iteration = state["iteration"]
+
+        # Préparation du rapport d'anomalies textuel pour le LLM Superviseur
+        evaluation_report = []
+        evaluation_report.append(f"--- RAPPORTS DES ANOMALIES (Tour {iteration + 1}) ---")
+        
+        for i, label in enumerate(labels):
+            if i in exact_match_indices:
+                evaluation_report.append(f"Libellé : '{label}' -> ERREUR : Copie exacte d'un vrai libellé de la base de données. REJETÉ.")
+            elif i in invalid_indices:
+                evaluation_report.append(f"Libellé : '{label}' -> ERREUR : Détecté comme 'Style IA' par le discriminateur. REJETÉ.")
+            else:
+                evaluation_report.append(f"Libellé : '{label}' -> VALIDE (À conserver tel quel).")
+
+        if human_examples:
+            evaluation_report.append("\n--- EXEMPLES HUMAINS RÉELS POUR INSPIRATION STYLE ---")
+            for ex in human_examples:
+                evaluation_report.append(f"- {ex}")
+
+        # Construction du prompt système du Superviseur (Peut être récupéré depuis Langfuse)
+        supervisor_system_prompt = (
+            f"Tu es le Superviseur d'un pipeline de génération. Ta mission est d'analyser les échecs "
+            f"pour le code {state['code']} ({state['code_name']}) et de rédiger des consignes de correction pour le Générateur.\n"
+            f"RÈGLES :\n"
+            f"- Si 'Style IA' : Demande de casser la structure (enlever les articles, raccourcir, jargonner).\n"
+            f"- Si 'Copie exacte' : Demande une vraie reformulation sans copier-coller les exemples humains sémantiquement proches.\n"
+            f"- Sois direct, critique, ne pose aucune question à l'humain. Parle directement au Générateur."
         )
 
-        if is_discrimination_result:
-            relance = (
-                f"Certains libellés sont détectés comme IA. "
-                f"Rappel de ta mission : tu génères des libellés pour le code "
-                f"{state['code']} ({state['code_name']}). "
-                f"Appelle get_human_examples pour t'inspirer du style humain, "
-                f"puis régénère UNIQUEMENT les libellés invalides en imitant ce style."
-            )
-            return {
-                "messages": last_messages + [{"role": "user", "content": relance}]
-            }
+        supervisor_user_content = (
+            f"Voici le rapport d'évaluation de la génération précédente :\n"
+            f"{chr(10).join(evaluation_report)}\n\n"
+            f"Génère les consignes de correction précises pour le Générateur pour le tour suivant.\n"
+            f"Rappelle-lui de conserver les libellés VALIDES intacts et de ne renvoyer que la liste finale mise à jour de {self.nb_labels} libellés."
+        )
 
-        return state
+        # Appel au LLM (On utilise le même client, mais sans structured output pour avoir une critique textuelle riche)
+        supervisor_response = await self.gen_client.ainvoke([
+            {"role": "system", "content": supervisor_system_prompt},
+            {"role": "user", "content": supervisor_user_content}
+        ])
 
-    async def _format_output(self, state: AgentState):
-        """Nœud forçant la structuration Pydantic finale."""
-        llm_structured = self.gen_client.with_structured_output(self.LabelGeneration)
-        res = await llm_structured.ainvoke(state["messages"])
-        return {"messages": [res]}
+        # Extraction des consignes rédigées par le LLM
+        instructions = supervisor_response.content
+
+        return {
+            "supervisor_instructions": instructions,
+            "iteration": state["iteration"] + 1,
+        }
+
+    # ==========================================================================
+    # ROUTEURS
+    # ==========================================================================
 
     @staticmethod
-    def _should_continue(state: AgentState) -> Literal["tools", "final_format"]:
-        """Routeur déterminant s'il faut appeler un outil ou clore la boucle."""
-        last_message = state["messages"][-1]
-        if last_message.tool_calls:
-            return "tools"
-        return "final_format"
+    def _should_stop(state: AgentState) -> Literal["supervisor_discriminate", "end"]:
+        """Après génération : discrimine toujours sauf si max_iterations atteint."""
+        if state["iteration"] >= state.get("_max_iterations", 5):
+            return "end"
+        return "supervisor_discriminate"
+
+    @staticmethod
+    def _after_discrimination(state: AgentState) -> Literal["end", "supervisor_find_matches"]:
+        """Après discrimination : arrêt si tout est valide, sinon cherche les copies exactes."""
+        if state["all_valid"]:
+            return "end"
+        return "supervisor_find_matches"
+
+    # ==========================================================================
+    # COMPILATION DU GRAPHE
+    # ==========================================================================
 
     def _compile_graph(self) -> CompiledStateGraph:
-        """Assemble et compile le workflow LangGraph."""
         workflow = StateGraph(AgentState)
 
-        # Association des méthodes de l'instance aux nœuds
-        workflow.add_node("agent", self._call_model)
-        workflow.add_node("tools", self.tool_node)
-        workflow.add_node("post_tool_guidance", self._post_tool_guidance)
-        workflow.add_node("final_format", self._format_output)
+        # Nœuds
+        workflow.add_node("generate", self._generate)
+        workflow.add_node("supervisor_discriminate", self._discriminate)
+        workflow.add_node("supervisor_find_matches", self._find_exact_matches)
+        workflow.add_node("supervisor_build_instructions", self._build_supervisor_instructions)
 
-        workflow.add_edge(START, "agent")
-        workflow.add_conditional_edges("agent", self._should_continue)
-        workflow.add_edge("tools", "post_tool_guidance")
-        workflow.add_edge("post_tool_guidance", "agent")
-        workflow.add_edge("final_format", END)
+        # Flux principal
+        workflow.add_edge(START, "generate")
+
+        workflow.add_conditional_edges(
+            "generate",
+            self._should_stop,
+            {
+                "supervisor_discriminate": "supervisor_discriminate",
+                "end": END,
+            }
+        )
+
+        workflow.add_conditional_edges(
+            "supervisor_discriminate",
+            self._after_discrimination,
+            {
+                "end": END,
+                "supervisor_find_matches": "supervisor_find_matches",
+            }
+        )
+
+        workflow.add_edge("supervisor_find_matches", "supervisor_build_instructions")
+        workflow.add_edge("supervisor_build_instructions", "generate")
 
         return workflow.compile()
 
-    # --- LOGIQUE D'EXÉCUTION PUBLIQUE ---
-    @staticmethod
-    def build_label_generation_model(nb_labels: int) -> Type[BaseModel]:
-        return create_model(
-            "LabelGeneration",
-            labels=(List[str], Field(..., min_items=nb_labels, max_items=nb_labels))
-        )
+    # ==========================================================================
+    # API PUBLIQUE
+    # ==========================================================================
 
     async def run_single_agent(
         self,
         system_prompt: str,
         user_prompt: str,
-        code: str,
-        code_name: str
-    ):
-        inputs = {
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "contexte_generation": {"model_pydantic": self.LabelGeneration},
+        code: str = "",
+        code_name: str = "",
+    ) -> LabelList:
+
+        initial_state: AgentState = {
             "code": code,
-            "code_name": code_name
+            "code_name": code_name,
+            "system_prompt_generator": system_prompt,
+            "user_prompt": user_prompt,
+            "generator_messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "current_labels": [],
+            "discrimination_results": [],
+            "invalid_indices": [],
+            "exact_match_indices": [],
+            "human_examples": [],
+            "supervisor_instructions": None,
+            "iteration": 0,
+            "all_valid": False,
+            "_max_iterations": self.max_iterations,
         }
 
         final_state = await self.graph.ainvoke(
-            inputs,
+            initial_state,
             config={
                 "callbacks": [self.langfuse_handler],
-                "recursion_limit": 20
+                "recursion_limit": self.max_iterations * 4 + 10,
             }
         )
 
-        return final_state["messages"][-1]
+        return self.LabelGeneration(labels=final_state["current_labels"])
 
     async def run_multiple_agents(
         self,
         system_prompt: str,
         user_prompts: list,
-        codes: list,
-        code_names: list,
-        max_concurrency: int = 15
-    ):
+        codes: Optional[List[str]] = None,
+        code_names: Optional[List[str]] = None,
+        max_concurrency: int = 15,
+    ) -> List[LabelList]:
+
+        if codes is None:
+            codes = [""] * len(user_prompts)
+        if code_names is None:
+            code_names = [""] * len(user_prompts)
+
         semaphore = asyncio.Semaphore(max_concurrency)
 
         async def safe_run(prompt, code, code_name):
             async with semaphore:
                 return await self.run_single_agent(system_prompt, prompt, code, code_name)
 
-        tasks = [safe_run(p, c, cn) for p, c, cn in zip(user_prompts, codes, code_names)]
+        tasks = [
+            safe_run(p, c, cn)
+            for p, c, cn in zip(user_prompts, codes, code_names)
+        ]
         return await asyncio.gather(*tasks)
