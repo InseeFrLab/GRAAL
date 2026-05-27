@@ -11,6 +11,7 @@ from .config import (
     NEO4J_USERNAME,
     NOTICES_PATH,
     URL_EMBEDDING_API,
+    OPENAI_API_KEY,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     NEO4J_URL,
     NEO4J_PWD,
     NEO4J_USERNAME,
+    OPENAI_API_KEY,
 ]

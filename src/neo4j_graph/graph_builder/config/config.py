@@ -20,13 +20,16 @@ NEO4J_PWD = os.environ["NEO4J_PWD"]
 # NOTICE MANAGER: all notices (except NAF) have been created using
 # script from ./utils/convert_to_parquet.py
 # Notice FR NAF
-# NOTICES_PATH = "projet-ape/notices/Notices-NAF2025-FR.parquet"
+NOTICES_PATH = "projet-ape/notices/Notices-NAF2025-FR.parquet"
 # Notice EN NACE
 # NOTICES_PATH = "projet-ape/notices/NACE_Rev2.1_Structure_Explanatory_Notes_EN.parquet"
 # Notice COICOP EN
 # NOTICES_PATH = "projet-ape/notices/coicop-2018_envoi_rmes_20251022_en.parquet"
 # Notice COICOP FR
-NOTICES_PATH = "projet-ape/notices/coicop-2018_envoi_rmes_20251022_fr.parquet"
+# NOTICES_PATH = "projet-ape/notices/coicop-2018_envoi_rmes_20251022_fr.parquet"
+
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", None)
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", None)
 
 COLUMNS_TO_KEEP = [
     "ID",

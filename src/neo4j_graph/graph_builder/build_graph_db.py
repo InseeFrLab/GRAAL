@@ -1,5 +1,5 @@
 import logging
-
+from dotenv import load_dotenv
 from langchain_community.document_loaders import DataFrameLoader
 
 from src.neo4j_graph.graph_builder.config import (
@@ -25,7 +25,7 @@ from src.utils.logging import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)
-
+load_dotenv(override=True)
 
 if EMBEDDING_MODEL is None:
     raise ValueError("EMBEDDING_MODEL environment variable must be set.")
