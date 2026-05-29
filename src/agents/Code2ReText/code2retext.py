@@ -101,6 +101,7 @@ def main(cfg: DictConfig):
         embed_client=EMBED_CLIENT,
         embed_model=EMBED_MODEL,
         discrim_url=DISCRIM_URL,
+        timeout=360.0,
         nb_labels=cfg["main"]["n_labels_per_gen"]
     )
 
@@ -253,7 +254,7 @@ def main(cfg: DictConfig):
     # ======================== LABEL GENERATION ==========================
     root_logger.info(f"Generating {len(valid_items)*cfg["main"]["n_labels_per_gen"]} labels...")
 
-    session_id = f"gen_{cfg['main']['n_labels_per_gen']}lpc"
+    session_id = cfg["retext"]["session_id"]
 
     results_buffer = []
     n_batches = len(valid_items) // cfg["llm"]["generation_batch_size"]
