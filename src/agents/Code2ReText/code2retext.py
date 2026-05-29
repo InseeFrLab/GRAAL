@@ -78,6 +78,7 @@ def main(cfg: DictConfig):
         temperature=cfg["llm"]["temperature"],
         openai_api_key=os.environ["LLM_API_KEY"],
         openai_api_base=os.environ["LLM_URL"],
+        timeout=360.0
     )
 
     QDRANT_CLIENT = QdrantClient(
@@ -101,7 +102,6 @@ def main(cfg: DictConfig):
         embed_client=EMBED_CLIENT,
         embed_model=EMBED_MODEL,
         discrim_url=DISCRIM_URL,
-        timeout=360.0,
         nb_labels=cfg["main"]["n_labels_per_gen"]
     )
 
