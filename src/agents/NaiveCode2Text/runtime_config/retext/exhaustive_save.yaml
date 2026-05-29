@@ -12,6 +12,10 @@ main:
   n_random_codes: 1000
   n_labels_per_gen: 15
 
+exhaustivity:
+  min_prompts_per_code: 10
+  n_spec_per_prompt: 10          # Number of includes/examples per prompt
+
 random:
   includes:
     geom_prob: 0.3

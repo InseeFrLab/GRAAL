@@ -47,7 +47,7 @@ spec:
             echo "=== Secrets loaded ==="
 
             # clone repo
-            git clone -b feature/code2retext https://github.com/InseeFrLab/GRAAL.git
+            git clone -b feature/code2retext https://$GIT_PERSONAL_ACCESS_TOKEN@github.com/InseeFrLab/GRAAL.git
             cd GRAAL/
 
             uv sync
