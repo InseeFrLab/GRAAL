@@ -8,8 +8,8 @@ prompt:
   prompt_path: "system/retext/"
 
 main:
-  exhaustive_sampling: false
-  n_random_codes: 200
+  exhaustive_sampling: true
+  n_random_codes: 1000
   n_labels_per_gen: 15
 
 random:

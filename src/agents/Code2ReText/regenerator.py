@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Type, Literal, Optional
+from typing import List, Literal, Optional
 from typing_extensions import TypedDict
 from pydantic import BaseModel, Field, create_model
 
@@ -11,7 +11,6 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
 from langfuse.langchain import CallbackHandler
-from langchain_core.runnables import RunnableConfig
 
 
 # ==============================================================================
@@ -138,7 +137,7 @@ class ReGenerator:
             response = await client.post(
                 self.discrim_url,
                 json={"texts": labels},
-                timeout=15.0
+                timeout=60.0
             )
 
         if response.status_code != 200:
@@ -168,13 +167,11 @@ class ReGenerator:
                     data_type="NUMERIC"
                 )
 
-                # 2. Si c'est le premier passage, situation initiale
-                if iteration == 0:
-                    client.score_current_trace(
-                        name="erreurs_initiales",
-                        value=nb_invalides,
-                        data_type="NUMERIC"
-                    )
+                client.score_current_trace(
+                    name=f"error_rate_lap_{iteration}",
+                    value=nb_invalides/len(labels),
+                    data_type="NUMERIC"
+                )
 
         discrimination_results = [
             f"{labels[i]} [score IA: {probs[i]:.3f}]" for i in range(len(labels))
@@ -365,6 +362,7 @@ class ReGenerator:
         user_prompt: str,
         code: str = "",
         code_name: str = "",
+        session_id: str = None
     ) -> LabelList:
 
         initial_state: AgentState = {
@@ -387,12 +385,17 @@ class ReGenerator:
             "_max_iterations": self.max_iterations,
         }
 
+        run_config = {
+            "callbacks": [self.langfuse_handler],
+            "recursion_limit": self.max_iterations * 4 + 10,
+        }
+
+        if session_id:
+            run_config["metadata"] = {"langfuse_session_id": session_id}
+
         final_state = await self.graph.ainvoke(
             initial_state,
-            config={
-                "callbacks": [self.langfuse_handler],
-                "recursion_limit": self.max_iterations * 4 + 10,
-            }
+            config=run_config
         )
 
         return self.LabelGeneration(labels=final_state["current_labels"])
@@ -404,6 +407,7 @@ class ReGenerator:
         codes: Optional[List[str]] = None,
         code_names: Optional[List[str]] = None,
         max_concurrency: int = 15,
+        session_id: str = None
     ) -> List[LabelList]:
 
         if codes is None:
@@ -415,7 +419,7 @@ class ReGenerator:
 
         async def safe_run(prompt, code, code_name):
             async with semaphore:
-                return await self.run_single_agent(system_prompt, prompt, code, code_name)
+                return await self.run_single_agent(system_prompt, prompt, code, code_name, session_id)
 
         tasks = [
             safe_run(p, c, cn)

@@ -106,7 +106,7 @@ def main(cfg: DictConfig):
 
     # Automatic name for output
     FINAL_PATH = label_exportation.create_file_name(
-        output_path=cfg["export"]["output_path"],
+        output_path=cfg["export"]["output_path"] + "retext-",
         output_format=cfg["export"]["output_format"],
         temperature=cfg["llm"]["temperature"],
         language=cfg["main"]["language"],
@@ -253,6 +253,8 @@ def main(cfg: DictConfig):
     # ======================== LABEL GENERATION ==========================
     root_logger.info(f"Generating {len(valid_items)*cfg["main"]["n_labels_per_gen"]} labels...")
 
+    session_id = f"gen_{cfg['main']['n_labels_per_gen']}lpc"
+
     results_buffer = []
     n_batches = len(valid_items) // cfg["llm"]["generation_batch_size"]
     if len(valid_items) % cfg["llm"]["generation_batch_size"] > 0:
@@ -275,7 +277,8 @@ def main(cfg: DictConfig):
                     user_prompts=prompts,
                     codes=codes,
                     code_names=code_names,
-                    max_concurrency=len(prompts)
+                    max_concurrency=len(prompts),
+                    session_id=session_id
                 )
             )
 
@@ -298,7 +301,8 @@ def main(cfg: DictConfig):
                         user_prompts=prompts,
                         codes=codes,
                         code_names=code_names,
-                        max_concurrency=len(prompts)
+                        max_concurrency=len(prompts),
+                        session_id=session_id
                     )
                 )
 

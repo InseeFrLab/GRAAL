@@ -3,4 +3,4 @@ defaults:
   - fewshot@_global_: few-shot
   - llm@_global_: gemma4
   - notice@_global_: naf2025
-  - retext@_global_: medium_save
+  - retext@_global_: exhaustive_save
