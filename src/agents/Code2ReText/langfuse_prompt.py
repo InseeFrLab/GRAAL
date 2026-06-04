@@ -9,6 +9,7 @@ def build_system_prompt(
         language: str = "English",
         nb_labels: int = 10,
         use_fewshot: bool = False,
+        supervisor: bool = False
         ) -> str:
     """
     Import system prompt with the correct language and specify the number of labels.
@@ -37,6 +38,10 @@ def build_system_prompt(
     else:
         logger.warn("Supported languages are English and French. Switching to English...")
         suffix = "-en"
+
+    if supervisor:
+        style = "supervisor"
+        suffix = ""
 
     # Importing prompt
     prompt_path = prompt_path + style + suffix

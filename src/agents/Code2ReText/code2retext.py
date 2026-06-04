@@ -94,6 +94,20 @@ def main(cfg: DictConfig):
     )
     EMBED_MODEL = "qwen3-embedding-8b"
     DISCRIM_URL = cfg["retext"]["discrim_api_url"] + "/predict_proba"
+    GEN_PROMPT = langfuse_prompt.build_system_prompt(
+        prompt_path=cfg["prompt"]["prompt_path"],
+        language=cfg["main"]["language"],
+        nb_labels=cfg["main"]["n_labels_per_gen"],
+        use_fewshot=cfg["main"]["use_fewshot"],
+        supervisor=False
+    )
+    SUP_PROMPT = langfuse_prompt.build_system_prompt(
+        prompt_path=cfg["prompt"]["prompt_path"],
+        language=cfg["main"]["language"],
+        nb_labels=cfg["main"]["n_labels_per_gen"],
+        use_fewshot=cfg["main"]["use_fewshot"],
+        supervisor=True
+    )
 
     REGENERATOR = regenerator.ReGenerator(
         gen_client=GEN_CLIENT,
@@ -102,7 +116,9 @@ def main(cfg: DictConfig):
         embed_client=EMBED_CLIENT,
         embed_model=EMBED_MODEL,
         discrim_url=DISCRIM_URL,
-        nb_labels=cfg["main"]["n_labels_per_gen"]
+        nb_labels=cfg["main"]["n_labels_per_gen"],
+        gen_prompt=GEN_PROMPT,
+        sup_prompt=SUP_PROMPT
     )
 
     # Automatic name for output
@@ -174,15 +190,8 @@ def main(cfg: DictConfig):
                 code_list=unique_codes
                 )
 
-    # ======================== PROMPT CREATION ==========================
+    # ======================== USER PROMPT CREATION ==========================
     root_logger.info("Creating prompts...")
-
-    system_prompt = langfuse_prompt.build_system_prompt(
-            prompt_path=cfg["prompt"]["prompt_path"],
-            language=cfg["main"]["language"],
-            nb_labels=cfg["main"]["n_labels_per_gen"],
-            use_fewshot=cfg["main"]["use_fewshot"]
-        )
 
     valid_items = []
 
@@ -274,7 +283,6 @@ def main(cfg: DictConfig):
         try:
             generations = asyncio.run(
                 REGENERATOR.run_multiple_agents(
-                    system_prompt=system_prompt,
                     user_prompts=prompts,
                     codes=codes,
                     code_names=code_names,
@@ -298,7 +306,6 @@ def main(cfg: DictConfig):
             try:
                 generations = asyncio.run(
                     REGENERATOR.run_multiple_agents(
-                        system_prompt=system_prompt,
                         user_prompts=prompts,
                         codes=codes,
                         code_names=code_names,

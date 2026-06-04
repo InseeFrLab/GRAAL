@@ -71,6 +71,8 @@ class ReGenerator:
         embed_model: str,
         discrim_url: str,
         nb_labels: int,
+        gen_prompt: str,
+        sup_prompt: str,
         max_iterations: int = 5,
         discrimination_threshold: float = 0.7,
     ):
@@ -82,6 +84,8 @@ class ReGenerator:
         self.embed_model = embed_model
         self.discrim_url = discrim_url
         self.nb_labels = nb_labels
+        self.gen_prompt = gen_prompt
+        self.sup_prompt = sup_prompt
         self.max_iterations = max_iterations
         self.discrimination_threshold = discrimination_threshold
 
@@ -158,7 +162,7 @@ class ReGenerator:
             # Demande au handler l'ID de la trace parente active pour cette coroutine
             client = self.langfuse_handler.client
             trace_id = client.get_current_trace_id()
-            
+
             if trace_id:
                 # 1. Enregistrement du score spécifique au tour
                 client.score_current_trace(
@@ -264,16 +268,6 @@ class ReGenerator:
             for ex in human_examples:
                 evaluation_report.append(f"- {ex}")
 
-        # Construction du prompt système du Superviseur (Peut être récupéré depuis Langfuse)
-        supervisor_system_prompt = (
-            f"Tu es le Superviseur d'un pipeline de génération. Ta mission est d'analyser les échecs "
-            f"pour le code {state['code']} ({state['code_name']}) et de rédiger des consignes de correction pour le Générateur.\n"
-            f"RÈGLES :\n"
-            f"- Si 'Style IA' : Demande de casser la structure (enlever les articles, raccourcir, jargonner).\n"
-            f"- Si 'Copie exacte' : Demande une vraie reformulation sans copier-coller les exemples humains sémantiquement proches.\n"
-            f"- Sois direct, critique, ne pose aucune question à l'humain. Parle directement au Générateur."
-        )
-
         supervisor_user_content = (
             f"Voici le rapport d'évaluation de la génération précédente :\n"
             f"{chr(10).join(evaluation_report)}\n\n"
@@ -283,7 +277,7 @@ class ReGenerator:
 
         # Appel au LLM (On utilise le même client, mais sans structured output pour avoir une critique textuelle riche)
         supervisor_response = await self.gen_client.ainvoke([
-            {"role": "system", "content": supervisor_system_prompt},
+            {"role": "system", "content": self.sup_prompt},
             {"role": "user", "content": supervisor_user_content}
         ])
 
@@ -358,7 +352,6 @@ class ReGenerator:
 
     async def run_single_agent(
         self,
-        system_prompt: str,
         user_prompt: str,
         code: str = "",
         code_name: str = "",
@@ -368,10 +361,10 @@ class ReGenerator:
         initial_state: AgentState = {
             "code": code,
             "code_name": code_name,
-            "system_prompt_generator": system_prompt,
+            "system_prompt_generator": self.gen_prompt,
             "user_prompt": user_prompt,
             "generator_messages": [
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": self.gen_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             "current_labels": [],
@@ -402,7 +395,6 @@ class ReGenerator:
 
     async def run_multiple_agents(
         self,
-        system_prompt: str,
         user_prompts: list,
         codes: Optional[List[str]] = None,
         code_names: Optional[List[str]] = None,
@@ -419,7 +411,7 @@ class ReGenerator:
 
         async def safe_run(prompt, code, code_name):
             async with semaphore:
-                return await self.run_single_agent(system_prompt, prompt, code, code_name, session_id)
+                return await self.run_single_agent(prompt, code, code_name, session_id)
 
         tasks = [
             safe_run(p, c, cn)

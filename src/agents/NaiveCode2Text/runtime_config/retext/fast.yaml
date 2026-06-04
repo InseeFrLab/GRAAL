@@ -3,6 +3,7 @@ retext:
   discrimination_threshold: 0.7
   discrim_api_url: "https://labelguard.lab.sspcloud.fr"
   qdrant_collection: "original_cleaned"
+  session_id: "fast-test"
 
 prompt:
   prompt_path: "system/retext/"
