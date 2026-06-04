@@ -1,0 +1,22 @@
+retext:
+  max_iterations: 20
+  discrimination_threshold: 0.7
+  discrim_api_url: "https://labelguard.lab.sspcloud.fr"
+  qdrant_collection: "original_cleaned"
+  session_id: "exhaustive_15lpc_v7_superv_v2"
+
+prompt:
+  prompt_path: "system/retext/"
+
+main:
+  exhaustive_sampling: true
+  n_random_codes: 0
+  n_labels_per_gen: 15
+
+exhaustivity:
+  min_prompts_per_code: 67
+  n_spec_per_prompt: 5          # Number of includes/examples per prompt
+
+export:
+  output_format: ".parquet"
+  save_batch_size: 1000
