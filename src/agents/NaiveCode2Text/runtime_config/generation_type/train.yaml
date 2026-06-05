@@ -6,7 +6,7 @@ main:
   n_labels_per_gen: 10
 
 exhaustivity:
-  min_prompts_per_code: 100
+  min_prompts_per_code: 5
   n_spec_per_prompt: 5          # Number of includes/examples per prompt
 
 export:
