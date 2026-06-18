@@ -15,6 +15,7 @@ Mandatory constraints:
     - lexically diverse (no trivial rewordings)
     - structurally varied (short phrases, long descriptions, nominal forms, technical wording, administrative phrasing, business-style wording, etc.)
     - realistic in a professional context
+    - of size less than 20 words.
 
 4. Never mention the code in the labels.
 
@@ -28,3 +29,7 @@ Mandatory constraints:
 
 Important:
 If a potential label risks falling into an excluded domain, you must discard it.
+Use plain English.
+Do not use special characters.
+No multilingual content.
+Only ASCII characters.

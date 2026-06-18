@@ -1,0 +1,10 @@
+llm:
+  model: "Qwen/Qwen3.5-9B"
+  temperature: 1.0
+  generation_batch_size: 10                     # Depends on GPU performances
+
+prompt:
+  prompt_path: "src/agents/NaiveCode2Text/prompt_creation/"
+
+export:
+  model_name: "Qwen/Qwen3.5-9B"           # For file name

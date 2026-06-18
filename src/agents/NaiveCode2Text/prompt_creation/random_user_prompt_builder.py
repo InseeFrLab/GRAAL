@@ -1,3 +1,7 @@
+"""
+Use to pick specifications randomly from code information.
+"""
+
 import logging
 
 import numpy.random as npr
@@ -72,15 +76,22 @@ def split_spec_and_select(
     Returns:
         list: Random spec with examples sampled from the original list
     """
+    # First check to unintended selection
+    if len(all_spec) == 0:
+        return all_spec
+
     final_spec = []
 
     # First, select spec to keep
-    random_spec = select_random_items(
-        all_items=all_spec,
-        min_items=spec_min,
-        max_items=spec_max,
-        geom_prob=spec_geom_prob
-    )
+    if len(all_spec) >= 2:
+        random_spec = select_random_items(
+            all_items=all_spec,
+            min_items=spec_min,
+            max_items=spec_max,
+            geom_prob=spec_geom_prob
+        )
+    else:
+        random_spec = all_spec
 
     # Then, select examples to keep within each spec that remains
     for spec in random_spec:
@@ -109,41 +120,6 @@ def split_spec_and_select(
     return final_spec
 
 
-def build_system_prompt(
-        prompt_path: str,
-        language: str = "English",
-        nb_labels: int = 10,
-        ) -> str:
-    """
-    Import system prompt with the correct language and specify the number of labels.
-
-    Args:
-        prompt_path (str): The path for importation.
-        language (str): English or French.
-        nb_labels (int): The number of labels to generate.
-
-    Returns:
-        str: The system prompt.
-    """
-
-    # Selecting language
-    if language == "French":
-        suffix = "_fr"
-    elif language == "English":
-        suffix = "_en"
-    else:
-        logger.warn("Supported languages are English and French. Switching to English...")
-
-    # Importing prompt
-    file_path = prompt_path + "system_prompt" + suffix + ".txt"
-    with open(file=file_path, mode='r') as f:
-        system_prompt = f.read()
-
-    # Indicating the correct number of labels
-    system_prompt = system_prompt.replace("{nb_labels}", str(nb_labels))
-    return system_prompt
-
-
 def build_user_prompt(
         code_details: dict,
         language: str = "English",
@@ -151,7 +127,6 @@ def build_user_prompt(
         includes_divider: str = "\n-",
         examples_divider: str = "\n",
         excludes_divider: str = "\n",
-        random_spec_sampling: bool = False,
         random_includes_geom_prob: float = 0.7,
         random_includes_min: int = 1,
         random_includes_max: int = None,
@@ -192,13 +167,21 @@ def build_user_prompt(
     """
     # Extracting useful information
     if code_details["includes"]:
-        all_includes = code_details["includes"].split(includes_divider)[1:]
+        all_includes = code_details["includes"].split(includes_divider)
+
+        if len(all_includes) >= 2:              # Introduction sentence
+            all_includes = all_includes[1:]
 
         # Case with includes_also: extend the Includes
         if code_details["includes_also"]:
-            all_includes += code_details["includes_also"].split(includes_divider)[1:]
+            all_includes_also = code_details["includes_also"].split(includes_divider)
 
-        if random_spec_sampling:
+            if len(all_includes_also) >= 2:     # Introduction sentence
+                all_includes_also = all_includes_also[1:]
+
+            all_includes += all_includes_also
+
+        if len(all_includes) >= 2:
             # Select includes randomly
             random_includes = split_spec_and_select(
                 all_spec=all_includes,
@@ -218,7 +201,9 @@ def build_user_prompt(
 
     # Add all excludes
     if code_details["excludes"]:
-        all_excludes = code_details["excludes"].split(excludes_divider)[1:]
+        all_excludes = code_details["excludes"].split(excludes_divider)
+        if len(all_excludes) >= 2:
+            all_excludes = all_excludes[1:]
     else:
         all_excludes = []
 
@@ -241,9 +226,9 @@ def build_user_prompt(
             for exclude in all_excludes:
                 user_prompt += "\n" + exclude
 
-        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic \
-            labels that strictly correspond to this code, fully complying with the official \
-                description."
+        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic" \
+            + "labels that strictly correspond to this code, fully complying with the official" \
+            + " description."
 
     # For French
     elif language == "French":
@@ -264,7 +249,7 @@ def build_user_prompt(
             for exclude in all_excludes:
                 user_prompt += "\n" + exclude
 
-        user_prompt += f"\n\n Consigne :\nGénère {nb_labels} libellés différents, variés et \
-            réalistes correspondant strictement à ce code, en respectant la notice."
+        user_prompt += f"\n\n Consigne :\nGénère {nb_labels} libellés différents, variés et" \
+            + " réalistes correspondant strictement à ce code, en respectant la notice."
 
     return user_prompt

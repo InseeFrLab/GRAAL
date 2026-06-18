@@ -1,0 +1,10 @@
+llm:
+  model: "google/gemma-3-27b-it"
+  temperature: 1.0
+  generation_batch_size: 40                     # Depends on GPU performances
+
+prompt:
+  prompt_path: "src/agents/NaiveCode2Text/prompt_creation/"
+
+export:
+  model_name: "google/gemma-3-27b-it"           # For file name
