@@ -1,10 +1,8 @@
 import logging
 from typing import Any, Dict, List, Optional
-import json 
 
 from agents import function_tool
 from src.neo4j_graph.graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
-from src.agents.closers.match_verifier import MatchVerificationInput
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,6 @@ def make_tools(navigator):
         
         # Cas spécial pour root
         if navigator.current_code == "root":
-            children = get_current_children()
             result = {
                 "success": True,
                 "code": "root",

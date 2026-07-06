@@ -79,7 +79,7 @@ Chaque appel d'outil est journalisé (position avant/après, données renvoyées
 
 - `BaseClassifier` — spécialise `BaseAgent` en fixant le type de sortie à `MatchVerificationInput` (activité, code proposé, explication, confiance), le format commun attendu par les agents « closers ».
 - `NavigatorAgenticClassifier` — classifieur concret : instructions demandant au *Navigator* de descendre jusqu'à un code terminal (`is_final = 1`) en justifiant chaque choix, en démarrant systématiquement par `get_current_children()`.
-- `AgenticRAGClassifier` (`agentic_rag.py`) — approche alternative : récupération des *top-k* codes les plus proches par similarité d'embedding (`Graph.get_closest_codes`), puis arbitrage par l'agent `CodeChooser`. **Ce module contient actuellement une erreur de syntaxe et n'est pas exécutable** (correctif prévu semaine 1, cf. cadrage §2.2) ; il n'est pas non plus branché dans `src/main.py` (fonction *stub*).
+- `AgenticRAGClassifier` (`agentic_rag.py`) — approche alternative : récupération des *top-k* codes les plus proches par similarité d'embedding (`Graph.get_closest_codes`, recherche vectorielle Neo4j filtrée sur les codes finaux), puis arbitrage par l'agent `CodeChooser`. Branché dans la CLI via `--agentic-rag` ; le nombre de candidats est réglable par la variable d'environnement `AGENTIC_RAG_TOP_K` (défaut : 5).
 
 ### 3.5 Agents « closers » (`src/agents/closers/`)
 
@@ -88,7 +88,7 @@ Agents de validation, appelés en fin de chaîne :
 - **`CodeChooser`** — arbitre entre plusieurs codes candidats pour une activité donnée ; sortie : code choisi, niveau de confiance, explication.
 - **`MatchVerifier`** — vérifie qu'une correspondance libellé ↔ code proposée est valide ; sortie : booléen de validité, confiance, explication. C'est cet agent qui porte le cas d'usage « monitoring du modèle en production » (cf. cadrage §1.3).
 
-**[à compléter]** : le chaînage effectif `Navigator` → `MatchVerifier` n'existe pas encore dans le code (prévu semaine 3 de la roadmap) ; cette section sera mise à jour une fois l'intégration réalisée.
+Le chaînage classifieur → *MatchVerifier* est disponible via l'option `--verify` de la CLI : la sortie du classifieur (un `MatchVerificationInput` : activité, code proposé, explication, confiance) est passée telle quelle au *MatchVerifier*, qui rend un verdict indépendant (`is_match`, confiance, explication). Ce chaînage fonctionne en mode unitaire comme en mode batch et constitue la brique de base du cas d'usage « monitoring » (cf. cadrage §1.3). **[à compléter]** : retour d'expérience et calibrage des seuils de confiance après les premières campagnes d'évaluation.
 
 ### 3.6 Génération de données synthétiques (`src/agents/Code2Text/`, `src/agents/NaiveCode2Text/`)
 
@@ -99,19 +99,34 @@ Deux approches, à des stades de maturité différents :
 
 ## 4. Point d'entrée et CLI (`src/main.py`)
 
-La CLI (`src/utils/parser.py`) expose deux méthodes de classification :
+La CLI (`src/utils/parser.py`) expose deux méthodes de classification, avec vérification optionnelle :
 
 ```bash
 uv run -m src.main --navigator "Boulangerie artisanale avec vente directe"
+uv run -m src.main --agentic-rag "Boulangerie" --verify
 uv run -m src.main --navigator --batch-file requetes.txt --experiment-name mon-experience
 ```
 
-- `--navigator QUERY` — classification agentique via le *Navigator* ;
-- `--agentic-rag QUERY` — **actuellement un stub** renvoyant une valeur codée en dur, en attendant le branchement du classifieur `AgenticRAGClassifier` (cf. §3.4) ;
+- `--navigator QUERY` — classification agentique par navigation hiérarchique (*Navigator*) ;
+- `--agentic-rag QUERY` — classification par recherche vectorielle *top-k* + arbitrage `CodeChooser` (cf. §3.4) ;
+- `--verify` — chaîne la prédiction dans le *MatchVerifier* pour double vérification (cf. §3.5) ;
 - `--batch-file FILE` — traite un fichier de requêtes (une par ligne) avec la méthode choisie ;
 - `--experiment-name` — nom d'expérience propagé au traçage Langfuse.
 
-## 5. Configuration (variables d'environnement)
+## 5. Module d'évaluation (`src/evaluation/`)
+
+Socle du chantier prioritaire du mois (cf. cadrage §3.1–3.2), en trois briques :
+
+- **`metrics.py`** — métriques pures Python (sans dépendance, testées unitairement dans `tests/`) : normalisation des codes (`"10.71C"` ≡ `"1071C"`), exactitude à la feuille, exactitude par niveau hiérarchique (préfixes : 2 = division, 3 = groupe, 4 = classe pour la NAF), taux d'échec (prédictions n'ayant pas atteint de code final, comptées comme erreurs).
+- **`build_eval_set.py`** — construction du jeu d'évaluation stratifié : lecture du parquet labellisé (local ou S3/Datalab), stratification par préfixe de code (division par défaut), tirage plafonné par strate et reproductible (seed) — les strates plus petites que le plafond sont conservées en entier.
+- **`run_eval.py`** — harnais de campagne : exécute une méthode (`navigator` ou `agentic-rag`) sur le jeu d'évaluation, écrit les prédictions détaillées (parquet) et le rapport de métriques (JSON). Nécessite Neo4j et l'API LLM à l'exécution.
+
+```bash
+uv run -m src.evaluation.build_eval_set --input <parquet S3/local> --output data/eval/eval_set.parquet
+uv run -m src.evaluation.run_eval --eval-set data/eval/eval_set.parquet --method navigator
+```
+
+## 6. Configuration (variables d'environnement)
 
 | Variable | Usage |
 |---|---|
@@ -124,17 +139,17 @@ uv run -m src.main --navigator --batch-file requetes.txt --experiment-name mon-e
 
 Le traçage applicatif (sessions, coûts, latence, arbre d'appels des agents) est assuré par **Langfuse** (`get_client`, `propagate_attributes`, `@observe` dans `src/main.py`).
 
-## 6. Comment étendre GRAAL à une nouvelle nomenclature **[à compléter]**
+## 7. Comment étendre GRAAL à une nouvelle nomenclature **[à compléter]**
 
 Cette section documentera, une fois formalisée, le mode opératoire complet pour instancier GRAAL sur une nouvelle nomenclature : format attendu du fichier de notices, exécution du pipeline de construction du graphe, adaptation minimale des prompts si nécessaire.
 
-## 7. Limites connues et dette technique
+## 8. Limites connues et dette technique
 
 Recensées ici pour mémoire (suivi détaillé dans le document de cadrage) :
 
-- `src/agents/Text2Code/classifiers/agentic_rag.py` contient une erreur de syntaxe empêchant son import (parenthèse fermée trop tôt dans la construction de `MatchVerificationInput`).
-- Pas de suite de tests automatisés ni de CI sur le code applicatif (seuls le déploiement des slides et des embeddings sont automatisés).
-- Pas encore de jeu d'évaluation versionné ni de métriques automatisées (chantier semaine 2 de la roadmap de juillet).
+- Les composants branchés le 6/07 (classifieur *Agentic RAG* dans la CLI, chaînage `--verify`, harnais `run_eval`) sont vérifiés statiquement (lint, syntaxe, tests unitaires des métriques) mais **pas encore validés fonctionnellement** contre la base Neo4j et l'API LLM — à faire dès le retour sur l'environnement Datalab.
+- La CI couvre lint, syntaxe et tests unitaires purs, mais **pas de tests d'intégration** (agents + graphe) : ils nécessiteraient un service Neo4j et un LLM de test dans le workflow.
+- Le jeu d'évaluation lui-même n'est pas encore constitué ni versionné (l'outillage est prêt, il manque l'accès aux données — chantier semaine 2 de la roadmap de juillet).
 - **Le projet requiert Python ≥ 3.12** (idéalement 3.13, cf. `pyproject.toml` et `.python-version`) : certains modules (ex. `prompt_builder.py`) utilisent des f-strings à guillemets imbriqués, syntaxe introduite par la PEP 701 et invalide sur des versions antérieures. Exécuter le projet avec un interpréteur plus ancien (3.11 par exemple) produit de fausses erreurs de syntaxe sur ces fichiers.
 
 ---

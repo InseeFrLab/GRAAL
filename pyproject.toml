@@ -41,3 +41,10 @@ dev = [
 [tool.ruff]
 line-length = 100
 extend-include = ["*.ipynb"]
+# Cell-based script meant to be run interactively (VS Code / Jupytext), relies
+# on IPython magics that are not valid standalone Python syntax.
+extend-exclude = ["explorations.py"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
