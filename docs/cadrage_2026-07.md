@@ -56,7 +56,7 @@ Ce positionnement conditionne la roadmap : la priorité n'est pas de « battre �
 - **Aucune intégration continue (CI) ne teste le code applicatif** : les deux workflows GitHub existants ne font que déployer les slides de présentation et les embeddings, sans exécuter de tests. → **Corrigé le 6/07** : workflow CI ajouté (lint `ruff`, vérification de syntaxe, tests unitaires).
 - **Pas encore de documentation technique détaillée du framework**, au-delà du README et de la présentation de démonstration — c'est l'objet du chantier lancé cette semaine (cf. §4).
 
-### 2.4 Synthèse
+### 2.3 Synthèse
 
 L'architecture cible (graphe + agents génériques + closers de validation) est posée et sa faisabilité technique est démontrée sur le cas *Navigator*. Le mois de juillet doit servir à **consolider la base de code** (corriger le bug bloquant, brancher les composants manquants), puis, surtout, à **construire une évaluation chiffrée et reproductible**, condition nécessaire pour statuer sur la valeur ajoutée réelle de chacun des trois cas d'usage identifiés.
 
@@ -66,12 +66,11 @@ L'architecture cible (graphe + agents génériques + closers de validation) est 
 
 ### 3.1 Méthode d'évaluation envisagée
 
-Deux volets à évaluer séparément, comme identifié dès la présentation initiale du projet :
+Méthode retenue pour l'évaluation du classifieur (*Navigator*, et *Agentic RAG* une fois réparé), comme identifié dès la présentation initiale du projet :
 
-1. **Évaluation du classifieur (*Navigator*, et *Agentic RAG* une fois réparé)**
-   - **Si le jeu de test est jugé fiable** : évaluation automatique classique — exactitude (*accuracy*) au code terminal, et par niveau de hiérarchie (section, division, groupe, classe) pour distinguer une erreur « proche » (bon niveau supérieur, mauvaise feuille) d'une erreur « lointaine ».
-   - **Si le jeu de test n'est pas jugé fiable** (label bruité, notices ambiguës) : évaluation manuelle sur échantillon, en mettant bout à bout la prédiction *ground truth*, la prédiction du classifieur, et les jugements du *CodeChooser* et du *MatchVerifier* — évaluation conjointe de toute la chaîne plutôt que du seul classifieur.
-   - Métriques complémentaires : taux de requêtes n'atteignant **pas** un code terminal (`is_final = 0`), nombre moyen d'étapes de navigation, taux d'accord entre *Navigator* et *MatchVerifier*, comparaison au modèle supervisé de référence sur le même échantillon.
+- **Si le jeu de test est jugé fiable** : évaluation automatique classique — exactitude (*accuracy*) au code terminal, et par niveau de hiérarchie (section, division, groupe, classe) pour distinguer une erreur « proche » (bon niveau supérieur, mauvaise feuille) d'une erreur « lointaine ».
+- **Si le jeu de test n'est pas jugé fiable** (label bruité, notices ambiguës) : évaluation manuelle sur échantillon, en mettant bout à bout la prédiction *ground truth*, la prédiction du classifieur, et les jugements du *CodeChooser* et du *MatchVerifier* — évaluation conjointe de toute la chaîne plutôt que du seul classifieur.
+- Métriques complémentaires : taux de requêtes n'atteignant **pas** un code terminal (`is_final = 0`), nombre moyen d'étapes de navigation, taux d'accord entre *Navigator* et *MatchVerifier*, comparaison au modèle supervisé de référence sur le même échantillon.
 
 ### 3.2 Jeu d'évaluation
 
