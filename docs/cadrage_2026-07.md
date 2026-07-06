@@ -96,20 +96,34 @@ Deux volets à évaluer séparément, comme identifié dès la présentation ini
 
 ### 3.3 Pistes à explorer
 
+**A. Fiabilisation et industrialisation du framework**
+- **Nettoyage du dépôt** : suppression du code mort, structuration des scripts exploratoires (`explorations.py`), mise en cohérence des modules d'agents, mise en place d'une CI minimale (lint, vérification d'import) pour éviter que des fichiers cassés comme ceux identifiés en §2.2 ne passent inaperçus.
 - Réparation et **branchement effectif du chaînage *Navigator* → *MatchVerifier*** (nécessaire au cas d'usage monitoring).
+- **Automatisation de la pipeline d'évaluation via Argo Workflows** (déjà utilisé pour l'entraînement du modèle supervisé de production) : exécuter le jeu d'évaluation de façon reproductible et programmée, avec des métriques versionnées à chaque évolution du framework, plutôt que des lancements manuels ponctuels.
+
+**B. Diagnostic et évaluation**
+- **Analyse des embeddings** : formaliser les explorations déjà amorcées (projections UMAP/PaCMAP/t-SNE/PCA, k-plus-proches-voisins dans `explorations.py`) en un diagnostic reproductible de la qualité de l'espace d'embedding utilisé par l'*Agentic RAG* — séparabilité des codes, zones de confusion, sensibilité au modèle d'embedding choisi.
 - Comparaison **plusieurs modèles LLM** sous-jacents (le framework est agnostique au modèle via une API compatible OpenAI — variable d'environnement `GENERATION_MODEL`), pour arbitrer coût/latence/qualité.
 - Étude du **nombre d'étapes de navigation et du taux d'échec** (requêtes n'atteignant pas de code terminal) en fonction de la formulation du prompt et des instructions du *Navigator*.
+
+**C. Monitoring en production**
 - Premiers tests du cas d'usage **monitoring** : simulation d'un flux de prédictions du modèle de production, détection par *MatchVerifier* des cas à recoder.
+- **Détection de dérive par distance de Wasserstein** entre distributions de prédictions/embeddings du modèle en production dans le temps, comme méthode de détection non supervisée en amont ou en complément de *MatchVerifier* — répond directement à l'enjeu « comment contrôler le modèle en production sans annotation humaine continue ? » (§1.2).
+
+**D. Génération de données et industrialisation du modèle agentique**
 - Premiers tests du cas d'usage **génération synthétique pour ré-entraînement**, avec une métrique proxy (gain de performance du modèle supervisé sur les classes enrichies).
+- **LoRA / QLoRA** : explorer le fine-tuning léger d'un modèle plus petit sur les trajectoires de raisonnement du *Navigator* (ou sur les données synthétiques de *Code2Text*), pour réduire le coût et la latence d'inférence — piste qui répondrait directement à la limite actuelle « un modèle agentique est trop lourd pour la production » (§1.3). Piste plus exploratoire, à horizon au-delà de juillet mais à garder en ligne de mire.
 
 ### 3.4 Objectifs hebdomadaires — juillet 2026
 
 | Semaine | Dates | Objectifs |
 |---|---|---|
-| **S1** | 6 → 11 juillet | Corriger les deux bugs bloquants (`agentic_rag.py`, `prompt_builder.py`) pour fiabiliser la base de code. Poser les bases de la **documentation détaillée du framework** (architecture, modèle de données, contrats des agents — voir §4), première brique valorisable en document de travail DMCSI. |
-| **S2** | 14 → 18 juillet | Formaliser la méthode d'évaluation (§3.1) et constituer le **jeu d'évaluation stratifié** (§3.2), versionné dans le dépôt. Brancher le classifieur *Agentic RAG* dans le pipeline principal (retirer le stub). |
-| **S3** | 21 → 25 juillet | Implémenter le chaînage *Navigator* → *MatchVerifier*. Lancer les **premières campagnes d'évaluation chiffrées** du *Navigator* (et de l'*Agentic RAG*) sur le jeu d'évaluation, avec comparaison au modèle supervisé de référence. |
-| **S4** | 28 → 31 juillet | Évaluer la génération synthétique (*Code2Text* / *NaiveCode2Text*) via la métrique proxy de ré-entraînement. Synthèse des résultats du mois et note de recommandation sur les cas d'usage à prioriser pour la suite (monitoring, recodage, génération de données). |
+| **S1** | 6 → 11 juillet | Corriger les deux bugs bloquants (`agentic_rag.py`, `prompt_builder.py`) et **nettoyer le dépôt** (code mort, structuration des scripts exploratoires, CI minimale de lint/import) pour fiabiliser la base de code. Poser les bases de la **documentation détaillée du framework** (architecture, modèle de données, contrats des agents — voir §4), première brique valorisable en document de travail DMCSI. |
+| **S2** | 14 → 18 juillet | Formaliser la méthode d'évaluation (§3.1) et constituer le **jeu d'évaluation stratifié** (§3.2), versionné dans le dépôt, en s'appuyant sur un premier **diagnostic de l'espace d'embedding** (formalisation des analyses UMAP/kNN déjà amorcées). Brancher le classifieur *Agentic RAG* dans le pipeline principal (retirer le stub). |
+| **S3** | 21 → 25 juillet | Implémenter le chaînage *Navigator* → *MatchVerifier*. Lancer les **premières campagnes d'évaluation chiffrées** du *Navigator* (et de l'*Agentic RAG*) sur le jeu d'évaluation, avec comparaison au modèle supervisé de référence. Amorcer un **prototype d'automatisation de la pipeline d'évaluation via Argo Workflows**. |
+| **S4** | 28 → 31 juillet | Évaluer la génération synthétique (*Code2Text* / *NaiveCode2Text*) via la métrique proxy de ré-entraînement. Test exploratoire de **détection de dérive par distance de Wasserstein** sur le cas d'usage monitoring. Synthèse des résultats du mois et note de recommandation sur les cas d'usage à prioriser pour la suite (monitoring, recodage, génération de données). |
+
+> Pistes identifiées mais volontairement hors périmètre resserré de juillet, à ré-examiner ensuite : industrialisation complète (au-delà du prototype) de la pipeline Argo Workflows ; exploration **LoRA/QLoRA** pour un modèle agentique plus léger (cf. §3.3-D).
 
 ---
 
