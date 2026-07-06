@@ -56,11 +56,8 @@ Ce positionnement conditionne la roadmap : la priorité n'est pas de « battre �
 
 ### 2.2 Ce qui ne fonctionne pas encore
 
-- **Deux modules du dépôt sont actuellement cassés** (erreurs de syntaxe empêchant leur simple import) :
-  - `src/agents/Text2Code/classifiers/agentic_rag.py` — parenthèse fermée avant l'affectation de `proposed_confidence`, code non exécutable en l'état ;
-  - `src/agents/NaiveCode2Text/prompts/prompt_builder.py` — f-string malformée.
-
-  Ce sont les tout premiers correctifs à apporter (cf. roadmap semaine 1) avant toute campagne d'évaluation.
+- **Un module du dépôt est actuellement cassé** : `src/agents/Text2Code/classifiers/agentic_rag.py` — la parenthèse de l'appel à `MatchVerificationInput(...)` se ferme avant l'affectation de `proposed_confidence`, ce qui rend le fichier non exécutable en l'état. C'est le tout premier correctif à apporter (cf. roadmap semaine 1) avant toute campagne d'évaluation.
+  *(Rectificatif : une première lecture avait aussi signalé `src/agents/NaiveCode2Text/prompts/prompt_builder.py` comme cassé — vérification faite avec l'interpréteur cible du projet, ce fichier est en réalité valide. Il utilise des f-strings à guillemets imbriqués, syntaxe introduite par la PEP 701 et disponible à partir de Python 3.12 ; le projet cible Python 3.13 (`pyproject.toml`), donc pas de problème réel, à condition d'exécuter le projet avec l'interpréteur attendu.)*
 - **Le classifieur « Agentic RAG »** (approche alternative combinant recherche par embeddings + *CodeChooser*) n'est pas branché dans le pipeline principal : `main.py` appelle aujourd'hui une fonction *stub* (`classify_agentic_rag`) qui renvoie une valeur codée en dur.
 - **Le chaînage *Navigator* → *MatchVerifier*** n'est pas encore implémenté : le *Navigator* s'arrête aujourd'hui dès qu'il atteint un code terminal, sans double vérification automatique par un second agent. C'est pourtant l'articulation nécessaire au cas d'usage « monitoring en production ».
 - **Aucune méthodologie d'évaluation n'est encore formalisée** : ni jeu de données de référence versionné, ni métriques automatisées, ni tableau de bord de suivi. À ce stade, l'évaluation n'existe qu'à l'état de script exploratoire ponctuel (projection UMAP/PaCMAP/t-SNE/PCA des embeddings, calcul de k-plus-proches-voisins). C'est le chantier prioritaire du mois (cf. §3).
@@ -68,9 +65,19 @@ Ce positionnement conditionne la roadmap : la priorité n'est pas de « battre �
 - **Aucune intégration continue (CI) ne teste le code applicatif** : les deux workflows GitHub existants ne font que déployer les slides de présentation et les embeddings, sans exécuter de tests.
 - **Pas encore de documentation technique détaillée du framework**, au-delà du README et de la présentation de démonstration — c'est l'objet du chantier lancé cette semaine (cf. §4).
 
-### 2.3 Synthèse
+### 2.3 Nettoyage engagé cette semaine
 
-L'architecture cible (graphe + agents génériques + closers de validation) est posée et sa faisabilité technique est démontrée sur le cas *Navigator*. Le mois de juillet doit servir à **consolider la base de code** (corriger les deux bugs bloquants, brancher les composants manquants), puis, surtout, à **construire une évaluation chiffrée et reproductible**, condition nécessaire pour statuer sur la valeur ajoutée réelle de chacun des trois cas d'usage identifiés.
+Premières actions de nettoyage du dépôt réalisées (branche `chore/clean-main`, à merger) :
+- suppression de `newplot.png` (export Plotly oublié à la racine, 251 Ko) ;
+- suppression de `presentation/_preview/` (7,7 Mo, ~90 fichiers) : un dossier de build Quarto committé par erreur, qui faisait doublon avec la branche `gh-pages` déjà utilisée pour publier le site ;
+- correction des imports et variable morts détectés par `ruff` dans `src/navigator/navigator.py` ;
+- exclusion d'`explorations.py` du lint `ruff` (script à cellules `# %%` pensé pour un usage interactif, pas comme script autonome).
+
+Côté branches Git : 7 branches `renovate/*` obsolètes (bot de dépendances, non maintenu depuis longtemps) et une branche `explorations` personnelle périmée ont été identifiées et validées pour suppression ; leur suppression effective reste à faire manuellement (limitation de droits d'accès sur l'environnement d'exécution utilisé pour cette revue).
+
+### 2.4 Synthèse
+
+L'architecture cible (graphe + agents génériques + closers de validation) est posée et sa faisabilité technique est démontrée sur le cas *Navigator*. Le mois de juillet doit servir à **consolider la base de code** (corriger le bug bloquant, brancher les composants manquants), puis, surtout, à **construire une évaluation chiffrée et reproductible**, condition nécessaire pour statuer sur la valeur ajoutée réelle de chacun des trois cas d'usage identifiés.
 
 ---
 
@@ -118,7 +125,7 @@ Deux volets à évaluer séparément, comme identifié dès la présentation ini
 
 | Semaine | Dates | Objectifs |
 |---|---|---|
-| **S1** | 6 → 11 juillet | Corriger les deux bugs bloquants (`agentic_rag.py`, `prompt_builder.py`) et **nettoyer le dépôt** (code mort, structuration des scripts exploratoires, CI minimale de lint/import) pour fiabiliser la base de code. Poser les bases de la **documentation détaillée du framework** (architecture, modèle de données, contrats des agents — voir §4), première brique valorisable en document de travail DMCSI. |
+| **S1** | 6 → 11 juillet | Corriger le bug bloquant (`agentic_rag.py`) et **nettoyer le dépôt** (code mort, artefacts de build committés par erreur, structuration des scripts exploratoires, CI minimale de lint/import) pour fiabiliser la base de code. Poser les bases de la **documentation détaillée du framework** (architecture, modèle de données, contrats des agents — voir §4), première brique valorisable en document de travail DMCSI. |
 | **S2** | 14 → 18 juillet | Formaliser la méthode d'évaluation (§3.1) et constituer le **jeu d'évaluation stratifié** (§3.2), versionné dans le dépôt, en s'appuyant sur un premier **diagnostic de l'espace d'embedding** (formalisation des analyses UMAP/kNN déjà amorcées). Brancher le classifieur *Agentic RAG* dans le pipeline principal (retirer le stub). |
 | **S3** | 21 → 25 juillet | Implémenter le chaînage *Navigator* → *MatchVerifier*. Lancer les **premières campagnes d'évaluation chiffrées** du *Navigator* (et de l'*Agentic RAG*) sur le jeu d'évaluation, avec comparaison au modèle supervisé de référence. Amorcer un **prototype d'automatisation de la pipeline d'évaluation via Argo Workflows**. |
 | **S4** | 28 → 31 juillet | Évaluer la génération synthétique (*Code2Text* / *NaiveCode2Text*) via la métrique proxy de ré-entraînement. Test exploratoire de **détection de dérive par distance de Wasserstein** sur le cas d'usage monitoring. Synthèse des résultats du mois et note de recommandation sur les cas d'usage à prioriser pour la suite (monitoring, recodage, génération de données). |

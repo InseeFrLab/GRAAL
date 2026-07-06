@@ -132,9 +132,10 @@ Cette section documentera, une fois formalisée, le mode opératoire complet pou
 
 Recensées ici pour mémoire (suivi détaillé dans le document de cadrage) :
 
-- `src/agents/Text2Code/classifiers/agentic_rag.py` et `src/agents/NaiveCode2Text/prompts/prompt_builder.py` contiennent des erreurs de syntaxe empêchant leur import.
+- `src/agents/Text2Code/classifiers/agentic_rag.py` contient une erreur de syntaxe empêchant son import (parenthèse fermée trop tôt dans la construction de `MatchVerificationInput`).
 - Pas de suite de tests automatisés ni de CI sur le code applicatif (seuls le déploiement des slides et des embeddings sont automatisés).
 - Pas encore de jeu d'évaluation versionné ni de métriques automatisées (chantier semaine 2 de la roadmap de juillet).
+- **Le projet requiert Python ≥ 3.12** (idéalement 3.13, cf. `pyproject.toml` et `.python-version`) : certains modules (ex. `prompt_builder.py`) utilisent des f-strings à guillemets imbriqués, syntaxe introduite par la PEP 701 et invalide sur des versions antérieures. Exécuter le projet avec un interpréteur plus ancien (3.11 par exemple) produit de fausses erreurs de syntaxe sur ces fichiers.
 
 ---
 
