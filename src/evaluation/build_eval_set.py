@@ -20,13 +20,12 @@ import os
 
 import polars as pl
 
+from src.evaluation.config import PATH_EVAL_INPUT, PATH_EVAL_OUTPUT
 from src.evaluation.metrics import normalize_code
 from src.utils.logging import configure_logging
 
 configure_logging()
 logger = logging.getLogger(__name__)
-
-S3_ENDPOINT = "https://minio.lab.sspcloud.fr"
 
 
 def load_dataframe(path: str) -> pl.DataFrame:
@@ -39,7 +38,7 @@ def load_dataframe(path: str) -> pl.DataFrame:
 
     logger.info(f"Loading parquet from S3: {path}")
     fs = s3fs.S3FileSystem(
-        client_kwargs={"endpoint_url": S3_ENDPOINT},
+        client_kwargs={"endpoint_url": os.environ["AWS_ENDPOINT_URL"]},
         key=os.environ["AWS_ACCESS_KEY_ID"],
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         token=os.environ["AWS_SESSION_TOKEN"],
@@ -79,9 +78,7 @@ def stratified_sample(
     n_strata = df["_stratum"].n_unique()
     logger.info(f"{n_strata} strata found at depth {stratum_depth}")
 
-    sampled = df.filter(
-        pl.int_range(pl.len()).shuffle(seed=seed).over("_stratum") < n_per_stratum
-    )
+    sampled = df.filter(pl.int_range(pl.len()).shuffle(seed=seed).over("_stratum") < n_per_stratum)
 
     logger.info(f"Sampled {len(sampled)} rows out of {len(df)}")
     return sampled.drop(["_norm_code", "_stratum"])
@@ -89,16 +86,20 @@ def stratified_sample(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a stratified evaluation set")
-    parser.add_argument("--input", required=True, help="Input parquet (local path or S3 key)")
-    parser.add_argument("--output", required=True, help="Output parquet (local path)")
-    parser.add_argument("--code-column", default="nace2025", help="Label column (default: nace2025)")
+    parser.add_argument(
+        "--input", default=PATH_EVAL_INPUT, help="Input parquet (local path or S3 key)"
+    )
+    parser.add_argument("--output", default=PATH_EVAL_OUTPUT, help="Output parquet (local path)")
+    parser.add_argument(
+        "--code-column", default="apet2025", help="Label column (default: apet2025)"
+    )
     parser.add_argument(
         "--n-per-stratum", type=int, default=10, help="Max rows per stratum (default: 10)"
     )
     parser.add_argument(
         "--stratum-depth",
         type=int,
-        default=2,
+        default=5,
         help="Code prefix length defining a stratum (default: 2 = NAF division)",
     )
     parser.add_argument("--seed", type=int, default=42, help="Sampling seed (default: 42)")

@@ -22,6 +22,7 @@ import os
 
 import polars as pl
 
+from src.evaluation.config import PATH_EVAL_OUTPUT
 from src.evaluation.metrics import evaluate
 from src.main import classify_agentic_rag, classify_navigator
 from src.utils.logging import configure_logging
@@ -74,10 +75,14 @@ async def run(args) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run an evaluation campaign")
-    parser.add_argument("--eval-set", required=True, help="Evaluation parquet (cf. build_eval_set)")
+    parser.add_argument(
+        "--eval-set", default=PATH_EVAL_OUTPUT, help="Evaluation parquet (cf. build_eval_set)"
+    )
     parser.add_argument("--method", choices=sorted(METHODS), default="navigator")
     parser.add_argument("--text-column", default="libelle", help="Text column (default: libelle)")
-    parser.add_argument("--code-column", default="nace2025", help="Label column (default: nace2025)")
+    parser.add_argument(
+        "--code-column", default="apet2025", help="Label column (default: apet2025)"
+    )
     parser.add_argument("--output-dir", default="data/eval/results", help="Output directory")
     args = parser.parse_args()
     return asyncio.run(run(args))
