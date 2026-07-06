@@ -1,22 +1,15 @@
 # Document de cadrage — Projet GRAAL
 
-**Destinataires :** hiérarchie SSP Lab / DMCSI
-**Auteurs :** Théo Ferry, Meilame Tayebjee — Insee, SSP Lab
-**Date :** 6 juillet 2026
-**Portée du document :** rappel du projet, état d'avancement au 6 juillet, et roadmap détaillée jusqu'à fin juillet 2026.
-
-> Note de calage : ce document couvre le mois de **juillet** 2026 (livraison hebdomadaire chaque lundi). La roadmap détaillée ci-dessous porte donc sur les quatre semaines du **6 au 31 juillet**.
-
 ---
 
-## 1. Rappel du projet
+## 1. Description du projet
 
-**GRAAL** (*Graph-based Reasoning Agents for Automatic Labelling*) est un framework de recherche appliquée qui combine :
+**GRAAL** (*Graph-based Reasoning Agents for Automatic Labelling*) est un framework qui combine :
 
 - une **base de données graphe** (Neo4j) représentant une nomenclature statistique hiérarchique (codes, libellés, notices explicatives, relations parent/enfant) ;
 - des **agents LLM à outils** (*tool-calling*), qui interrogent et parcourent ce graphe pour raisonner sur la classification d'un texte libre vers un code de nomenclature.
 
-Le projet est actuellement instancié sur la **NAF** (Nomenclature d'Activités Française, ~700 codes terminaux, 5 niveaux hiérarchiques) et le pipeline de construction du graphe est déjà paramétré pour d'autres nomenclatures (NACE en anglais, COICOP FR/EN), ce qui matérialise l'objectif de généricité du framework.
+Le projet est actuellement instancié sur la **NAF** (Nomenclature d'Activités Française, ~700 codes terminaux, 5 niveaux hiérarchiques) toutefois le pipeline a vocataion à être générique et la construction du graphe est déjà paramétrée pour d'autres nomenclatures (NACE en anglais, COICOP FR/EN).
 
 ### 1.1 Objectifs
 
@@ -27,7 +20,7 @@ Le projet est actuellement instancié sur la **NAF** (Nomenclature d'Activités 
 ### 1.2 Enjeux
 
 - **Enjeu métier** : disposer d'une solution de codification qui fonctionne (a) quand on n'a pas ou peu de données labellisées, (b) quand une nomenclature est révisée par le métier et qu'il faut recoder l'historique, (c) quand les données labellisées existantes sont de qualité incertaine et doivent être fiabilisées/corrigées.
-- **Enjeu MLOps** : la chaîne de production actuelle (stockage S3/Datalab, entraînement distribué Argo Workflows, *serving* FastAPI conteneurisé) est mature sur les volets Data, Modèle et Déploiement, mais **le monitoring en production reste le point faible** : sans annotation humaine continue, il n'existe pas aujourd'hui de moyen de contrôler la dérive du modèle déployé. GRAAL est une piste concrète pour combler ce manque.
+- **Enjeu MLOps** : la chaîne de production actuelle (stockage S3/Datalab, entraînement distribué Argo Workflows, *serving* FastAPI conteneurisé) est mature sur les volets Data, Modèle et Déploiement, mais **le monitoring en production reste le point faible** : sans annotation humaine continue, il n'existe pas aujourd'hui de moyen de contrôler la dérive du modèle déployé. GRAAL est une piste pour combler ce manque.
 - **Enjeu méthodologique** : un premier prototype zero-shot par RAG a été testé et a révélé plusieurs limites structurelles (dépendance au découpage des notices, dépendance au modèle d'embedding, saturation du contexte, hétérogénéité de la comparaison notice/libellé, absence de traçabilité, non prise en compte de la hiérarchie). Ces limites motivent directement le choix de l'approche agentique.
 
 ### 1.3 Positionnement par rapport aux besoins de codification automatique
@@ -56,24 +49,12 @@ Ce positionnement conditionne la roadmap : la priorité n'est pas de « battre �
 
 ### 2.2 Ce qui ne fonctionne pas encore
 
-- **Un module du dépôt est actuellement cassé** : `src/agents/Text2Code/classifiers/agentic_rag.py` — la parenthèse de l'appel à `MatchVerificationInput(...)` se ferme avant l'affectation de `proposed_confidence`, ce qui rend le fichier non exécutable en l'état. C'est le tout premier correctif à apporter (cf. roadmap semaine 1) avant toute campagne d'évaluation. → **Corrigé le 6/07.**
-  *(Rectificatif : une première lecture avait aussi signalé `src/agents/NaiveCode2Text/prompts/prompt_builder.py` comme cassé — vérification faite avec l'interpréteur cible du projet, ce fichier est en réalité valide. Il utilise des f-strings à guillemets imbriqués, syntaxe introduite par la PEP 701 et disponible à partir de Python 3.12 ; le projet cible Python 3.13 (`pyproject.toml`), donc pas de problème réel, à condition d'exécuter le projet avec l'interpréteur attendu.)*
 - **Le classifieur « Agentic RAG »** (approche alternative combinant recherche par embeddings + *CodeChooser*) n'est pas branché dans le pipeline principal : `main.py` appelle aujourd'hui une fonction *stub* (`classify_agentic_rag`) qui renvoie une valeur codée en dur. → **Corrigé le 6/07** : le classifieur est branché dans la CLI (`--agentic-rag`) ; validation fonctionnelle sur la base Neo4j à faire.
 - **Le chaînage *Navigator* → *MatchVerifier*** n'est pas encore implémenté : le *Navigator* s'arrête aujourd'hui dès qu'il atteint un code terminal, sans double vérification automatique par un second agent. C'est pourtant l'articulation nécessaire au cas d'usage « monitoring en production ». → **Implémenté le 6/07** via l'option `--verify` de la CLI (en mode unitaire comme en batch) ; validation fonctionnelle sur données réelles à faire.
 - **Aucune méthodologie d'évaluation n'est encore formalisée** : ni jeu de données de référence versionné, ni métriques automatisées, ni tableau de bord de suivi. À ce stade, l'évaluation n'existe qu'à l'état de script exploratoire ponctuel (projection UMAP/PaCMAP/t-SNE/PCA des embeddings, calcul de k-plus-proches-voisins). C'est le chantier prioritaire du mois (cf. §3). → **Premier socle posé le 6/07** : module `src/evaluation/` (métriques d'exactitude à la feuille et par niveau hiérarchique testées unitairement, échantillonnage stratifié reproductible, harnais de campagne) ; la constitution effective du jeu d'évaluation et les campagnes chiffrées restent à mener (S2–S3).
 - **La génération synthétique agentique** (*Code2Text*, par opposition à l'approche *Naive*) est au stade de squelette de code, non encore évaluée ni comparée à l'approche naïve.
 - **Aucune intégration continue (CI) ne teste le code applicatif** : les deux workflows GitHub existants ne font que déployer les slides de présentation et les embeddings, sans exécuter de tests. → **Corrigé le 6/07** : workflow CI ajouté (lint `ruff`, vérification de syntaxe, tests unitaires).
 - **Pas encore de documentation technique détaillée du framework**, au-delà du README et de la présentation de démonstration — c'est l'objet du chantier lancé cette semaine (cf. §4).
-
-### 2.3 Nettoyage engagé cette semaine
-
-Premières actions de nettoyage du dépôt réalisées (branche `chore/clean-main`, à merger) :
-- suppression de `newplot.png` (export Plotly oublié à la racine, 251 Ko) ;
-- suppression de `presentation/_preview/` (7,7 Mo, ~90 fichiers) : un dossier de build Quarto committé par erreur, qui faisait doublon avec la branche `gh-pages` déjà utilisée pour publier le site ;
-- correction des imports et variable morts détectés par `ruff` dans `src/navigator/navigator.py` ;
-- exclusion d'`explorations.py` du lint `ruff` (script à cellules `# %%` pensé pour un usage interactif, pas comme script autonome).
-
-Côté branches Git : 7 branches `renovate/*` obsolètes (bot de dépendances, non maintenu depuis longtemps) et une branche `explorations` personnelle périmée ont été identifiées et validées pour suppression ; leur suppression effective reste à faire manuellement (limitation de droits d'accès sur l'environnement d'exécution utilisé pour cette revue).
 
 ### 2.4 Synthèse
 
@@ -91,8 +72,6 @@ Deux volets à évaluer séparément, comme identifié dès la présentation ini
    - **Si le jeu de test est jugé fiable** : évaluation automatique classique — exactitude (*accuracy*) au code terminal, et par niveau de hiérarchie (section, division, groupe, classe) pour distinguer une erreur « proche » (bon niveau supérieur, mauvaise feuille) d'une erreur « lointaine ».
    - **Si le jeu de test n'est pas jugé fiable** (label bruité, notices ambiguës) : évaluation manuelle sur échantillon, en mettant bout à bout la prédiction *ground truth*, la prédiction du classifieur, et les jugements du *CodeChooser* et du *MatchVerifier* — évaluation conjointe de toute la chaîne plutôt que du seul classifieur.
    - Métriques complémentaires : taux de requêtes n'atteignant **pas** un code terminal (`is_final = 0`), nombre moyen d'étapes de navigation, taux d'accord entre *Navigator* et *MatchVerifier*, comparaison au modèle supervisé de référence sur le même échantillon.
-2. **Évaluation de la génération de données synthétiques (*Code2Text* / *NaiveCode2Text*)**
-   - Moins directe : approche retenue = ré-entraîner le modèle supervisé de production en enrichissant le jeu d'entraînement avec les libellés synthétiques (notamment sur les classes sous-représentées), et comparer les performances obtenues à une performance de référence sur un même jeu de test.
 
 ### 3.2 Jeu d'évaluation
 
@@ -134,8 +113,7 @@ Deux volets à évaluer séparément, comme identifié dès la présentation ini
 
 ---
 
-## 4. Focus semaine du 6 juillet — documentation du framework
+## 4. Documentation du framework
 
-En parallèle des correctifs de la semaine 1, le chantier **« documentation détaillée du framework »** est initié cette semaine. Un premier document technique a été créé : [`docs/framework.md`](./framework.md).
+Un premier document technique a été créé : [`docs/framework.md`](./framework.md).
 
-Objectif : poser une base structurée (architecture, modèle de données Neo4j, contrats des agents, configuration) qui pourra être enrichie au fil des semaines de juillet et **valorisée in fine comme document de travail DMCSI** décrivant un framework générique de codification automatique par agents sur graphe de connaissance.
