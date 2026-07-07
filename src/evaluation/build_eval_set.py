@@ -51,7 +51,7 @@ def stratified_sample(
     df: pl.DataFrame,
     code_column: str,
     n_per_stratum: int,
-    stratum_depth: int = 2,
+    stratum_depth: int = 5,
     seed: int = 42,
 ) -> pl.DataFrame:
     """Tire au plus `n_per_stratum` lignes par strate de code.

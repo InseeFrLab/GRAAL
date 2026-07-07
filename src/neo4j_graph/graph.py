@@ -120,26 +120,22 @@ class Graph:
             enhanced_schema=True,
         )
 
-        try:
-            self.emb_model = OpenAIEmbeddings(
-                model=os.environ["EMBEDDING_MODEL"],
-                openai_api_base=os.environ["URL_EMBEDDING_API"],
-                openai_api_key=os.environ["OPENAI_API_KEY"],
-            )
+        self.emb_model = OpenAIEmbeddings(
+            model=os.environ["EMBEDDING_MODEL"],
+            openai_api_base=os.environ["URL_EMBEDDING_API"],
+            openai_api_key=os.environ["OPENAI_API_KEY"],
+        )
 
-            self.db = Neo4jVector.from_existing_graph(
-                graph=self.graph,
-                embedding=self.emb_model,
-                index_name="id",
-                node_label="Chunk",
-                text_node_properties=["text"],
-                keyword_index_name="text",
-                embedding_node_property="embedding",
-                search_type="vector",
-            )
-
-        except Exception as e: 
-            logger.info(f"Not able to connect to the embedder: {e}")
+        self.db = Neo4jVector.from_existing_graph(
+            graph=self.graph,
+            embedding=self.emb_model,
+            index_name="id",
+            node_label="Chunk",
+            text_node_properties=["text"],
+            keyword_index_name="text",
+            embedding_node_property="embedding",
+            search_type="vector",
+        )
 
     # ------------------------------------------------------------------
     # Get tools
@@ -285,7 +281,7 @@ class Graph:
         return _freeze_dict(result[0])
 
     # ------------------------------------------------------------------
-    # search_codes 
+    # search_codes
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=0)
@@ -296,7 +292,7 @@ class Graph:
            OR toLower(node.text) CONTAINS toLower($search_term)
         RETURN node.CODE as code,
                node.LEVEL as level,
-               node.FINAL as is_final, 
+               node.FINAL as is_final,
                node.NAME as name,
                node.text as description
         ORDER BY node.LEVEL, node.CODE

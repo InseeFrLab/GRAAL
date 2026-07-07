@@ -49,14 +49,14 @@ def test_generation_model_api_connection():
     assert list(client.models.list())
 
 
+@_require_env("URL_EMBEDDING_API", "EMBEDDING_MODEL")
 def test_embedding_api_connection():
-    base_url = os.environ.get("URL_EMBEDDING_API") or os.environ.get("OPENAI_BASE_URL")
-    if not base_url:
-        pytest.skip("missing env var(s): URL_EMBEDDING_API or OPENAI_BASE_URL")
-
     from openai import OpenAI
 
-    client = OpenAI(base_url=base_url, api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"))
+    client = OpenAI(
+        base_url=os.environ.get("URL_EMBEDDING_API"),
+        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
+    )
     assert list(client.models.list())
 
 

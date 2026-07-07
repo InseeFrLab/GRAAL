@@ -2,8 +2,9 @@ import asyncio
 import logging
 import os
 import sys
-from langfuse import get_client, propagate_attributes, observe
 from datetime import datetime
+
+from langfuse import get_client, observe, propagate_attributes
 
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.agents.Text2Code.classifiers.agentic_rag import AgenticRAGClassifier
@@ -20,37 +21,38 @@ logger = logging.getLogger(__name__)
 
 # @observe
 async def classify_navigator(
-    query: str | list[str], 
-    experiment_name: str = "Navigator Classification"
+    query: str | list[str], experiment_name: str = "Navigator Classification"
 ):
     """Classify using agentic method
-    
+
     Args:
         query: A single query string or a list of query strings
         experiment_name: Name of the experiment
-        
+
     Returns:
         Single result dict if query is str, list of result dicts if query is list
     """
     # Normalize input to always work with a list
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
-    
+
     logger.info(f"Navigator classification: {len(queries)} query/queries")
-    
+
     # TODO: add the management for exp_name
     navigator = Navigator(neo4j_config)
-    
+    # Built once: tools/Agent are closures over `navigator`, so state resets
+    # (below) are enough between queries — no need to rebuild them each time.
+    classifier = NavigatorAgenticClassifier(navigator)
+
     results = []
     for q in queries:
         logger.info(f"Classifying: {q}")
-        logger.info(f'Current position of the navigator: {navigator.current_code}')
-        classifier = NavigatorAgenticClassifier(navigator)
+        logger.info(f"Current position of the navigator: {navigator.current_code}")
         result = await classifier(q)
         results.append(result)
         logger.info(f"Le résultat de la classification est : {result}")
         navigator.reset_to_root()
-    
+
     # Return single result or list based on input type
     return results[0] if is_single else results
 
@@ -76,16 +78,23 @@ async def classify_agentic_rag(
 
     graph = Graph(neo4j_config)
     top_k = int(os.environ.get("AGENTIC_RAG_TOP_K", "5"))
+    concurrency = int(os.environ.get("AGENTIC_RAG_CONCURRENCY", "5"))
     classifier = AgenticRAGClassifier(graph, top_k=top_k)
 
-    results = []
-    for q in queries:
-        logger.info(f"Classifying: {q}")
-        result = await classifier(q)
-        results.append(result)
-        logger.info(f"Le résultat de la classification est : {result}")
+    # Stateless per query (unlike NavigatorAgenticClassifier), so queries can
+    # run concurrently against the single shared classifier/graph connection.
+    semaphore = asyncio.Semaphore(concurrency)
 
-    return results[0] if is_single else results
+    async def classify_one(q: str):
+        async with semaphore:
+            logger.info(f"Classifying: {q}")
+            result = await classifier(q)
+            logger.info(f"Le résultat de la classification est : {result}")
+            return result
+
+    results = await asyncio.gather(*(classify_one(q) for q in queries))
+
+    return results[0] if is_single else list(results)
 
 
 async def verify_classification(prediction: MatchVerificationInput, verifier: MatchVerifier):

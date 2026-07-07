@@ -38,6 +38,7 @@ METHODS = {
 
 async def run(args) -> int:
     df = pl.read_parquet(args.eval_set)
+    df = df.sample(fraction=args.fraction)
     labels = df[args.text_column].to_list()
     y_true = df[args.code_column].to_list()
     logger.info(f"Evaluating method '{args.method}' on {len(labels)} labels")
@@ -77,6 +78,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run an evaluation campaign")
     parser.add_argument(
         "--eval-set", default=PATH_EVAL_OUTPUT, help="Evaluation parquet (cf. build_eval_set)"
+    )
+    parser.add_argument(
+        "--fraction", default="1.0", help="Dataset's fraction to evaluate (default: 1.0)"
     )
     parser.add_argument("--method", choices=sorted(METHODS), default="navigator")
     parser.add_argument("--text-column", default="libelle", help="Text column (default: libelle)")
