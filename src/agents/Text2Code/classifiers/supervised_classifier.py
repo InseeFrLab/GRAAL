@@ -34,6 +34,17 @@ def _load_model():
 
         tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
         model_uri = os.environ["MLFLOW_MODEL_URI"]  # ex. "models:/apet_classifier/Production"
+
+        if model_uri.startswith(("http://", "https://")):
+            raise ValueError(
+                f"MLFLOW_MODEL_URI={model_uri!r} looks like a browser link to the MLflow UI, "
+                "not a model URI. mlflow.pyfunc.load_model() expects the 'models:' scheme, "
+                "e.g. 'models:/<model_name>/<version_or_stage>' (for '.../#/models/"
+                "FastText-pytorch/versions/9', use 'models:/FastText-pytorch/9'). Also check "
+                "that MLFLOW_TRACKING_URI points to the MLflow server where that model is "
+                "actually registered, not a different (e.g. personal) instance."
+            )
+
         logger.info(f"Loading supervised model '{model_uri}' from MLflow ({tracking_uri})")
 
         mlflow.set_tracking_uri(tracking_uri)
