@@ -24,7 +24,7 @@ import polars as pl
 
 from src.evaluation.config import PATH_EVAL_OUTPUT
 from src.evaluation.metrics import evaluate
-from src.main import classify_agentic_rag, classify_navigator
+from src.main import classify_agentic_rag, classify_navigator, classify_supervised
 from src.utils.logging import configure_logging
 
 configure_logging()
@@ -33,6 +33,9 @@ logger = logging.getLogger(__name__)
 METHODS = {
     "navigator": classify_navigator,
     "agentic-rag": classify_agentic_rag,
+    # Reference baseline: production model, for the Navigator/Agentic-RAG/supervised
+    # comparison called for in the cadrage's note de conception (§3.3-B).
+    "supervised": classify_supervised,
 }
 
 

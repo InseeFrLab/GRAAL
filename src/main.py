@@ -8,6 +8,7 @@ from datetime import datetime
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.agents.Text2Code.classifiers.agentic_rag import AgenticRAGClassifier
 from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
+from src.agents.Text2Code.classifiers.supervised_classifier import SupervisedClassifier
 from src.config import neo4j_config
 from src.navigator.navigator import Navigator
 from src.neo4j_graph.graph import Graph
@@ -88,6 +89,41 @@ async def classify_agentic_rag(
     return results[0] if is_single else results
 
 
+@observe
+async def classify_supervised(
+    query: str | list[str],
+    experiment_name: str = "Supervised Model Classification",
+):
+    """Classify using the production supervised model (torchTextClassifiers via MLflow)
+
+    Serves as the reference baseline for comparing the agentic methods
+    (cf. cadrage §3.3-B, note de conception). Requires MLFLOW_TRACKING_URI
+    and MLFLOW_MODEL_URI to be set.
+
+    Args:
+        query: A single query string or a list of query strings
+        experiment_name: Name of the experiment
+
+    Returns:
+        Single MatchVerificationInput if query is str, list of them if query is list
+    """
+    queries = [query] if isinstance(query, str) else query
+    is_single = isinstance(query, str)
+
+    logger.info(f"Supervised model classification: {len(queries)} query/queries")
+
+    classifier = SupervisedClassifier()
+
+    results = []
+    for q in queries:
+        logger.info(f"Classifying: {q}")
+        result = await classifier(q)
+        results.append(result)
+        logger.info(f"Le résultat de la classification est : {result}")
+
+    return results[0] if is_single else results
+
+
 async def verify_classification(prediction: MatchVerificationInput, verifier: MatchVerifier):
     """Chain a classifier prediction into the MatchVerifier for double-checking
 
@@ -143,6 +179,9 @@ async def main():
 
         if args.agentic_rag:
             methods_to_run.append(("agentic-rag", args.agentic_rag, classify_agentic_rag))
+
+        if args.supervised:
+            methods_to_run.append(("supervised", args.supervised, classify_supervised))
 
         # No method specified
         if not methods_to_run:
