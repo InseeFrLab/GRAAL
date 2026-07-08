@@ -159,9 +159,11 @@ report["any_drift"]  # bool
 | `MAX_TURNS` | Nombre maximal de tours d'agent (boucle outil → réponse) |
 | `EMBEDDING_MODEL`, `URL_EMBEDDING_API`, `MAX_TOKENS` | Modèle et service d'embedding utilisés lors de la construction du graphe |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_ENDPOINT_URL` | Accès S3 (Datalab/Onyxia) pour les données sources et notices |
-| `MLFLOW_TRACKING_URI`, `MLFLOW_MODEL_URI` | Chargement du modèle supervisé de production par `SupervisedClassifier` (`MLFLOW_MODEL_URI` ex. `models:/apet_classifier/Production`) |
+| `MLFLOW_TRACKING_URI`, `MLFLOW_MODEL_URI` | Chargement du modèle supervisé de production par `SupervisedClassifier` |
 
 Le traçage applicatif (sessions, coûts, latence, arbre d'appels des agents) est assuré par **Langfuse** (`get_client`, `propagate_attributes`, `@observe` dans `src/main.py`).
+
+**Piège fréquent sur `MLFLOW_MODEL_URI`** : ce n'est pas le lien de la page MLflow ouverte dans le navigateur, mais une URI au schéma `models:` — ex. `models:/FastText-pytorch/9` (pas `https://.../#/models/FastText-pytorch/versions/9`). Et `MLFLOW_TRACKING_URI` doit pointer vers le serveur MLflow où ce modèle est **effectivement enregistré** (le plus souvent l'instance MLflow partagée du projet, ex. `projet-ape-mlflow.user.lab.sspcloud.fr`) — pas nécessairement l'instance MLflow personnelle par défaut sur le Datalab, qui n'a pas accès au registre d'un autre projet. `SupervisedClassifier` lève une erreur explicite si `MLFLOW_MODEL_URI` est un lien `http(s)://` plutôt qu'une URI `models:`.
 
 Un test de connectivité par service externe (Neo4j, LLM de génération, embedding, S3, Langfuse, MLflow) est disponible dans `tests/test_connections.py` — chaque test se saute automatiquement si les variables requises sont absentes, pour rester vert en CI sans secrets Datalab tout en détectant un endpoint/identifiant mal configuré quand ils sont présents.
 
