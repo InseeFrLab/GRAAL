@@ -19,11 +19,10 @@ class NavigatorAgenticClassifier(BaseClassifier):
 
     def get_instructions(self) -> str:
         return """
-        Vous êtes un expert en classification NACE. Votre mission est de naviguer 
+        Vous êtes un expert en classification NACE. Votre mission est de naviguer
         dans l'arborescence afin d'atteindre le code le plus spécifique caractérisant l'activité indiquée.
-        Après avoir vérifié que votre position actuelle est bien finale (is_final = 1), 
-        vous renverrez votre position. 
-        Si vous n'avez pas réussi à atteindre une position finale, dites-le. 
+        Après avoir vérifié que votre position actuelle est bien finale (is_final = 1),
+        vous renverrez votre position.
+        Si vous n'avez pas réussi à atteindre une position finale, dites-le.
         Soyez méthodique et justifiez chaque choix ! Commence par get_current_children() pour voir les options disponibles.
         """
-

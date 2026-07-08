@@ -15,15 +15,19 @@ def make_tools(navigator):
     @function_tool
     def get_current_information() -> Dict[str, Any]:
         """
-        Retourne les informations du noeud actuel.
-        Fournis les codes et les noms des noeuds enfants.  
-        Pour avoir l'information détaillée sur un enfant, utilise get_code_information(code)
-        
+        Retourne les informations du noeud actuel, y compris les codes et noms de ses
+        enfants directs. Rappeler cet outil sans avoir changé de position renvoie
+        exactement le même résultat. Si un enfant correspond déjà à l'activité à
+        classifier, appelez go_to_child(child_code) directement plutôt que de
+        ré-appeler cet outil.
+
         Returns:
             Informations complètes du noeud courant avec historique de navigation
         """
-        logger.info(f"Navigator: get_current_information called at the position: {navigator.current_code}")
-        
+        logger.info(
+            f"Navigator: get_current_information called at the position: {navigator.current_code}"
+        )
+
         # Cas spécial pour root
         if navigator.current_code == "root":
             result = {
@@ -36,7 +40,7 @@ def make_tools(navigator):
             }
             logger.info(f"get_current_information (root): Data sent to the llm: {result}")
             return result
-        
+
         # Cas normal (pas root)
         data = _unfreeze_dict(navigator._cached_get_code_information(navigator.current_code))
         if not data:
@@ -44,12 +48,12 @@ def make_tools(navigator):
             return {
                 "success": False,
                 "error": f"Code {navigator.current_code} not found",
-                "current_position": navigator.current_code
+                "current_position": navigator.current_code,
             }
-        
+
         result = {
-            "success": True, 
-            **data, 
+            "success": True,
+            **data,
             "current_position": navigator.current_code,
         }
         logger.info(f"get_current_information: Data sent to the llm: {result}")
@@ -58,7 +62,11 @@ def make_tools(navigator):
     @function_tool
     def get_code_information(code: str) -> Dict[str, Any]:
         """
-        Retourne les informations d'un code spécifique sans changer la position.
+        Retourne les informations détaillées d'un code spécifique, sans changer la
+        position. À utiliser en cas d'hésitation entre plusieurs enfants candidats —
+        ce n'est pas une étape obligatoire : si un enfant correspond déjà clairement
+        à l'activité d'après get_current_children, appelez directement
+        go_to_child(child_code) sans consulter cet outil au préalable.
 
         Args:
             code: Code NACE à consulter
@@ -92,24 +100,26 @@ def make_tools(navigator):
 
         logger.info(f"get_code_information with code {code}: Data sent to the llm: {filtered_data}")
         return filtered_data
-    
 
     @function_tool
     def get_current_children() -> List[Dict[str, Any]]:
         """
-        Retourne les codes et les noms des enfants directs du noeud actuel.
-        Pour avoir l'information détaillée sur un enfant, utilise get_code_information(code)
+        Retourne les codes, noms et is_final des enfants directs du noeud actuel.
+        Dès qu'un enfant correspond à l'activité à classifier, appelez immédiatement
+        go_to_child(child_code) pour vous y déplacer — ne rappelez pas cet outil sans
+        avoir changé de position, son résultat sera identique.
 
         Returns:
             Liste des codes enfants du noeud courant, contient le code et son nom
         """
-        logger.info(f"Navigator: get_current_children called at the position {navigator.current_code}")
-        children_found = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
+        logger.info(
+            f"Navigator: get_current_children called at the position {navigator.current_code}"
+        )
+        children_found = _unfreeze_list_of_dicts(
+            navigator._cached_get_children(navigator.current_code)
+        )
         keys_to_keep = ["code", "name", "is_final"]
-        filtered_children_found = [
-            {k: d[k] for k in keys_to_keep}
-            for d in children_found
-        ]
+        filtered_children_found = [{k: d[k] for k in keys_to_keep} for d in children_found]
         logger.info(f"get_current_children: Data sent to the llm {filtered_children_found}")
         return filtered_children_found
 
@@ -169,7 +179,7 @@ def make_tools(navigator):
         navigator.current_code = code
         navigator.history.append(code)
         logger.info(f"Navigated to: {code}")
-        
+
         result = {
             "success": True,
             "node": info,
@@ -200,11 +210,11 @@ def make_tools(navigator):
         navigator.current_code = parent_code
         navigator.history.append(parent_code)
         logger.info(f"Move up to: {parent_code}")
-        
+
         parent_info_filtered = {
-            'code': parent_info['code'], 
-            'level': parent_info['level'], 
-            'name': parent_info['name'],
+            "code": parent_info["code"],
+            "level": parent_info["level"],
+            "name": parent_info["name"],
         }
 
         result = {
@@ -215,11 +225,14 @@ def make_tools(navigator):
 
         logger.info(f"go_to_parent: data sent to the llm: {result}")
         return result
-    
+
     @function_tool
     def go_to_child(child_code: str) -> Dict[str, Any]:
         """
-        Descend vers un enfant spécifique du noeud actuel.
+        Descend vers un enfant spécifique du noeud actuel. C'est l'action à utiliser
+        dès qu'un enfant pertinent a été identifié via get_current_children ou
+        get_current_information — appelez-la directement, sans consultation
+        systématique de get_code_information au préalable.
 
         Args:
             child_code: Code de l'enfant vers lequel naviguer
@@ -245,13 +258,15 @@ def make_tools(navigator):
         new_node_information = {
             "code": target_info["code"],
             "level": target_info["level"],
-            "is_final": target_info['is_final'],
-            "name": target_info["name"], 
-            }
+            "is_final": target_info["is_final"],
+            "name": target_info["name"],
+        }
         navigator.current_code = child_code
         navigator.history.append(child_code)
         logger.info(f"Move down to: {child_code}")
-        logger.info(f"Navigator.current_code is {navigator.current_code} and navigator.history is {navigator.history}")
+        logger.info(
+            f"Navigator.current_code is {navigator.current_code} and navigator.history is {navigator.history}"
+        )
 
         result = {
             "success": True,
@@ -292,6 +307,7 @@ def make_tools(navigator):
         go_to_parent,
         go_to_child,
     ]
+
 
 class Navigator(Graph):
     """

@@ -79,7 +79,7 @@ Chaque appel d'outil est journalisé (position avant/après, données renvoyées
 
 - `BaseClassifier` — spécialise `BaseAgent` en fixant le type de sortie à `MatchVerificationInput` (activité, code proposé, explication, confiance), le format commun attendu par les agents « closers ».
 - `NavigatorAgenticClassifier` — classifieur concret : instructions demandant au *Navigator* de descendre jusqu'à un code terminal (`is_final = 1`) en justifiant chaque choix, en démarrant systématiquement par `get_current_children()`.
-- `AgenticRAGClassifier` (`agentic_rag.py`) — approche alternative : récupération des *top-k* codes les plus proches par similarité d'embedding (`Graph.get_closest_codes`, recherche vectorielle Neo4j filtrée sur les codes finaux), puis arbitrage par l'agent `CodeChooser`. Branché dans la CLI via `--agentic-rag` ; le nombre de candidats est réglable par la variable d'environnement `AGENTIC_RAG_TOP_K` (défaut : 5).
+- `AgenticRAGClassifier` (`agentic_rag.py`) — approche hybride : récupération du code le plus proche par similarité d'embedding (`Graph.get_closest_codes`, recherche vectorielle Neo4j filtrée sur les codes finaux), utilisé comme point de départ (*warm start*) pour le *Navigator* plutôt que la racine. L'agent vérifie ce point de départ avec les outils du *Navigator* (informations du noeud, enfants, frères, parent) et navigue pour le corriger si besoin, avant de rendre un `MatchVerificationInput`. Branché dans la CLI via `--agentic-rag`.
 - `SupervisedClassifier` (`supervised_classifier.py`) — **pas un agent LLM** : charge le modèle supervisé de production (*deep learning*, package `torchTextClassifiers`, cf. cadrage §1.1) via l'API MLflow pyfunc (`MLFLOW_TRACKING_URI` / `MLFLOW_MODEL_URI`) et l'expose avec le même contrat de sortie (`MatchVerificationInput`) que les deux classifieurs agentiques, pour servir de référence dans la comparaison chiffrée (cf. cadrage §3.3-B, note de conception). Branché dans la CLI via `--supervised`. **Non validé** : le format exact de sortie du modèle logué (nom des colonnes, présence d'un score de confiance) n'a pas pu être vérifié dans cet environnement — `_parse_prediction` gère plusieurs formats plausibles et journalise un avertissement s'il doit se rabattre sur une confiance par défaut de 1.0.
 
 ### 3.5 Agents « closers » (`src/agents/closers/`)
@@ -110,7 +110,7 @@ uv run -m src.main --navigator --batch-file requetes.txt --experiment-name mon-e
 ```
 
 - `--navigator QUERY` — classification agentique par navigation hiérarchique (*Navigator*) ;
-- `--agentic-rag QUERY` — classification par recherche vectorielle *top-k* + arbitrage `CodeChooser` (cf. §3.4) ;
+- `--agentic-rag QUERY` — classification par recherche vectorielle comme point de départ (*warm start*) du *Navigator* (cf. §3.4) ;
 - `--supervised QUERY` — classification par le modèle supervisé de production via MLflow (cf. §3.4) ;
 - `--verify` — chaîne la prédiction dans le *MatchVerifier* pour double vérification (cf. §3.5) ;
 - `--batch-file FILE` — traite un fichier de requêtes (une par ligne) avec la méthode choisie ;
@@ -129,7 +129,7 @@ uv run -m src.evaluation.build_eval_set --input <parquet S3/local> --output data
 uv run -m src.evaluation.run_eval --eval-set data/eval/eval_set.parquet --method navigator
 ```
 
-Le jeu d'évaluation est désormais construit et versionné (`data/eval/eval_set.parquet`, 5 181 lignes, stratifié par code complet — `apet2025`, ~10 exemples/code) ; `run_eval.py` propose trois méthodes : `navigator`, `agentic-rag`, `supervised`.
+Le jeu d'évaluation est désormais construit (`data/eval/eval_set.parquet`, 5 181 lignes, stratifié par code complet — `apet2025`, ~10 exemples/code) ; `run_eval.py` propose trois méthodes : `navigator`, `agentic-rag`, `supervised`.
 
 ### 5.1 Détection de dérive (`src/evaluation/drift.py`)
 
@@ -173,12 +173,7 @@ Cette section documentera, une fois formalisée, le mode opératoire complet pou
 
 Recensées ici pour mémoire (suivi détaillé dans le document de cadrage) :
 
-- Les composants branchés le 6/07 (classifieur *Agentic RAG* dans la CLI, chaînage `--verify`, harnais `run_eval`) sont vérifiés statiquement (lint, syntaxe, tests unitaires des métriques) mais **pas encore validés fonctionnellement** contre la base Neo4j et l'API LLM — à faire dès le retour sur l'environnement Datalab.
+- Les composants branchés le 6/07 (classifieur *Agentic RAG* dans la CLI, chaînage `--verify`, harnais `run_eval`) n'ont pas encore été évaluées.
 - `SupervisedClassifier` (modèle de production via MLflow) est également non validé fonctionnellement : le parsing de la sortie `.predict()` est écrit pour plusieurs formats plausibles mais n'a pas pu être testé contre le modèle réel dans cet environnement (pas d'accès au tracking MLflow).
 - La CI couvre lint, syntaxe et tests unitaires purs (dont le module `drift.py`, testé sur données synthétiques), mais **pas de tests d'intégration** (agents + graphe + MLflow) : ils nécessiteraient les services correspondants dans le workflow. `tests/test_connections.py` comble partiellement ce manque en local/Datalab (smoke tests skippés si les identifiants sont absents).
-- Le jeu d'évaluation est désormais constitué et versionné (`data/eval/eval_set.parquet`) ; restent les campagnes chiffrées elles-mêmes (S3 de la roadmap).
-- **Le projet requiert Python ≥ 3.12** (idéalement 3.13, cf. `pyproject.toml` et `.python-version`) : certains modules (ex. `prompt_builder.py`) utilisent des f-strings à guillemets imbriqués, syntaxe introduite par la PEP 701 et invalide sur des versions antérieures. Exécuter le projet avec un interpréteur plus ancien (3.11 par exemple) produit de fausses erreurs de syntaxe sur ces fichiers.
-
 ---
-
-*Prochaine mise à jour prévue : semaine du 14 juillet 2026, à l'issue de la formalisation de la méthode et du jeu d'évaluation.*

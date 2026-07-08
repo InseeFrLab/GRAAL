@@ -1,9 +1,9 @@
 import asyncio
 import logging
-import os
 import sys
-from langfuse import get_client, propagate_attributes, observe
 from datetime import datetime
+
+from langfuse import get_client, observe, propagate_attributes
 
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.agents.Text2Code.classifiers.agentic_rag import AgenticRAGClassifier
@@ -21,37 +21,36 @@ logger = logging.getLogger(__name__)
 
 # @observe
 async def classify_navigator(
-    query: str | list[str], 
-    experiment_name: str = "Navigator Classification"
+    query: str | list[str], experiment_name: str = "Navigator Classification"
 ):
     """Classify using agentic method
-    
+
     Args:
         query: A single query string or a list of query strings
         experiment_name: Name of the experiment
-        
+
     Returns:
         Single result dict if query is str, list of result dicts if query is list
     """
     # Normalize input to always work with a list
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
-    
+
     logger.info(f"Navigator classification: {len(queries)} query/queries")
-    
+
     # TODO: add the management for exp_name
     navigator = Navigator(neo4j_config)
-    
+
     results = []
     for q in queries:
         logger.info(f"Classifying: {q}")
-        logger.info(f'Current position of the navigator: {navigator.current_code}')
+        logger.info(f"Current position of the navigator: {navigator.current_code}")
         classifier = NavigatorAgenticClassifier(navigator)
         result = await classifier(q)
         results.append(result)
         logger.info(f"Le résultat de la classification est : {result}")
         navigator.reset_to_root()
-    
+
     # Return single result or list based on input type
     return results[0] if is_single else results
 
@@ -61,7 +60,11 @@ async def classify_agentic_rag(
     query: str | list[str],
     experiment_name: str = "Agentic RAG Classification",
 ):
-    """Classify using embedding retrieval (top-k closest codes) + CodeChooser agent
+    """Classify using embedding retrieval as a Navigator warm-start
+
+    Finds the closest code by vector similarity, then lets the Navigator agent verify
+    and refine that starting position instead of walking down from the root
+    (cf. classify_navigator).
 
     Args:
         query: A single query string or a list of query strings
@@ -75,9 +78,8 @@ async def classify_agentic_rag(
 
     logger.info(f"Agentic RAG classification: {len(queries)} query/queries")
 
-    graph = Graph(neo4j_config)
-    top_k = int(os.environ.get("AGENTIC_RAG_TOP_K", "5"))
-    classifier = AgenticRAGClassifier(graph, top_k=top_k)
+    navigator = Navigator(neo4j_config)
+    classifier = AgenticRAGClassifier(navigator)
 
     results = []
     for q in queries:
@@ -94,11 +96,11 @@ async def classify_supervised(
     query: str | list[str],
     experiment_name: str = "Supervised Model Classification",
 ):
-    """Classify using the production supervised model (torchTextClassifiers via MLflow)
+    """Classify using the production supervised model, via the deployed codif-ape-API
 
     Serves as the reference baseline for comparing the agentic methods
-    (cf. cadrage §3.3-B, note de conception). Requires MLFLOW_TRACKING_URI
-    and MLFLOW_MODEL_URI to be set.
+    (cf. cadrage §3.3-B, note de conception). Requires CODIF_APE_API_USERNAME
+    and CODIF_APE_API_PASSWORD to be set (CODIF_APE_API_URL is optional).
 
     Args:
         query: A single query string or a list of query strings
