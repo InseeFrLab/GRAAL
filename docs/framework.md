@@ -52,7 +52,7 @@ Classe abstraite dont héritent tous les agents. Elle encapsule :
 - la connexion à un client LLM compatible OpenAI (`OPENAI_BASE_URL` / `OPENAI_API_KEY`), avec tracing désactivé au niveau du SDK `agents` (le traçage applicatif passe par Langfuse, voir §5) ;
 - le modèle utilisé pour la génération (`GENERATION_MODEL`), avec une température fixée à 0 par défaut (`get_model_settings`) ;
 - un contrat commun : chaque sous-classe doit définir un nom d'agent (`get_agent_name`), des instructions système (`get_instructions`), un type de sortie structuré (`get_output_type`, un modèle Pydantic) et une méthode de construction du prompt (`build_prompt`) ;
-- l'exécution (`__call__`) via `Runner.run` du SDK `agents`, avec un nombre maximal de tours (`MAX_TURNS`).
+- l'exécution (`__call__`) via `Runner.run` du SDK `agents`, avec un nombre maximal de tours (`MAX_TURNS`). Cette description vaut pour `CodeChooser`/`MatchVerifier`/`SupervisedClassifier` ; `BaseClassifier` (§3.4) remplace cette boucle par sa propre boucle pas-à-pas.
 
 Chaque agent = **un prompt + un jeu d'outils + un contrat de sortie typé**. C'est cette homogénéité qui permet de composer des agents entre eux sans coder de logique de parsing ad hoc.
 
@@ -70,17 +70,18 @@ Le *Navigator* hérite de `Graph` et ajoute un **état de position courante** da
 
 - `get_current_information` / `get_code_information(code)` — information sur la position courante ou sur un code arbitraire (sans déplacement) ;
 - `get_current_children` / `get_current_siblings` / `get_current_parent` — exploration locale relative à la position courante ;
-- `navigate_to(code)` / `go_to_child(child_code)` / `go_to_parent()` — déplacement dans la hiérarchie, avec validation (un `go_to_child` vers un code qui n'est pas un enfant direct échoue explicitement) ;
-- `reset_to_root()` — réinitialisation avant une nouvelle requête.
+- `navigate_to(code)` / `go_to_child(child_code)` / `go_to_parent()` — déplacement dans la hiérarchie, avec validation (un `go_to_child` vers un code qui n'est pas un enfant direct échoue explicitement) ; `go_to_child`/`go_to_parent` renvoient directement les enfants de la nouvelle position, pour fusionner « se déplacer » et « voir les options » en un seul appel ;
+- `reset_to_root()` — réinitialisation avant une nouvelle requête ;
+- `is_current_final()` — vérité terrain lue directement sur le graphe (jamais déduite d'une auto-évaluation du LLM), utilisée par `BaseClassifier` (§3.4) pour savoir quand arrêter l'exploration.
 
 Chaque appel d'outil est journalisé (position avant/après, données renvoyées au LLM), ce qui fournit une trace complète et rejouable du raisonnement de l'agent.
 
 ### 3.4 Classifieurs (`src/agents/Text2Code/`)
 
-- `BaseClassifier` — spécialise `BaseAgent` en fixant le type de sortie à `MatchVerificationInput` (activité, code proposé, explication, confiance), le format commun attendu par les agents « closers ».
+- `BaseClassifier` — spécialise `BaseAgent` en fixant le type de sortie à `MatchVerificationInput` (activité, code proposé, explication, confiance), le format commun attendu par les agents « closers ». Remplace la boucle unique de `BaseAgent` par une boucle pas-à-pas pilotée en Python (`_run_navigator_loop`) : un seul `Runner.run` piloté par le LLM ne peut pas à la fois utiliser les outils de façon fiable et savoir quand s'arrêter (le SDK ne réinitialise `tool_choice` que sur « un outil a été utilisé », sans notion du critère métier `is_final`). La boucle alterne donc entre deux variantes d'`Agent` (`Agent.clone()`) : un agent d'exploration (outils forcés via `tool_choice="required"`, sans `output_type`) et un agent de finalisation (`tool_choice="none"`, outils gardés déclarés pour éviter un blocage du rendu du chat-template côté serveur, `output_type=MatchVerificationInput`). L'arrêt est décidé par `Navigator.is_current_final()` et seulement juste après un déplacement réel (jamais après une simple consultation), pour éviter qu'une position de départ RAG erronée soit « vérifiée » puis renvoyée telle quelle.
 - `NavigatorAgenticClassifier` — classifieur concret : instructions demandant au *Navigator* de descendre jusqu'à un code terminal (`is_final = 1`) en justifiant chaque choix, en démarrant systématiquement par `get_current_children()`.
 - `AgenticRAGClassifier` (`agentic_rag.py`) — approche hybride : récupération du code le plus proche par similarité d'embedding (`Graph.get_closest_codes`, recherche vectorielle Neo4j filtrée sur les codes finaux), utilisé comme point de départ (*warm start*) pour le *Navigator* plutôt que la racine. L'agent vérifie ce point de départ avec les outils du *Navigator* (informations du noeud, enfants, frères, parent) et navigue pour le corriger si besoin, avant de rendre un `MatchVerificationInput`. Branché dans la CLI via `--agentic-rag`.
-- `SupervisedClassifier` (`supervised_classifier.py`) — **pas un agent LLM** : charge le modèle supervisé de production (*deep learning*, package `torchTextClassifiers`, cf. cadrage §1.1) via l'API MLflow pyfunc (`MLFLOW_TRACKING_URI` / `MLFLOW_MODEL_URI`) et l'expose avec le même contrat de sortie (`MatchVerificationInput`) que les deux classifieurs agentiques, pour servir de référence dans la comparaison chiffrée (cf. cadrage §3.3-B, note de conception). Branché dans la CLI via `--supervised`. **Non validé** : le format exact de sortie du modèle logué (nom des colonnes, présence d'un score de confiance) n'a pas pu être vérifié dans cet environnement — `_parse_prediction` gère plusieurs formats plausibles et journalise un avertissement s'il doit se rabattre sur une confiance par défaut de 1.0.
+- `SupervisedClassifier` (`supervised_classifier.py`) — **pas un agent LLM** : appelle le modèle supervisé de production via l'API déployée `codif-ape-API` (authentification HTTP Basic, `CODIF_APE_API_USERNAME` / `CODIF_APE_API_PASSWORD` / `CODIF_APE_API_URL`), plutôt que chargé en local via MLflow, pour éviter d'ajouter torch/transformers/torchfasttext aux dépendances de ce dépôt. L'expose avec le même contrat de sortie (`MatchVerificationInput`) que les deux classifieurs agentiques, pour servir de référence dans la comparaison chiffrée (cf. cadrage §3.3-B, note de conception). Branché dans la CLI via `--supervised`.
 
 ### 3.5 Agents « closers » (`src/agents/closers/`)
 

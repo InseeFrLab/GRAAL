@@ -29,7 +29,7 @@ class AgenticRAGClassifier(BaseClassifier):
         self.graph.current_code = start_code
         self.graph.history = [start_code]
 
-        return await self._run_navigator_loop(self.build_prompt(activity, start_code))
+        return await self._run_navigator_loop(activity, self.build_prompt(activity, start_code))
 
     def get_agent_name(self) -> str:
         return "Agentic RAG Classifier"

@@ -67,7 +67,20 @@ class BaseClassifier(BaseAgent):
             model_settings=ModelSettings(temperature=0, tool_choice="none"),
         )
 
-    async def _run_navigator_loop(self, initial_prompt: str) -> MatchVerificationInput:
+    def _fallback_output(self, activity: str) -> MatchVerificationInput:
+        return MatchVerificationInput(
+            activity=activity,
+            code=self.graph.current_code,
+            proposed_explanation=(
+                "Échec de la génération de la réponse finale par le modèle ; dernière "
+                f"position atteinte lors de l'exploration : {self.graph.current_code}."
+            ),
+            proposed_confidence=0.0,
+        )
+
+    async def _run_navigator_loop(
+        self, activity: str, initial_prompt: str
+    ) -> MatchVerificationInput:
         conversation = initial_prompt
         last_call = None
         max_turns = int(os.environ["MAX_TURNS"])
@@ -109,6 +122,14 @@ class BaseClassifier(BaseAgent):
         else:
             logger.warning("Navigator loop: step budget exhausted before reaching is_final")
 
-        result = await Runner.run(self.finalize_agent, conversation, max_turns=1)
-        logger.info(f"Result of the navigator loop: \n {result.final_output}")
-        return result.final_output
+        try:
+            result = await Runner.run(self.finalize_agent, conversation, max_turns=2)
+            final_output = result.final_output
+        except Exception:
+            logger.exception(
+                "Navigator loop: finalize call failed, falling back to current position"
+            )
+            final_output = self._fallback_output(activity)
+
+        logger.info(f"Result of the navigator loop: \n {final_output}")
+        return final_output

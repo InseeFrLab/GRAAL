@@ -6,7 +6,7 @@ class NavigatorAgenticClassifier(BaseClassifier):
         super().__init__(navigator)
 
     async def __call__(self, query: str):
-        return await self._run_navigator_loop(self.build_prompt(query))
+        return await self._run_navigator_loop(query, self.build_prompt(query))
 
     def get_agent_name(self) -> str:
         return "Navigator Agentic Classifier"
