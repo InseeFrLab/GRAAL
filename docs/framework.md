@@ -121,16 +121,19 @@ uv run -m src.main --navigator --batch-file requetes.txt --experiment-name mon-e
 
 Socle du chantier prioritaire du mois (cf. cadrage §3.1–3.2), en trois briques :
 
-- **`metrics.py`** — métriques pures Python (sans dépendance, testées unitairement dans `tests/`) : normalisation des codes (`"10.71C"` ≡ `"1071C"`), exactitude à la feuille, exactitude par niveau hiérarchique (préfixes : 2 = division, 3 = groupe, 4 = classe pour la NAF), taux d'échec (prédictions n'ayant pas atteint de code final, comptées comme erreurs).
-- **`build_eval_set.py`** — construction du jeu d'évaluation stratifié : lecture du parquet labellisé (local ou S3/Datalab), stratification par préfixe de code (division par défaut), tirage plafonné par strate et reproductible (seed) — les strates plus petites que le plafond sont conservées en entier.
-- **`run_eval.py`** — harnais de campagne : exécute une méthode (`navigator` ou `agentic-rag`) sur le jeu d'évaluation, écrit les prédictions détaillées (parquet) et le rapport de métriques (JSON). Nécessite Neo4j et l'API LLM à l'exécution.
+- **`metrics.py`** — métriques pures Python (sans dépendance, testées unitairement dans `tests/`) : normalisation des codes (`"10.71C"` ≡ `"1071C"`), exactitude à la feuille, exactitude par niveau hiérarchique (préfixes : 2 = division, 3 = groupe, 4 = classe pour la NAF), taux d'échec (prédictions n'ayant pas atteint de code final, comptées comme erreurs), taux de faible confiance (`low_confidence_rate`, distinct du taux d'échec : un code peut être renvoyé avec une confiance nulle par le repli de finalisation `_fallback_output`). `accuracy_at_depth`/`evaluate` acceptent un paramètre `weights` optionnel pour une lecture pondérée en plus de la lecture non pondérée historique (jamais en remplacement, cf. ci-dessous).
+- **`build_eval_set.py`** — construction du jeu d'évaluation stratifié : lecture du parquet labellisé (local ou S3/Datalab), stratification par préfixe de code (division par défaut), tirage plafonné par strate et reproductible (seed) — les strates plus petites que le plafond sont conservées en entier. Le sur-échantillonnage des strates rares casse la fréquence réelle des codes ; deux colonnes sont donc ajoutées au jeu produit : `eval_stratum` (clé de strate, réutilisée par le bootstrap stratifié) et `ipw_weight` (poids de repondération, population de la strate / lignes tirées) qui permet de reconstruire une exactitude représentative du trafic réel via `evaluate(..., weights=...)`.
+- **`bootstrap.py`** — intervalle de confiance bootstrap (`bootstrap_ci`) pour une métrique, par rééchantillonnage en grappes **à l'intérieur de chaque strate** (jamais entre strates, pour respecter le plan d'échantillonnage de `build_eval_set.py`).
+- **`compare.py`** — comparaison statistique appariée de deux campagnes exécutées sur le même jeu d'évaluation (mêmes lignes, même vérité terrain) : bootstrap apparié en grappes sur la différence d'exactitude, et test de McNemar en complément — répond au chantier « rigueur statistique » de la note de conception (cadrage §3.3-B) et évite l'erreur classique de comparer deux IC indépendants sur des données appariées.
+- **`run_eval.py`** — harnais de campagne : exécute une méthode (`navigator`, `agentic-rag` ou `supervised`) sur le jeu d'évaluation, écrit les prédictions détaillées (parquet) et le rapport de métriques (JSON), avec exactitude pondérée automatique si `ipw_weight` est présent dans le jeu d'évaluation. Nécessite Neo4j et l'API LLM à l'exécution.
 
 ```bash
 uv run -m src.evaluation.build_eval_set --input <parquet S3/local> --output data/eval/eval_set.parquet
-uv run -m src.evaluation.run_eval --eval-set data/eval/eval_set.parquet --method navigator
+uv run -m src.evaluation.run_eval --eval-set data/eval/eval_set.parquet --method navigator --bootstrap 1000
+uv run -m src.evaluation.compare --a data/eval/results/predictions_navigator.parquet --b data/eval/results/predictions_agentic-rag.parquet
 ```
 
-Le jeu d'évaluation est désormais construit (`data/eval/eval_set.parquet`, 5 181 lignes, stratifié par code complet — `apet2025`, ~10 exemples/code) ; `run_eval.py` propose trois méthodes : `navigator`, `agentic-rag`, `supervised`.
+Le jeu d'évaluation est désormais construit (`data/eval/eval_set.parquet`, 5 181 lignes, stratifié par code complet — `apet2025`, ~10 exemples/code) ; `run_eval.py` propose trois méthodes : `navigator`, `agentic-rag`, `supervised`. **[à compléter]** : le jeu d'évaluation versionné a été construit avant l'ajout d'`ipw_weight`/`eval_stratum` — à reconstruire depuis la source (`df_test`) pour bénéficier de poids non triviaux (voir `stratified_sample`) et d'un bootstrap qui n'ait pas à se rabattre sur une strate unique.
 
 ### 5.1 Détection de dérive (`src/evaluation/drift.py`)
 
