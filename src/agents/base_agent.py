@@ -44,7 +44,6 @@ class BaseAgent(ABC):
             model=os.environ["GENERATION_MODEL"],
             model_settings=self.get_model_settings(),
             output_type=self.output_type,
-            reset_tool_choice=False,
         )
 
     @abstractmethod

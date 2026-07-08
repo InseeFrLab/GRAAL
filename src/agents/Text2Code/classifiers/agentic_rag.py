@@ -29,7 +29,7 @@ class AgenticRAGClassifier(BaseClassifier):
         self.graph.current_code = start_code
         self.graph.history = [start_code]
 
-        return await super().__call__(activity, start_code)
+        return await self._run_navigator_loop(self.build_prompt(activity, start_code))
 
     def get_agent_name(self) -> str:
         return "Agentic RAG Classifier"
@@ -45,17 +45,7 @@ class AgenticRAGClassifier(BaseClassifier):
 
         Si le point de départ semble incorrect, naviguez vers une meilleure position (remontez
         au parent, explorez les frères ou les enfants) plutôt que de le valider tel quel.
-
-        Après avoir vérifié que votre position finale est bien terminale (is_final = 1),
-        renvoyez le code choisi, une explication concise et votre niveau de confiance.
         Commencez par get_current_information() pour examiner le point de départ proposé.
-
-        RÈGLE STRICTE : il est interdit de répondre avec un code dont is_final = 0, ou
-        avec le point de départ suggéré si vous avez constaté qu'il ne correspond pas à
-        l'activité. Si votre position actuelle n'est pas satisfaisante, vous DEVEZ appeler
-        un autre outil (get_current_children, go_to_child, go_to_parent...) avant de
-        conclure — ne vous arrêtez jamais après un seul appel d'outil si is_final n'est
-        pas à 1 ou si le code ne correspond pas à l'activité décrite.
         """
 
     async def get_starting_code(self, activity: str) -> str:

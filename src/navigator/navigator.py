@@ -8,6 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 def make_tools(navigator):
+    def _children_summary(code: str) -> List[Dict[str, Any]]:
+        children_found = _unfreeze_list_of_dicts(navigator._cached_get_children(code))
+        keys_to_keep = ["code", "name", "is_final"]
+        return [{k: d[k] for k in keys_to_keep} for d in children_found]
+
     # ------------------------------------------------------------------
     # Information methods
     # ------------------------------------------------------------------
@@ -115,11 +120,7 @@ def make_tools(navigator):
         logger.info(
             f"Navigator: get_current_children called at the position {navigator.current_code}"
         )
-        children_found = _unfreeze_list_of_dicts(
-            navigator._cached_get_children(navigator.current_code)
-        )
-        keys_to_keep = ["code", "name", "is_final"]
-        filtered_children_found = [{k: d[k] for k in keys_to_keep} for d in children_found]
+        filtered_children_found = _children_summary(navigator.current_code)
         logger.info(f"get_current_children: Data sent to the llm {filtered_children_found}")
         return filtered_children_found
 
@@ -191,10 +192,12 @@ def make_tools(navigator):
     @function_tool
     def go_to_parent() -> Dict[str, Any]:
         """
-        Remonte au parent du noeud actuel.
+        Remonte au parent du noeud actuel et retourne directement ses enfants
+        (les frères du noeud de départ) — inutile d'appeler get_current_children
+        juste après.
 
         Returns:
-            Résultat de la navigation avec informations du parent
+            Résultat de la navigation avec informations du parent et ses enfants
         """
         logger.info("Navigator: go_to_parent called")
         parent_info = _unfreeze_dict(navigator._cached_get_parent(navigator.current_code))
@@ -220,6 +223,7 @@ def make_tools(navigator):
         result = {
             "success": True,
             "parent": parent_info_filtered,
+            "children": _children_summary(parent_code),
             "current_position": navigator.current_code,
         }
 
@@ -229,16 +233,19 @@ def make_tools(navigator):
     @function_tool
     def go_to_child(child_code: str) -> Dict[str, Any]:
         """
-        Descend vers un enfant spécifique du noeud actuel. C'est l'action à utiliser
-        dès qu'un enfant pertinent a été identifié via get_current_children ou
-        get_current_information — appelez-la directement, sans consultation
-        systématique de get_code_information au préalable.
+        Descend vers un enfant spécifique du noeud actuel et retourne directement les
+        enfants de cette nouvelle position — inutile d'appeler get_current_children
+        juste après. C'est l'action à utiliser dès qu'un enfant pertinent a été
+        identifié via get_current_children ou get_current_information — appelez-la
+        directement, sans consultation systématique de get_code_information au
+        préalable. Si le noeud atteint a is_final = 1 (ou une liste d'enfants vide),
+        c'est une position terminale : arrêtez la navigation et concluez.
 
         Args:
             child_code: Code de l'enfant vers lequel naviguer
 
         Returns:
-            Résultat de la navigation avec validation
+            Résultat de la navigation avec validation et les enfants du nouveau noeud
         """
         logger.info(f"Navigator: go_to_child called with child_code: {child_code}")
 
@@ -271,6 +278,7 @@ def make_tools(navigator):
         result = {
             "success": True,
             "node": new_node_information,
+            "children": _children_summary(child_code),
             "current_position": navigator.current_code,
         }
         logger.info(f"go_to_child: Data sent to the llm: {result}")
@@ -333,3 +341,11 @@ class Navigator(Graph):
         self.current_code = "root"
         self.history = ["root"]
         logger.info("Navigator: Reset to root")
+
+    def is_current_final(self) -> bool:
+        """Ground-truth check on the current position, read straight from the graph
+        (never from the model's self-reported completion)."""
+        if self.current_code == "root":
+            return False
+        data = _unfreeze_dict(self._cached_get_code_information(self.current_code))
+        return bool(data.get("is_final")) if data else False
