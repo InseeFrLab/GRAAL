@@ -51,7 +51,7 @@ def stratified_sample(
     df: pl.DataFrame,
     code_column: str,
     n_per_stratum: int,
-    stratum_depth: int = 2,
+    stratum_depth: int = 5,
     seed: int = 42,
 ) -> pl.DataFrame:
     """Tire au plus `n_per_stratum` lignes par strate de code.
@@ -64,6 +64,16 @@ def stratified_sample(
         stratum_depth: Longueur du préfixe de code normalisé définissant la
             strate (2 = division NAF).
         seed: Graine du tirage, pour un jeu reproductible.
+
+    Le sur-échantillonnage des strates rares casse la fréquence réelle des
+    codes : une exactitude moyennée sans pondération sur le jeu obtenu répond
+    à « quelle est la performance moyenne par code », pas « quelle serait la
+    performance sur le trafic réel ». `ipw_weight` (population de la strate /
+    lignes effectivement tirées) permet de reconstruire cette seconde lecture
+    a posteriori (cf. `metrics.evaluate(..., weights=...)`). `eval_stratum`
+    est conservée pour que le rééchantillonnage stratifié (bootstrap) n'ait
+    pas à redériver les strates depuis le code, avec un risque de dérive si
+    `stratum_depth` change.
     """
     df = (
         df.with_columns(
@@ -78,10 +88,18 @@ def stratified_sample(
     n_strata = df["_stratum"].n_unique()
     logger.info(f"{n_strata} strata found at depth {stratum_depth}")
 
+    df = df.with_columns(pl.len().over("_stratum").alias("_population_count"))
     sampled = df.filter(pl.int_range(pl.len()).shuffle(seed=seed).over("_stratum") < n_per_stratum)
+    sampled = sampled.with_columns(
+        pl.len().over("_stratum").alias("_sampled_count"),
+    ).with_columns(
+        (pl.col("_population_count") / pl.col("_sampled_count")).alias("ipw_weight"),
+    )
 
     logger.info(f"Sampled {len(sampled)} rows out of {len(df)}")
-    return sampled.drop(["_norm_code", "_stratum"])
+    return sampled.rename({"_stratum": "eval_stratum"}).drop(
+        ["_norm_code", "_population_count", "_sampled_count"]
+    )
 
 
 def main() -> int:

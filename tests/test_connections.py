@@ -49,14 +49,14 @@ def test_generation_model_api_connection():
     assert list(client.models.list())
 
 
+@_require_env("URL_EMBEDDING_API", "EMBEDDING_MODEL")
 def test_embedding_api_connection():
-    base_url = os.environ.get("URL_EMBEDDING_API") or os.environ.get("OPENAI_BASE_URL")
-    if not base_url:
-        pytest.skip("missing env var(s): URL_EMBEDDING_API or OPENAI_BASE_URL")
-
     from openai import OpenAI
 
-    client = OpenAI(base_url=base_url, api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"))
+    client = OpenAI(
+        base_url=os.environ.get("URL_EMBEDDING_API"),
+        api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
+    )
     assert list(client.models.list())
 
 
@@ -99,3 +99,18 @@ def test_langfuse_connection():
         base_url=os.environ.get("LANGFUSE_BASE_URL"),
     )
     assert client.auth_check()
+
+
+@_require_env("MLFLOW_TRACKING_URI", "MLFLOW_MODEL_URI")
+def test_mlflow_supervised_model_connection():
+    """Backs SupervisedClassifier (src/agents/Text2Code/classifiers/supervised_classifier.py).
+
+    Only checks that the model can be *loaded*, not that a real prediction
+    matches the expected output shape — `_parse_prediction` there is
+    unverified against the real model and may need adjusting after this
+    passes.
+    """
+    import mlflow
+
+    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    assert mlflow.pyfunc.load_model(os.environ["MLFLOW_MODEL_URI"]) is not None

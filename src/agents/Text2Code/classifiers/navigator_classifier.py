@@ -5,6 +5,9 @@ class NavigatorAgenticClassifier(BaseClassifier):
     def __init__(self, navigator):
         super().__init__(navigator)
 
+    async def __call__(self, query: str):
+        return await self._run_navigator_loop(query, self.build_prompt(query))
+
     def get_agent_name(self) -> str:
         return "Navigator Agentic Classifier"
 
@@ -19,11 +22,8 @@ class NavigatorAgenticClassifier(BaseClassifier):
 
     def get_instructions(self) -> str:
         return """
-        Vous êtes un expert en classification NACE. Votre mission est de naviguer 
+        Vous êtes un expert en classification NACE. Votre mission est de naviguer
         dans l'arborescence afin d'atteindre le code le plus spécifique caractérisant l'activité indiquée.
-        Après avoir vérifié que votre position actuelle est bien finale (is_final = 1), 
-        vous renverrez votre position. 
-        Si vous n'avez pas réussi à atteindre une position finale, dites-le. 
-        Soyez méthodique et justifiez chaque choix ! Commence par get_current_children() pour voir les options disponibles.
+        Soyez méthodique et justifiez chaque choix ! Commencez par get_current_children() pour voir les
+        options disponibles.
         """
-

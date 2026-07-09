@@ -22,7 +22,22 @@ def parse_args() -> argparse.Namespace:
         const="Boulangerie",
         default=None,
         metavar="QUERY",
-        help="Classify with embedding retrieval + CodeChooser agent. Default query: 'Boulangerie'",
+        help=(
+            "Classify with embedding retrieval as a Navigator warm-start. "
+            "Default query: 'Boulangerie'"
+        ),
+    )
+    methods.add_argument(
+        "--supervised",
+        type=str,
+        nargs="?",
+        const="Boulangerie",
+        default=None,
+        metavar="QUERY",
+        help=(
+            "Classify with the production supervised model (torchTextClassifiers via MLflow). "
+            "Default query: 'Boulangerie'"
+        ),
     )
 
     options = parser.add_argument_group("Options")
