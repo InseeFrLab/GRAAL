@@ -6,9 +6,13 @@ test.ipynb
 # eval scripts, not source. Versioned inputs (eval_set*.parquet) are not ignored.
 data/eval/results/
 data/eval/results_sample*/
-data/eval/train_verification/
+data/eval/train_verification*/
 data/eval/embedding_diagnostics/
 data/eval/human_review/
+
+# Notebooks rendered from jupytext percent-format scripts (evaluate_train_labels.py
+# and similar) via `jupytext --to notebook` - the .py is the source of truth.
+evaluate_train_labels.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -18,13 +18,20 @@ presentation/presentation.qmd (ground truth + prédiction + jugement des
 closers, mis bout à bout), appliquée ici au jeu d'entraînement plutôt qu'à un
 jeu de test annoté.
 
-Pensé pour être exécuté cellule par cellule (VS Code Jupyter interactive, ou
-`quarto render evaluate_train_labels.py`) plutôt qu'en batch : les appels
-`await` nécessitent un kernel Jupyter (top-level await), comme déjà fait dans
-explorations.py pour classify_navigator.
+Pensé pour être exécuté cellule par cellule (VS Code Jupyter interactive)
+plutôt qu'en batch : les appels `await` nécessitent un kernel Jupyter
+(top-level await), comme déjà fait dans explorations.py pour classify_navigator.
 
-Usage :
-    quarto render evaluate_train_labels.py --to html
+Pour un rendu HTML via Quarto, il faut d'abord convertir ce script en notebook
+avec un kernel pointant sur le venv du projet (Quarto ne détecte pas tout
+seul un .py au format "percent", et le kernel `python3` par défaut n'a pas les
+dépendances du projet) :
+
+    uv run python -m ipykernel install --user --name graalbis \
+        --display-name "Python (GRAALbis .venv)"          # une seule fois
+    uv run jupytext --to notebook --set-kernel graalbis \
+        evaluate_train_labels.py -o evaluate_train_labels.ipynb
+    quarto render evaluate_train_labels.ipynb --to html --execute
 """
 
 # %% Imports
@@ -196,17 +203,19 @@ comparison.style.apply(highlight_disagreements, axis=1)
 n = len(comparison)
 summary = {
     "n": n,
-    "pct_labels_flagged_by_verifier": 1 - comparison["verifier_is_match"].mean(),
-    "navigator_agreement_rate": comparison["navigator_agrees"].mean(),
-    "agentic_rag_agreement_rate": comparison["agentic_rag_agrees"].mean(),
-    "supervised_agreement_rate": comparison["supervised_agrees"].mean(),
+    "pct_labels_flagged_by_verifier": float(1 - comparison["verifier_is_match"].mean()),
+    "navigator_agreement_rate": float(comparison["navigator_agrees"].mean()),
+    "agentic_rag_agreement_rate": float(comparison["agentic_rag_agrees"].mean()),
+    "supervised_agreement_rate": float(comparison["supervised_agrees"].mean()),
     "pct_rescued_by_chooser": (
-        (
-            ~comparison["verifier_is_match"]
-            & ~comparison["chooser_agrees_with_label"]
-            & comparison["final_verifier_is_match"]
-        ).sum()
-        / n
+        float(
+            (
+                ~comparison["verifier_is_match"]
+                & ~comparison["chooser_agrees_with_label"]
+                & comparison["final_verifier_is_match"]
+            ).sum()
+            / n
+        )
         if n
         else None
     ),
