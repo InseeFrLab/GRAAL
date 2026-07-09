@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import sys
 from datetime import datetime
 
@@ -9,6 +8,7 @@ from langfuse import get_client, observe, propagate_attributes
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.agents.Text2Code.classifiers.agentic_rag import AgenticRAGClassifier
 from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
+from src.agents.Text2Code.classifiers.supervised_classifier import SupervisedClassifier
 from src.config import neo4j_config
 from src.navigator.navigator import Navigator
 from src.neo4j_graph.graph import Graph
@@ -19,7 +19,7 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
-# @observe
+@observe
 async def classify_navigator(
     query: str | list[str], experiment_name: str = "Navigator Classification"
 ):
@@ -32,13 +32,16 @@ async def classify_navigator(
     Returns:
         Single result dict if query is str, list of result dicts if query is list
     """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     # Normalize input to always work with a list
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
 
     logger.info(f"Navigator classification: {len(queries)} query/queries")
 
-    # TODO: add the management for exp_name
     navigator = Navigator(neo4j_config)
     # Built once: tools/Agent are closures over `navigator`, so state resets
     # (below) are enough between queries — no need to rebuild them each time.
@@ -62,7 +65,11 @@ async def classify_agentic_rag(
     query: str | list[str],
     experiment_name: str = "Agentic RAG Classification",
 ):
-    """Classify using embedding retrieval (top-k closest codes) + CodeChooser agent
+    """Classify using embedding retrieval as a Navigator warm-start
+
+    Finds the closest code by vector similarity, then lets the Navigator agent verify
+    and refine that starting position instead of walking down from the root
+    (cf. classify_navigator).
 
     Args:
         query: A single query string or a list of query strings
@@ -71,30 +78,65 @@ async def classify_agentic_rag(
     Returns:
         Single MatchVerificationInput if query is str, list of them if query is list
     """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
 
     logger.info(f"Agentic RAG classification: {len(queries)} query/queries")
 
-    graph = Graph(neo4j_config)
-    top_k = int(os.environ.get("AGENTIC_RAG_TOP_K", "5"))
-    concurrency = int(os.environ.get("AGENTIC_RAG_CONCURRENCY", "5"))
-    classifier = AgenticRAGClassifier(graph, top_k=top_k)
+    navigator = Navigator(neo4j_config)
+    classifier = AgenticRAGClassifier(navigator)
 
-    # Stateless per query (unlike NavigatorAgenticClassifier), so queries can
-    # run concurrently against the single shared classifier/graph connection.
-    semaphore = asyncio.Semaphore(concurrency)
+    results = []
+    for q in queries:
+        logger.info(f"Classifying: {q}")
+        result = await classifier(q)
+        results.append(result)
+        logger.info(f"Le résultat de la classification est : {result}")
 
-    async def classify_one(q: str):
-        async with semaphore:
-            logger.info(f"Classifying: {q}")
-            result = await classifier(q)
-            logger.info(f"Le résultat de la classification est : {result}")
-            return result
+    return results[0] if is_single else results
 
-    results = await asyncio.gather(*(classify_one(q) for q in queries))
 
-    return results[0] if is_single else list(results)
+@observe
+async def classify_supervised(
+    query: str | list[str],
+    experiment_name: str = "Supervised Model Classification",
+):
+    """Classify using the production supervised model, via the deployed codif-ape-API
+
+    Serves as the reference baseline for comparing the agentic methods
+    (cf. cadrage §3.3-B, note de conception). Requires CODIF_APE_API_USERNAME
+    and CODIF_APE_API_PASSWORD to be set (CODIF_APE_API_URL is optional).
+
+    Args:
+        query: A single query string or a list of query strings
+        experiment_name: Name of the experiment
+
+    Returns:
+        Single MatchVerificationInput if query is str, list of them if query is list
+    """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
+    queries = [query] if isinstance(query, str) else query
+    is_single = isinstance(query, str)
+
+    logger.info(f"Supervised model classification: {len(queries)} query/queries")
+
+    classifier = SupervisedClassifier()
+
+    results = []
+    for q in queries:
+        logger.info(f"Classifying: {q}")
+        result = await classifier(q)
+        results.append(result)
+        logger.info(f"Le résultat de la classification est : {result}")
+
+    return results[0] if is_single else results
 
 
 async def verify_classification(prediction: MatchVerificationInput, verifier: MatchVerifier):
@@ -117,6 +159,10 @@ async def process_batch_file(
     filepath: str, method_func, experiment_name: str, verifier: MatchVerifier | None = None
 ):
     """Process a batch file with queries"""
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     logger.info(f"Processing batch file: {filepath}")
 
     with open(filepath, "r", encoding="utf-8") as f:
@@ -152,6 +198,9 @@ async def main():
 
         if args.agentic_rag:
             methods_to_run.append(("agentic-rag", args.agentic_rag, classify_agentic_rag))
+
+        if args.supervised:
+            methods_to_run.append(("supervised", args.supervised, classify_supervised))
 
         # No method specified
         if not methods_to_run:

@@ -18,9 +18,16 @@ class MatchVerificationResult(BaseModel):
 class MatchVerificationInput(BaseModel):
     activity: str = Field(description="The textual label of the activity to verify")
     code: str = Field(description="The code that has been associated with the activity")
-    proposed_explanation: str = Field(description="The explanation provided for the proposed code")
-    proposed_confidence: float = Field(
-        description="The confidence level of the proposed match, between 0 and 1", ge=0, le=1
+    proposed_explanation: str | None = Field(
+        default=None,
+        description="The explanation provided for the proposed code, if any (absent for a "
+        "raw ground-truth label with no accompanying model rationale)",
+    )
+    proposed_confidence: float | None = Field(
+        default=None,
+        description="The confidence level of the proposed match, between 0 and 1, if any",
+        ge=0,
+        le=1,
     )
 
 
@@ -33,7 +40,8 @@ class MatchVerifier(BaseAgent):
 
     def get_instructions(self) -> str:
         return """
-                Tu es un agent spécialisé dans la vérification de la validité d'une correspondance entre un libellé textuel et le code qui lui a été associé.
+                Tu es un agent spécialisé dans la vérification de la validité d'une
+                correspondance entre un libellé textuel et le code qui lui a été associé.
             """
 
     def get_output_type(self):
@@ -43,13 +51,37 @@ class MatchVerifier(BaseAgent):
         """
         Construire le prompt pour l'agent de vérification de correspondance.
         """
+        if match_verification_input.proposed_explanation:
+            explanation_line = (
+                f"Explication proposée : {match_verification_input.proposed_explanation}"
+            )
+        else:
+            explanation_line = (
+                "Aucune explication n'est fournie : il s'agit probablement d'un code de "
+                "référence (vérité terrain), pas de la proposition d'un modèle. Juge la "
+                "correspondance activité/code sur le fond, sans présumer qu'elle est correcte."
+            )
+
+        code_info = self.graph.get_code_information(match_verification_input.code)
+        if code_info.get("description"):
+            code_definition_line = (
+                f"Définition officielle du code ({code_info.get('name')}) : "
+                f"{code_info['description']}"
+            )
+        else:
+            code_definition_line = (
+                "Aucune définition trouvée dans la base pour ce code : appuie-toi sur "
+                "ta connaissance de la nomenclature."
+            )
+
         prompt = f"""
         Vérifie si le code suivant correspond bien à l'activité décrite.
 
         Activité : {match_verification_input.activity}
 
         Code proposé : {match_verification_input.code}
-        Explication proposée : {match_verification_input.proposed_explanation}
+        {code_definition_line}
+        {explanation_line}
 
         Réponds en fournissant :
         1. Un booléen indiquant si la correspondance est valide.
