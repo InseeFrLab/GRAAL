@@ -61,13 +61,10 @@ class BaseAgent(ABC):
     @abstractmethod
     def build_prompt(self, *args, **kwargs) -> str:
         pass
-    
+
     async def __call__(self, *args, **kwargs):
         prompt = self.build_prompt(*args, **kwargs)
-        result = await Runner.run(
-            self.agent,
-            prompt, 
-            max_turns=int(os.environ["MAX_TURNS"])) 
+        result = await Runner.run(self.agent, prompt, max_turns=int(os.environ["MAX_TURNS"]))
         logger.info(f"Result of the __call__ in BaseAgent: \n {result.final_output}")
         return result.final_output
 

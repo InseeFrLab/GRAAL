@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "duckdb>=1.4.4",
     "fastparquet>=2025.12.0",
+    "flask>=3.1.3",
     "ipykernel>=7.1.0",
     "ipywidgets>=8.1.8",
     "jupyter-cache>=1.0.1",
@@ -17,6 +18,7 @@ dependencies = [
     "langchain-text-splitters>=1.1.0",
     "langfuse>=3.11.2",
     "matplotlib>=3.10.8",
+    "mlflow>=2.19.0",
     "nbclient>=0.10.4",
     "nbformat>=5.10.4",
     "networkx>=3.6.1",
@@ -27,13 +29,16 @@ dependencies = [
     "plotly>=6.5.1",
     "polars>=1.38.1",
     "pyarrow>=23.0.1",
+    "pytest>=9.1.1",
     "s3fs>=2024.12.0",
+    "scipy>=1.14.0",
     "transformers>=4.57.3",
     "umap-learn>=0.5.11",
 ]
 
 [dependency-groups]
 dev = [
+    "jupytext>=1.19.4",
     "pre-commit>=4.5.1",
     "ruff>=0.14.9",
 ]
@@ -41,3 +46,11 @@ dev = [
 [tool.ruff]
 line-length = 100
 extend-include = ["*.ipynb"]
+# Cell-based scripts meant to be run interactively (VS Code / Jupytext) or
+# rendered with `quarto render`, relying on top-level `await`/IPython magics
+# that are not valid standalone Python syntax.
+extend-exclude = ["explorations.py", "evaluate_train_labels.py"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

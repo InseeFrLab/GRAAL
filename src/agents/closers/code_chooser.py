@@ -29,7 +29,7 @@ class CodeChooser(BaseAgent):
         prompt = self.build_prompt(activity, codes)
         result = await Runner.run(self.agent, prompt)
 
-        return result
+        return result.final_output
 
     def get_agent_name(self) -> str:
         return "Code Chooser Agent"
