@@ -182,13 +182,16 @@ uv run python evaluate_embeddings.py
 
 Le traçage applicatif (sessions, coûts, latence, arbre d'appels des agents) est assuré par **Langfuse** (`get_client`, `propagate_attributes`, `@observe` dans `src/main.py`).
 
-### 6.1 Traçage Langfuse — chantiers restants **[à compléter]**
+### 6.1 Traçage Langfuse
 
-Audit du 8/07 : le traçage fonctionne pour `classify_agentic_rag`, `classify_supervised` et `process_batch_file` (`@observe` actif, appels LLM individuels journalisés via `langfuse.openai.AsyncOpenAI` dans `base_agent.py`), mais reste incomplet sur plusieurs points, à traiter avant de présenter le traçage comme un acquis :
+Audit du 8/07 : le traçage fonctionnait pour `classify_agentic_rag`, `classify_supervised` et `process_batch_file` (`@observe` actif, appels LLM individuels journalisés via `langfuse.openai.AsyncOpenAI` dans `base_agent.py`), mais restait incomplet sur plusieurs points. **Corrigé le 9/07** :
 
-- **`classify_navigator` n'est pas tracé** (`@observe` commenté dans `src/main.py`) alors que c'est le chemin agentique principal (cf. cadrage §2.1) — chaque appel LLM est bien journalisé individuellement mais sans trace/span parent qui les relie en un arbre de raisonnement cohérent.
-- **Les échecs de finalisation de `_run_navigator_loop` ne remontent plus comme des erreurs dans Langfuse** depuis l'ajout du repli `_fallback_output` (`base_classifier.py`) : l'exception est journalisée en log applicatif seulement, la trace Langfuse correspondante apparaît comme un succès normal (confiance 0.0) plutôt que marquée en erreur.
-- **`--experiment-name` n'est pas réellement propagé au traçage Langfuse** malgré ce qu'indique le §4 : la valeur circule comme argument/log applicatif mais n'est jamais attachée à la trace (nom, tag ou métadonnée), donc impossible de filtrer/grouper les runs par expérience dans l'UI Langfuse.
+- **`classify_navigator` est maintenant tracé** (`@observe` ré-activé dans `src/main.py`) alors que c'est le chemin agentique principal (cf. cadrage §2.1) — chaque appel LLM était déjà journalisé individuellement mais sans trace/span parent qui les relie en un arbre de raisonnement cohérent.
+- **Les échecs de finalisation de `_run_navigator_loop` remontent maintenant comme des erreurs dans Langfuse** : en plus du repli `_fallback_output` (`base_classifier.py`), le span courant est explicitement marqué `level="ERROR"` (`get_client().update_current_span`) avant de retomber sur la dernière position connue, au lieu d'apparaître comme un succès normal (confiance 0.0).
+- **`--experiment-name` est maintenant réellement propagé au traçage Langfuse** : la valeur est attachée à la trace courante (nom, tag et métadonnée via `get_client().update_current_trace`) dans les quatre points d'entrée (`classify_navigator`, `classify_agentic_rag`, `classify_supervised`, `process_batch_file`), donc filtrable/groupable par expérience dans l'UI Langfuse.
+
+Reste à faire :
+
 - Pas de `langfuse.flush()`/`shutdown()` explicite avant la sortie du script CLI (repose sur le hook `atexit` du SDK, suffisant en usage normal mais fragile en cas d'arrêt forcé d'un job batch).
 
 **Piège fréquent sur `MLFLOW_MODEL_URI`** : ce n'est pas le lien de la page MLflow ouverte dans le navigateur, mais une URI au schéma `models:` — ex. `models:/FastText-pytorch/9` (pas `https://.../#/models/FastText-pytorch/versions/9`). Et `MLFLOW_TRACKING_URI` doit pointer vers le serveur MLflow où ce modèle est **effectivement enregistré** (le plus souvent l'instance MLflow partagée du projet, ex. `projet-ape-mlflow.user.lab.sspcloud.fr`) — pas nécessairement l'instance MLflow personnelle par défaut sur le Datalab, qui n'a pas accès au registre d'un autre projet. `SupervisedClassifier` lève une erreur explicite si `MLFLOW_MODEL_URI` est un lien `http(s)://` plutôt qu'une URI `models:`.
