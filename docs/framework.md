@@ -153,6 +153,20 @@ report["any_drift"]  # bool
 
 **[à compléter]** : validation sur un flux réel de prédictions du modèle de production (données synthétiques uniquement à ce stade).
 
+### 5.2 Diagnostic de l'espace d'embedding (`evaluate_embeddings.py`)
+
+Script autonome à la racine du dépôt (volontairement hors `src/evaluation/`, cf. cadrage §3.3-B), qui évalue la qualité de la recherche par similarité (notices NAF2025 ↔ libellés) utilisée comme *warm start* par l'Agentic RAG (`Graph.get_closest_codes`, §3.4), indépendamment de la navigation LLM qui la suit :
+
+- **Quantitatif** : k-NN cosinus entre l'embedding d'un libellé (préfixé `"query : "`, comme au moment de l'inférence dans `graph.py`) et les embeddings des notices NAF2025 (codes terminaux uniquement) — accuracy@1 et recall@5 contre la vérité terrain (`apet2025`), sur `data/eval/eval_set_sample15.parquet` / `eval_set_sample30.parquet`.
+- **Visuel** : projection 2D (UMAP/PaCMAP/t-SNE/PCA) des notices et des libellés, arêtes k-NN correctes (vert) / incorrectes (bleu) et vérité terrain, une figure Plotly comparative par modèle écrite dans `data/eval/embedding_diagnostics/<modèle>_comparison.html`.
+- **Comparaison multi-modèles** : éditer la liste `CANDIDATE_MODELS` en tête de script pour comparer plusieurs modèles d'embedding déployés derrière `URL_EMBEDDING_API`.
+
+```bash
+uv run python evaluate_embeddings.py
+```
+
+**Résultat du premier diagnostic (8/07)** avec le modèle actuellement configuré (`qwen3-embedding-8b`) : accuracy@1 = recall@5 = 0 % sur l'échantillon de 30 libellés — voir la limite documentée en §8.
+
 ## 6. Configuration (variables d'environnement)
 
 | Variable | Usage |
@@ -164,8 +178,18 @@ report["any_drift"]  # bool
 | `EMBEDDING_MODEL`, `URL_EMBEDDING_API`, `MAX_TOKENS` | Modèle et service d'embedding utilisés lors de la construction du graphe |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_ENDPOINT_URL` | Accès S3 (Datalab/Onyxia) pour les données sources et notices |
 | `MLFLOW_TRACKING_URI`, `MLFLOW_MODEL_URI` | Chargement du modèle supervisé de production par `SupervisedClassifier` |
+| `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` | Traçage applicatif Langfuse (voir ci-dessous) |
 
 Le traçage applicatif (sessions, coûts, latence, arbre d'appels des agents) est assuré par **Langfuse** (`get_client`, `propagate_attributes`, `@observe` dans `src/main.py`).
+
+### 6.1 Traçage Langfuse — chantiers restants **[à compléter]**
+
+Audit du 8/07 : le traçage fonctionne pour `classify_agentic_rag`, `classify_supervised` et `process_batch_file` (`@observe` actif, appels LLM individuels journalisés via `langfuse.openai.AsyncOpenAI` dans `base_agent.py`), mais reste incomplet sur plusieurs points, à traiter avant de présenter le traçage comme un acquis :
+
+- **`classify_navigator` n'est pas tracé** (`@observe` commenté dans `src/main.py`) alors que c'est le chemin agentique principal (cf. cadrage §2.1) — chaque appel LLM est bien journalisé individuellement mais sans trace/span parent qui les relie en un arbre de raisonnement cohérent.
+- **Les échecs de finalisation de `_run_navigator_loop` ne remontent plus comme des erreurs dans Langfuse** depuis l'ajout du repli `_fallback_output` (`base_classifier.py`) : l'exception est journalisée en log applicatif seulement, la trace Langfuse correspondante apparaît comme un succès normal (confiance 0.0) plutôt que marquée en erreur.
+- **`--experiment-name` n'est pas réellement propagé au traçage Langfuse** malgré ce qu'indique le §4 : la valeur circule comme argument/log applicatif mais n'est jamais attachée à la trace (nom, tag ou métadonnée), donc impossible de filtrer/grouper les runs par expérience dans l'UI Langfuse.
+- Pas de `langfuse.flush()`/`shutdown()` explicite avant la sortie du script CLI (repose sur le hook `atexit` du SDK, suffisant en usage normal mais fragile en cas d'arrêt forcé d'un job batch).
 
 **Piège fréquent sur `MLFLOW_MODEL_URI`** : ce n'est pas le lien de la page MLflow ouverte dans le navigateur, mais une URI au schéma `models:` — ex. `models:/FastText-pytorch/9` (pas `https://.../#/models/FastText-pytorch/versions/9`). Et `MLFLOW_TRACKING_URI` doit pointer vers le serveur MLflow où ce modèle est **effectivement enregistré** (le plus souvent l'instance MLflow partagée du projet, ex. `projet-ape-mlflow.user.lab.sspcloud.fr`) — pas nécessairement l'instance MLflow personnelle par défaut sur le Datalab, qui n'a pas accès au registre d'un autre projet. `SupervisedClassifier` lève une erreur explicite si `MLFLOW_MODEL_URI` est un lien `http(s)://` plutôt qu'une URI `models:`.
 
@@ -180,6 +204,7 @@ Cette section documentera, une fois formalisée, le mode opératoire complet pou
 Recensées ici pour mémoire (suivi détaillé dans le document de cadrage) :
 
 - Les composants branchés le 6/07 (classifieur *Agentic RAG* dans la CLI, chaînage `--verify`, harnais `run_eval`) n'ont pas encore été évaluées.
+- **L'espace d'embedding utilisé par l'Agentic RAG comme *warm start* est de très mauvaise qualité avec le modèle actuellement configuré** (`EMBEDDING_MODEL=qwen3-embedding-8b`) : premier diagnostic formalisé le 8/07 (`evaluate_embeddings.py`, cf. §5.2) — accuracy@1 = recall@5 = 0 % sur l'échantillon annoté de 30 libellés (ex. « FOOTBALL FEMININ » classé 373ᵉ/747 par similarité cosinus à sa propre notice). Cause probable non tranchée : modèle d'embedding non adapté au domaine, ou format d'instruction attendu par ce modèle (Qwen3-Embedding est *instruction-tuned*) différent du préfixe générique `"query : "` actuellement câblé dans `Graph.get_closest_codes`. À investiguer avant de considérer l'Agentic RAG comme fiable.
 - `SupervisedClassifier` (modèle de production via MLflow) est également non validé fonctionnellement : le parsing de la sortie `.predict()` est écrit pour plusieurs formats plausibles mais n'a pas pu être testé contre le modèle réel dans cet environnement (pas d'accès au tracking MLflow).
 - La CI couvre lint, syntaxe et tests unitaires purs (dont le module `drift.py`, testé sur données synthétiques), mais **pas de tests d'intégration** (agents + graphe + MLflow) : ils nécessiteraient les services correspondants dans le workflow. `tests/test_connections.py` comble partiellement ce manque en local/Datalab (smoke tests skippés si les identifiants sont absents).
 ---

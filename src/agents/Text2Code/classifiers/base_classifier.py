@@ -1,6 +1,8 @@
 import logging
 import os
 
+from langfuse import get_client
+
 from agents import Runner
 from agents.model_settings import ModelSettings
 from src.agents.base_agent import BaseAgent
@@ -125,9 +127,18 @@ class BaseClassifier(BaseAgent):
         try:
             result = await Runner.run(self.finalize_agent, conversation, max_turns=2)
             final_output = result.final_output
-        except Exception:
+        except Exception as e:
             logger.exception(
                 "Navigator loop: finalize call failed, falling back to current position"
+            )
+            # Don't re-raise: the fallback below lets the caller's batch loop continue
+            # to the next query. But without this, the exception being swallowed here
+            # means the enclosing @observe span (classify_navigator/classify_agentic_rag)
+            # completes as a normal success in Langfuse — flag it as an error explicitly
+            # so it's visible/filterable there instead of only in application logs.
+            get_client().update_current_span(
+                level="ERROR",
+                status_message=f"Finalize call failed, fell back to last position: {e}",
             )
             final_output = self._fallback_output(activity)
 

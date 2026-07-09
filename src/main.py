@@ -19,7 +19,7 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
-# @observe
+@observe
 async def classify_navigator(
     query: str | list[str], experiment_name: str = "Navigator Classification"
 ):
@@ -32,13 +32,16 @@ async def classify_navigator(
     Returns:
         Single result dict if query is str, list of result dicts if query is list
     """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     # Normalize input to always work with a list
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
 
     logger.info(f"Navigator classification: {len(queries)} query/queries")
 
-    # TODO: add the management for exp_name
     navigator = Navigator(neo4j_config)
 
     results = []
@@ -73,6 +76,10 @@ async def classify_agentic_rag(
     Returns:
         Single MatchVerificationInput if query is str, list of them if query is list
     """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
 
@@ -109,6 +116,10 @@ async def classify_supervised(
     Returns:
         Single MatchVerificationInput if query is str, list of them if query is list
     """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     queries = [query] if isinstance(query, str) else query
     is_single = isinstance(query, str)
 
@@ -146,6 +157,10 @@ async def process_batch_file(
     filepath: str, method_func, experiment_name: str, verifier: MatchVerifier | None = None
 ):
     """Process a batch file with queries"""
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
     logger.info(f"Processing batch file: {filepath}")
 
     with open(filepath, "r", encoding="utf-8") as f:

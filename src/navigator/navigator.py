@@ -2,14 +2,14 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from agents import function_tool
-from src.neo4j_graph.graph import Graph, Neo4JConfig, _unfreeze_dict, _unfreeze_list_of_dicts
+from src.neo4j_graph.graph import Graph, Neo4JConfig
 
 logger = logging.getLogger(__name__)
 
 
 def make_tools(navigator):
     def _children_summary(code: str) -> List[Dict[str, Any]]:
-        children_found = _unfreeze_list_of_dicts(navigator._cached_get_children(code))
+        children_found = navigator.get_children(code)
         keys_to_keep = ["code", "name", "is_final"]
         return [{k: d[k] for k in keys_to_keep} for d in children_found]
 
@@ -47,7 +47,7 @@ def make_tools(navigator):
             return result
 
         # Cas normal (pas root)
-        data = _unfreeze_dict(navigator._cached_get_code_information(navigator.current_code))
+        data = navigator.get_code_information(navigator.current_code)
         if not data:
             logger.warning(f"No data for code: {navigator.current_code}")
             return {
@@ -81,7 +81,7 @@ def make_tools(navigator):
         """
         logger.info(f"Navigator: get_code_information called with code {code}")
 
-        data = navigator._cached_get_code_information(code)
+        data = navigator.get_code_information(code)
 
         if not data:
             logger.info(f"No data for the code: {code}")
@@ -90,8 +90,6 @@ def make_tools(navigator):
                 "error": f"Code {code} not found",
                 "current_position": navigator.current_code,
             }
-
-        data = _unfreeze_dict(data)
 
         filtered_data = {
             "success": True,
@@ -133,7 +131,7 @@ def make_tools(navigator):
             Liste des siblings du noeud courant
         """
         logger.info("Navigator: get_current_siblings called")
-        result = _unfreeze_list_of_dicts(navigator._cached_get_siblings(navigator.current_code))
+        result = navigator.get_siblings(navigator.current_code)
         logger.info(f"get_current_siblings: Data sent to the llm: {result}")
         return result
 
@@ -146,8 +144,7 @@ def make_tools(navigator):
             Dictionnaire du parent ou None si pas de parent
         """
         logger.info("Navigator: get_current_parent called")
-        data = navigator._cached_get_parent(navigator.current_code)
-        result = _unfreeze_dict(data) if data else None
+        result = navigator.get_parent(navigator.current_code)
         logger.info(f"get_current_parent: Data sent to the llm: {result}")
         return result
 
@@ -200,7 +197,7 @@ def make_tools(navigator):
             Résultat de la navigation avec informations du parent et ses enfants
         """
         logger.info("Navigator: go_to_parent called")
-        parent_info = _unfreeze_dict(navigator._cached_get_parent(navigator.current_code))
+        parent_info = navigator.get_parent(navigator.current_code)
         if parent_info is None:
             logger.warning("parent_info is None, go_to_parent failed")
             return {
@@ -249,7 +246,7 @@ def make_tools(navigator):
         """
         logger.info(f"Navigator: go_to_child called with child_code: {child_code}")
 
-        children = _unfreeze_list_of_dicts(navigator._cached_get_children(navigator.current_code))
+        children = navigator.get_children(navigator.current_code)
         child_codes = [child["code"] for child in children]
 
         if child_code not in child_codes:
@@ -347,5 +344,5 @@ class Navigator(Graph):
         (never from the model's self-reported completion)."""
         if self.current_code == "root":
             return False
-        data = _unfreeze_dict(self._cached_get_code_information(self.current_code))
+        data = self.get_code_information(self.current_code)
         return bool(data.get("is_final")) if data else False
