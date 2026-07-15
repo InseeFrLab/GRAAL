@@ -23,6 +23,7 @@ import polars as pl
 from src.evaluation.config import PATH_EVAL_INPUT, PATH_EVAL_OUTPUT
 from src.evaluation.metrics import normalize_code
 from src.utils.logging import configure_logging
+from src.utils.storage import get_file_system
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -34,15 +35,8 @@ def load_dataframe(path: str) -> pl.DataFrame:
         logger.info(f"Loading local parquet: {path}")
         return pl.read_parquet(path)
 
-    import s3fs
-
     logger.info(f"Loading parquet from S3: {path}")
-    fs = s3fs.S3FileSystem(
-        client_kwargs={"endpoint_url": os.environ["AWS_ENDPOINT_URL"]},
-        key=os.environ["AWS_ACCESS_KEY_ID"],
-        secret=os.environ["AWS_SECRET_ACCESS_KEY"],
-        token=os.environ["AWS_SESSION_TOKEN"],
-    )
+    fs = get_file_system()
     with fs.open(path, "rb") as f:
         return pl.read_parquet(f)
 
