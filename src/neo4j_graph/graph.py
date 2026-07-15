@@ -196,6 +196,26 @@ class Graph:
         )
         return [item.metadata["CODE"] for item in retrieval]
 
+    def get_summary_tree(self, max_level: int) -> List[Dict[str, Any]]:
+        """Retourne tous les codes de niveau 1 à `max_level` (racine exclue), triés par
+        niveau puis code, avec leur parent direct.
+
+        Sert de matière première à `build_nace_summary.py`, appelé une seule fois à la
+        construction du résumé (pas un lookup à la volée) : pas de mise en cache, à la
+        différence des autres méthodes de cette classe.
+        """
+        query = """
+        MATCH (node)
+        WHERE node.LEVEL > 0 AND node.LEVEL <= $max_level
+        OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
+        RETURN node.CODE as code,
+               node.LEVEL as level,
+               node.NAME as name,
+               parent.CODE as parent_code
+        ORDER BY node.LEVEL, node.CODE
+        """
+        return self.graph.query(query, params={"max_level": max_level})
+
     # ------------------------------------------------------------------
     # Cache management
     # ------------------------------------------------------------------
@@ -219,7 +239,8 @@ class Graph:
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
-        WITH node, parent, collect({code: child.CODE, name: child.NAME}) as children
+        WITH node, parent,
+            [c IN collect(child) WHERE c IS NOT NULL | {code: c.CODE, name: c.NAME}] as children
         RETURN node.CODE as code,
             node.LEVEL as level,
             node.NAME as name,

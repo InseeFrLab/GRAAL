@@ -12,9 +12,19 @@ Le rappel/précision sont dérivés en traitant le jugement humain comme la
 vérité terrain sur le match réel : si l'humain dit "right", le label réel vaut
 le verdict du vérificateur ; s'il dit "wrong", le label réel est l'inverse.
 
-Nécessite Neo4j configuré dans l'environnement pour afficher la notice du
-code (comme src.main) ; sans connexion, la revue reste possible mais sans
-notice.
+Quand le vérificateur affirme un mismatch (llm_is_match = False), la revue
+affiche en plus, pour aider à juger, la proposition indépendante du
+SummaryAgenticClassifier pour ce même libellé, avec la notice officielle du
+code qu'il propose. Cette proposition n'est pas calculée ici : elle est déjà
+présente dans le parquet d'entrée (colonnes summary_code/summary_confidence/
+summary_explanation), calculée une fois pour toutes par
+src.evaluation.verify_train_labels au moment même où celui-ci appelle
+MatchVerifier — pas d'appel agentique dans cette appli, juste une lecture de
+colonnes (absentes ou nulles : pas de proposition affichée, sans erreur).
+
+Nécessite Neo4j configuré dans l'environnement pour afficher les notices (du
+code de vérité terrain et du code proposé, comme src.main) ; sans connexion,
+la revue reste possible mais sans notice.
 
 Usage :
     uv run -m src.evaluation.human_review_app \
@@ -33,8 +43,10 @@ from datetime import datetime, timezone
 import polars as pl
 from flask import Flask, redirect, render_template_string, url_for
 
+from src.agents.closers.match_verifier import MatchVerificationInput
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
+from src.utils import storage
 from src.utils.logging import configure_logging
 
 configure_logging()
@@ -49,9 +61,14 @@ def row_id_for(libelle: str, code: str) -> str:
 
 
 def load_rows(input_path: str, n: int | None, seed: int) -> list[dict]:
-    df = pl.read_parquet(input_path)
+    with storage.open_path(input_path, "rb") as f:
+        df = pl.read_parquet(f)
     if n is not None and n < len(df):
         df = df.sample(n=n, seed=seed)
+    # summary_code/summary_confidence/summary_explanation (SummaryAgenticClassifier's
+    # second opinion, precomputed by verify_train_labels for mismatch rows) are
+    # optional: absent on a parquet produced before that column was added.
+    has_summary_columns = "summary_code" in df.columns
     return [
         {
             "row_id": row_id_for(r["libelle"], r["nace2025"]),
@@ -60,6 +77,9 @@ def load_rows(input_path: str, n: int | None, seed: int) -> list[dict]:
             "llm_is_match": bool(r["llm_is_match"]),
             "llm_confidence": r["llm_confidence"],
             "llm_explanation": r["llm_explanation"],
+            "summary_code": r["summary_code"] if has_summary_columns else None,
+            "summary_confidence": r["summary_confidence"] if has_summary_columns else None,
+            "summary_explanation": r["summary_explanation"] if has_summary_columns else None,
         }
         for r in df.to_dicts()
     ]
@@ -67,9 +87,9 @@ def load_rows(input_path: str, n: int | None, seed: int) -> list[dict]:
 
 def load_judgments(output_path: str) -> dict[str, dict]:
     judgments = {}
-    if not os.path.exists(output_path):
+    if not storage.path_exists(output_path):
         return judgments
-    with open(output_path, encoding="utf-8") as f:
+    with storage.open_path(output_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -80,8 +100,8 @@ def load_judgments(output_path: str) -> dict[str, dict]:
 
 
 def append_judgment(output_path: str, entry: dict) -> None:
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    with open(output_path, "a", encoding="utf-8") as f:
+    storage.makedirs(os.path.dirname(output_path) or ".")
+    with storage.open_path(output_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
@@ -160,6 +180,24 @@ def get_code_notice(code: str) -> dict | None:
             logger.exception(f"Failed to fetch code information for {code}")
     _code_notice_cache[code] = notice
     return notice
+
+
+def summary_prediction_for(row: dict) -> MatchVerificationInput | None:
+    """Reconstructs the SummaryAgenticClassifier second opinion from the row's
+    summary_code/summary_confidence/summary_explanation columns (precomputed by
+    verify_train_labels, cf. module docstring). Returns None when the row has no
+    proposal: a match row (never computed), an older parquet without the columns, or
+    a mismatch row where the classifier call failed at verification time.
+    """
+    code = row.get("summary_code")
+    if not code:
+        return None
+    return MatchVerificationInput(
+        activity=row["libelle"],
+        code=code,
+        proposed_explanation=row.get("summary_explanation"),
+        proposed_confidence=row.get("summary_confidence"),
+    )
 
 
 STYLE = """
@@ -272,6 +310,28 @@ REVIEW_TEMPLATE = (
   <div class="label">Justification du MatchVerifier</div>
   <div>{{ row.llm_explanation }}</div>
 </div>
+
+{% if not row.llm_is_match %}
+<div class="card">
+  <div class="label">Proposition indépendante (Summary Agentic Classifier)</div>
+  {% if summary_prediction %}
+    <div style="margin-bottom: 1rem;">
+      <span class="code-badge">{{ summary_prediction.code }}</span>
+      {% if summary_code_notice %} &mdash; {{ summary_code_notice.name }}{% endif %}
+      {% if summary_prediction.proposed_confidence is not none %}
+        <span class="muted"> (confiance : {{ "%.0f"|format(summary_prediction.proposed_confidence * 100) }}%)</span>
+      {% endif %}
+    </div>
+    <div>{{ summary_prediction.proposed_explanation }}</div>
+    {% if summary_code_notice %}
+      <div class="label" style="margin-top: 1rem;">Notice officielle de ce code</div>
+      <div class="notice">{{ summary_code_notice.description or "(pas de description)" }}</div>
+    {% endif %}
+  {% else %}
+    <div class="muted">Proposition indisponible (non calculée pour ce libellé, cf. verify_train_labels).</div>
+  {% endif %}
+</div>
+{% endif %}
 
 <div class="actions">
   <a href="{{ url_for('judge', row_id=row.row_id, verdict='right') }}" class="btn-right">&#10003; Verdict correct</a>
@@ -390,12 +450,18 @@ def create_app(
         row = rows_by_id[row_id]
         judgments = load_judgments(output_path)
         notice = get_code_notice(row["nace2025"])
+        summary_prediction = summary_prediction_for(row)
+        summary_code_notice = (
+            get_code_notice(summary_prediction.code) if summary_prediction is not None else None
+        )
         idx = order.index(row_id)
         existing = judgments.get(row_id)
         return render_template_string(
             REVIEW_TEMPLATE,
             row=row,
             notice=notice,
+            summary_prediction=summary_prediction,
+            summary_code_notice=summary_code_notice,
             idx=idx + 1,
             total=len(order),
             n_reviewed=len(judgments),

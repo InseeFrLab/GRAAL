@@ -28,6 +28,18 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     methods.add_argument(
+        "--summary",
+        type=str,
+        nargs="?",
+        const="Boulangerie",
+        default=None,
+        metavar="QUERY",
+        help=(
+            "Classify with the NACE summary given upfront, letting the model choose "
+            "freely which tool/code to query and when to stop. Default query: 'Boulangerie'"
+        ),
+    )
+    methods.add_argument(
         "--supervised",
         type=str,
         nargs="?",

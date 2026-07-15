@@ -25,7 +25,13 @@ import polars as pl
 from src.evaluation.bootstrap import bootstrap_ci
 from src.evaluation.config import PATH_EVAL_OUTPUT
 from src.evaluation.metrics import accuracy_at_depth, evaluate
-from src.main import classify_agentic_rag, classify_navigator, classify_supervised
+from src.main import (
+    classify_agentic_rag,
+    classify_navigator,
+    classify_summary,
+    classify_supervised,
+)
+from src.utils import storage
 from src.utils.logging import configure_logging
 
 configure_logging()
@@ -34,6 +40,7 @@ logger = logging.getLogger(__name__)
 METHODS = {
     "navigator": classify_navigator,
     "agentic-rag": classify_agentic_rag,
+    "summary": classify_summary,
     # Reference baseline: production model, for the Navigator/Agentic-RAG/supervised
     # comparison called for in the cadrage's note de conception (§3.3-B).
     "supervised": classify_supervised,
@@ -41,7 +48,8 @@ METHODS = {
 
 
 async def run(args) -> int:
-    df = pl.read_parquet(args.eval_set)
+    with storage.open_path(args.eval_set, "rb") as f:
+        df = pl.read_parquet(f)
     df = df.sample(fraction=args.fraction)
     labels = df[args.text_column].to_list()
     y_true = df[args.code_column].to_list()
@@ -56,8 +64,27 @@ async def run(args) -> int:
         )
         weights = None
 
+    storage.makedirs(args.output_dir)
     method = METHODS[args.method]
-    predictions = await method(labels)
+
+    # Predictions are checkpointed to disk as they're produced (one JSONL line per
+    # label, flushed immediately) instead of only written after the whole batch
+    # succeeds: classify_navigator/classify_agentic_rag/classify_supervised already
+    # process labels one at a time internally, so calling them one label at a time
+    # here is equivalent to the previous bulk call, not just a wrapper around it — and
+    # it means a crash partway through (e.g. an unhandled error reaching the LLM
+    # endpoint) loses only what's unflushed, not every prediction gathered so far.
+    # Note: when --output-dir is an s3:// path, this durability guarantee is weaker —
+    # s3fs buffers writes and only uploads on close, so a crash still loses everything
+    # written since the checkpoint file was opened.
+    checkpoint_path = os.path.join(args.output_dir, f"predictions_{args.method}.checkpoint.jsonl")
+    predictions = []
+    with storage.open_path(checkpoint_path, "w", encoding="utf-8") as ckpt:
+        for label in labels:
+            pred = await method(label)
+            predictions.append(pred)
+            ckpt.write(pred.model_dump_json() + "\n")
+            ckpt.flush()
 
     # Les classifieurs renvoient des MatchVerificationInput ; un échec (pas de
     # code final atteint) est représenté par une prédiction sans code. Une
@@ -101,19 +128,20 @@ async def run(args) -> int:
 
     logger.info(f"Metrics: {report}")
 
-    os.makedirs(args.output_dir, exist_ok=True)
-
     details = df.with_columns(
         pl.Series("prediction", y_pred),
         pl.Series("explanation", explanations),
         pl.Series("confidence", confidences),
     )
     details_path = os.path.join(args.output_dir, f"predictions_{args.method}.parquet")
-    details.write_parquet(details_path)
+    with storage.open_path(details_path, "wb") as f:
+        details.write_parquet(f)
 
     report_path = os.path.join(args.output_dir, f"metrics_{args.method}.json")
-    with open(report_path, "w", encoding="utf-8") as f:
+    with storage.open_path(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
+
+    storage.remove(checkpoint_path)
 
     print(json.dumps(report, indent=2, ensure_ascii=False))
     logger.info(f"Predictions written to {details_path}, metrics to {report_path}")
