@@ -22,6 +22,7 @@ import os
 
 import polars as pl
 
+from src.agents.closers.match_verifier import MatchVerificationInput
 from src.evaluation.bootstrap import bootstrap_ci
 from src.evaluation.config import PATH_EVAL_OUTPUT
 from src.evaluation.metrics import accuracy_at_depth, evaluate
@@ -81,7 +82,21 @@ async def run(args) -> int:
     predictions = []
     with storage.open_path(checkpoint_path, "w", encoding="utf-8") as ckpt:
         for label in labels:
-            pred = await method(label)
+            try:
+                pred = await method(label)
+            except Exception as e:
+                # Not every classifier has BaseClassifier's own try/except+fallback
+                # (e.g. SummaryAgenticClassifier is a single free-running Runner.run
+                # with no Python-owned guard rail — cf. its docstring), so an error
+                # reaching the LLM endpoint (e.g. openai.APITimeoutError) can still
+                # propagate here. Record it as a failed prediction instead of losing
+                # the rest of the batch: code="" reads as a missing prediction in
+                # evaluate() (cf. normalize_code), the same convention classifiers'
+                # own fallbacks use for "no final code reached".
+                logger.exception(f"Classification failed for {label!r}, recording as a failure")
+                pred = MatchVerificationInput(
+                    activity=label, code="", proposed_explanation=str(e), proposed_confidence=0.0
+                )
             predictions.append(pred)
             ckpt.write(pred.model_dump_json() + "\n")
             ckpt.flush()
