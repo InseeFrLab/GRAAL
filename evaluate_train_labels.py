@@ -231,3 +231,5 @@ relabeling_candidates = comparison[
 print(f"\n{len(relabeling_candidates)} candidate(s) for relabeling:")
 for _, r in relabeling_candidates.iterrows():
     print(f"  {r['libelle']!r}: {r['nace2025']} -> {r['chooser_code']} ({r['chooser_explanation']})")
+
+# %%

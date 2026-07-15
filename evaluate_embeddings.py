@@ -39,6 +39,7 @@ from sklearn.neighbors import NearestNeighbors
 from src.neo4j_graph.graph_builder.config import COLUMNS_TO_KEEP, MAX_TOKENS, URL_EMBEDDING_API
 from src.neo4j_graph.graph_builder.utils.embed_manager import truncate_docs_to_max_tokens
 from src.neo4j_graph.graph_builder.utils.notice_manager import load_notices
+from src.utils import storage
 
 # %% Config
 # Add more model names deployed behind URL_EMBEDDING_API to compare them.
@@ -110,6 +111,7 @@ def load_leaf_notices(path: str, include_excludes: bool = False) -> pd.DataFrame
     for level, colname in LEVEL_NAMES.items():
         df[colname] = df["CODE"].map(lambda c, lvl=level: ancestor_at_level(c, lvl))
     df["SECTION_NAME"] = df["SECTION"].map(lambda c: ancestors[c].NAME if c in ancestors else "?")
+    df["DIVISION_NAME"] = df["DIVISION"].map(lambda c: ancestors[c].NAME if c in ancestors else "?")
     df["CODE"] = df["CODE"].map(normalize_code)
     df["text_to_embed"] = (
         df["NAME"].fillna("")
@@ -166,6 +168,66 @@ def score_retrieval(
         "mean_cosine_sim_incorrect": float(np.mean(incorrect_sims)) if incorrect_sims else None,
     }
     return metrics, edges
+
+
+def compute_hierarchical_accuracy(
+    indices: np.ndarray, notice_codes: list[str], target_codes: list[str], notices_df: pd.DataFrame
+) -> dict:
+    """accuracy@1 only counts an exact leaf-code match — a top-1 that's wrong at the leaf
+    but right at section/division/group/class is a much smaller miss than one in a totally
+    unrelated branch. This checks the top-1 retrieved notice against the target at every
+    taxonomy level, reusing the SECTION/DIVISION/GROUP/CLASS columns already computed by
+    load_leaf_notices rather than re-deriving ancestors."""
+    code_to_level = {
+        colname: dict(zip(notices_df["CODE"], notices_df[colname]))
+        for colname in ["SECTION", "DIVISION", "GROUP", "CLASS"]
+    }
+    n = len(target_codes)
+    hits = dict.fromkeys(code_to_level, 0)
+    hits["code"] = 0
+    for label_idx, target in enumerate(target_codes):
+        top1_code = notice_codes[indices[label_idx][0]]
+        hits["code"] += int(top1_code == target)
+        for colname, mapping in code_to_level.items():
+            hits[colname] += int(mapping.get(top1_code) == mapping.get(target))
+    return {level.lower(): count / n for level, count in hits.items()}
+
+
+def compute_worst_offenders(
+    eval_df: pd.DataFrame,
+    notice_codes: list[str],
+    notice_embeddings: np.ndarray,
+    label_embeddings: np.ndarray,
+    indices: np.ndarray,
+    top_n: int = 20,
+) -> list[dict]:
+    """Ranks libellés by similarity to their OWN correct notice (not to whatever was
+    actually retrieved) — the lowest-similarity cases are libellés where even the right
+    answer doesn't look similar to the query at all, a stronger signal of a genuine
+    embedding/labeling problem than "wrong top-1" alone (which could just mean a close
+    competitor edged out the correct notice)."""
+    code_to_idx = {code: i for i, code in enumerate(notice_codes)}
+    norm_labels = label_embeddings / np.linalg.norm(label_embeddings, axis=1, keepdims=True)
+    norm_notices = notice_embeddings / np.linalg.norm(notice_embeddings, axis=1, keepdims=True)
+
+    rows = []
+    for i, (libelle, target) in enumerate(zip(eval_df["libelle"], eval_df["apet2025"])):
+        target_idx = code_to_idx.get(target)
+        if target_idx is None:
+            continue  # target code isn't among the leaf notices (shouldn't normally happen)
+        sim_to_correct = float(norm_labels[i] @ norm_notices[target_idx])
+        top1_code = notice_codes[indices[i][0]]
+        rows.append(
+            {
+                "libelle": libelle,
+                "cible": target,
+                "notice_top1": top1_code,
+                "sim_cible": sim_to_correct,
+                "correct": top1_code == target,
+            }
+        )
+    rows.sort(key=lambda r: r["sim_cible"])
+    return rows[:top_n]
 
 
 # %% Tree-structure cohesion
@@ -387,6 +449,69 @@ def build_level_cohesion_figure(cohesion_by_level: dict) -> go.Figure:
     fig.update_layout(
         title="Cohésion intra-groupe par niveau de granularité (siblings vs. paires aléatoires)",
         yaxis_title="ratio de cohésion (>1 = siblings plus proches que des paires aléatoires)",
+    )
+    return fig
+
+
+def build_hierarchical_accuracy_figure(hierarchical_accuracy: dict) -> go.Figure:
+    """One bar per taxonomy level (code = exact leaf) showing how often the top-1 retrieved
+    notice matches the target at that level — since a coarser level is always at least as
+    easy to get right as a finer one, bars should increase monotonically toward Section;
+    a dip would indicate something structurally off rather than just gradual difficulty."""
+    order = ["code", "class", "group", "division", "section"]
+    labels = [LEVEL_LABELS[level.upper()] if level != "code" else "Code exact" for level in order]
+    values = [hierarchical_accuracy[level] for level in order]
+
+    fig = go.Figure(
+        go.Bar(
+            x=labels,
+            y=values,
+            text=[f"{v:.1%}" for v in values],
+            textposition="outside",
+            marker_color="steelblue",
+        )
+    )
+    fig.update_layout(
+        title="Précision du top-1 par niveau de granularité",
+        yaxis_title="précision (le retrieved top-1 correspond-il à la cible à ce niveau ?)",
+        yaxis_tickformat=".0%",
+    )
+    return fig
+
+
+def build_similarity_distribution_figure(edges: list[tuple]) -> go.Figure:
+    """Distribution (not just the two means already in mean_cosine_sim_correct/incorrect) of
+    k-NN cosine similarity, split by correct vs. incorrect — reveals whether there's a usable
+    confidence threshold (little overlap) or the two distributions are hard to tell apart
+    (heavy overlap), which is what actually determines if a similarity cutoff could flag
+    low-confidence retrievals for the downstream LLM navigator rather than trusting top-1."""
+    correct_sims = [1 - dist for _, _, dist, is_correct in edges if is_correct]
+    incorrect_sims = [1 - dist for _, _, dist, is_correct in edges if not is_correct]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Violin(
+            y=correct_sims,
+            name="Correct",
+            box_visible=True,
+            meanline_visible=True,
+            line_color="rgba(50, 130, 50, 0.9)",
+            fillcolor="rgba(50, 205, 50, 0.3)",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=incorrect_sims,
+            name="Incorrect",
+            box_visible=True,
+            meanline_visible=True,
+            line_color="rgba(70, 110, 180, 0.9)",
+            fillcolor="rgba(100, 150, 255, 0.3)",
+        )
+    )
+    fig.update_layout(
+        title="Distribution des similarités cosinus : k-NN corrects vs. incorrects",
+        yaxis_title="similarité cosinus",
     )
     return fig
 
@@ -706,6 +831,7 @@ def compute_model_diagnostics(
     eval_df: pd.DataFrame,
     notices_df: pd.DataFrame,
     run_label: str | None = None,
+    notice_embeddings: np.ndarray | None = None,
 ) -> dict:
     """The compute phase only: embeddings, retrieval scoring, cohesion/confusion/gap
     metrics, and the raw data figure-builders need — no HTML/figure construction. Split
@@ -714,14 +840,20 @@ def compute_model_diagnostics(
     duplicating this logic. run_label distinguishes console/report naming from the actual
     model_name passed to the embedding API — used to run the same model against multiple
     notices_df variants (e.g. baseline vs. with Excludes appended) without re-tagging the
-    underlying embedding model itself."""
+    underlying embedding model itself. notice_embeddings can be passed in to skip re-
+    embedding notices_df — e.g. reuse the embeddings from a small eval_df run (used for a
+    readable plot) when computing metrics again against a much larger eval_df (used for
+    statistically sturdier accuracy/recall/confusion numbers): notices_df doesn't change
+    between those two calls, only eval_df does, so there's no need to pay for the (far more
+    expensive, since there are many more notices than labels) notice embedding call twice."""
     run_label = run_label or model_name
     print(f"\n=== {run_label} ===")
     emb_model = build_embedding_model(model_name)
 
-    notice_texts = truncate_texts(notices_df["text_to_embed"].tolist(), MAX_TOKENS)
     notice_codes = notices_df["CODE"].tolist()
-    notice_embeddings = np.array(emb_model.embed_documents(notice_texts))
+    if notice_embeddings is None:
+        notice_texts = truncate_texts(notices_df["text_to_embed"].tolist(), MAX_TOKENS)
+        notice_embeddings = np.array(emb_model.embed_documents(notice_texts))
     # Mirrors the "query : {activity}" prefix used at retrieval time in
     # src/neo4j_graph/graph.py:get_closest_codes — required for a fair comparison with
     # instruction-tuned/asymmetric embedding models (query vs. passage formatting).
@@ -733,6 +865,17 @@ def compute_model_diagnostics(
     )
     metrics, edges = score_retrieval(indices, distances, notice_codes, eval_df["apet2025"].tolist())
     print(json.dumps(metrics, indent=2))
+
+    hierarchical_accuracy = compute_hierarchical_accuracy(
+        indices, notice_codes, eval_df["apet2025"].tolist(), notices_df
+    )
+    print("Hierarchical accuracy:", json.dumps(hierarchical_accuracy, indent=2))
+    metrics["hierarchical_accuracy"] = hierarchical_accuracy
+
+    worst_offenders = compute_worst_offenders(
+        eval_df, notice_codes, notice_embeddings, label_embeddings, indices
+    )
+    metrics["worst_offenders"] = worst_offenders
 
     cohesion_by_level = {}
     for colname in LEVEL_NAMES.values():
@@ -785,6 +928,8 @@ def compute_model_diagnostics(
         "combined_embeddings": np.vstack([notice_embeddings, label_embeddings]),
         "notice_codes": notice_codes,
         "edges": edges,
+        "hierarchical_accuracy": hierarchical_accuracy,
+        "worst_offenders": worst_offenders,
         "cohesion_by_level": cohesion_by_level,
         "query_passage_gap": query_passage_gap,
         "section_matrix": section_matrix,
@@ -827,6 +972,18 @@ def evaluate_model(
     comparison_fig.update_layout(
         title_text=f"{run_label} — accuracy@1={metrics['accuracy_at_1']:.1%}, "
         f"recall@{K_NN}={metrics[f'recall_at_{K_NN}']:.1%}"
+    )
+    hierarchical_accuracy_fig = build_hierarchical_accuracy_figure(diag["hierarchical_accuracy"])
+    distribution_fig = build_similarity_distribution_figure(diag["edges"])
+    worst_offenders_html = render_table_html(
+        diag["worst_offenders"],
+        [
+            ("libelle", "Libellé"),
+            ("cible", "Cible"),
+            ("notice_top1", "Notice récupérée (top-1)"),
+            ("sim_cible", "Similarité à la cible"),
+            ("correct", "Top-1 correct ?"),
+        ],
     )
     heatmap_fig = build_similarity_heatmap(diag["notice_embeddings"], notices_df)
     level_fig = build_level_cohesion_figure(diag["cohesion_by_level"])
@@ -876,6 +1033,9 @@ def evaluate_model(
 
     sections = [
         ("Projections 2D (UMAP / PaCMAP / t-SNE / PCA)", PROJECTION_CAPTION, comparison_fig),
+        ("Précision par niveau hiérarchique", None, hierarchical_accuracy_fig),
+        ("Distribution des similarités (correct vs. incorrect)", None, distribution_fig),
+        ("Cas les plus problématiques", None, worst_offenders_html),
         ("Similarité cosinus entre notices (triée par arbre taxonomique)", None, heatmap_fig),
         ("Cohésion intra-groupe par niveau de granularité", None, level_fig),
         ("Confusion entre sections (chevauchement)", CONFUSION_CAPTION, confusion_fig),
@@ -894,9 +1054,10 @@ def evaluate_model(
     ]
     html = render_report_html(run_label, metrics, sections)
 
-    os.makedirs(output_dir, exist_ok=True)
+    storage.makedirs(output_dir)
     safe_name = run_label.replace("/", "_")
-    with open(os.path.join(output_dir, f"{safe_name}_comparison.html"), "w", encoding="utf-8") as f:
+    comparison_path = os.path.join(output_dir, f"{safe_name}_comparison.html")
+    with storage.open_path(comparison_path, "w", encoding="utf-8") as f:
         f.write(html)
 
     return metrics
@@ -933,8 +1094,8 @@ def main():
         print_excludes_comparison(baseline, with_excludes)
         summary[model] = {"baseline": baseline, "with_excludes": with_excludes}
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    with open(os.path.join(OUTPUT_DIR, "summary.json"), "w") as f:
+    storage.makedirs(OUTPUT_DIR)
+    with storage.open_path(os.path.join(OUTPUT_DIR, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(f"\nSummary written to {OUTPUT_DIR}/summary.json")
 

@@ -27,7 +27,7 @@ execute:
 
 ## Contexte
 
-Le classifieur Agentic RAG ([`src/agents/Text2Code/classifiers/agentic_rag.py`](https://github.com/InseeFrLab/GRAAL/blob/main/src/agents/Text2Code/classifiers/agentic_rag.py)) se sert d'une recherche par similarité entre le libellé d'activité à classer et les embeddings des notices de nomenclature stockées dans Neo4j ([`src/neo4j_graph/graph.py:get_closest_codes`](https://github.com/InseeFrLab/GRAAL/blob/main/src/neo4j_graph/graph.py)) pour choisir un code de départ. Cette page évalue la qualité de cette recherche indépendamment de la navigation LLM qui la suit, sur un petit échantillon annoté de 30 libellés, et regarde si l'espace d'embedding reflète la structure hiérarchique de la nomenclature NAF2025 (section → division → groupe → classe → sous-classe).
+Le classifieur Agentic RAG ([`src/agents/Text2Code/classifiers/agentic_rag.py`](https://github.com/InseeFrLab/GRAAL/blob/main/src/agents/Text2Code/classifiers/agentic_rag.py)) se sert d'une recherche par similarité entre le libellé d'activité à classer et les embeddings des notices de nomenclature stockées dans Neo4j ([`src/neo4j_graph/graph.py:get_closest_codes`](https://github.com/InseeFrLab/GRAAL/blob/main/src/neo4j_graph/graph.py)) pour choisir un code de départ. Cette page évalue la qualité de cette recherche indépendamment de la navigation LLM qui la suit, sur un échantillon annoté (30 libellés pour la projection 2D, l'échantillon complet pour les métriques — voir la note dans la Méthodologie), et regarde si l'espace d'embedding reflète la structure hiérarchique de la nomenclature NAF2025 (section → division → groupe → classe → sous-classe).
 
 Le code source complet est dans [`evaluate_embeddings.py`](https://github.com/InseeFrLab/GRAAL/blob/main/evaluate_embeddings.py) ; cette page réutilise directement ses fonctions plutôt que de dupliquer la logique.
 
@@ -44,6 +44,24 @@ $$
 $$
 
 où $\text{notice}_j(i)$ est la $j$-ème notice la plus proche du libellé $i$.
+
+### Précision par niveau hiérarchique
+
+L'accuracy@1 ci-dessus ne compte qu'une correspondance exacte de code (sous-classe). Un top-1 faux à ce niveau mais correct en section/division/groupe/classe est une erreur bien moins grave qu'un top-1 dans une branche complètement différente. Pour chaque niveau $\ell$ (du code exact jusqu'à la section) :
+
+$$
+\text{accuracy@1}_\ell = \frac{1}{N}\sum_{i=1}^N \mathbb{1}\left[\text{ancêtre}_\ell(\text{notice}_1(i)) = \text{ancêtre}_\ell(\text{cible}(i))\right]
+$$
+
+Ces précisions sont croissantes par construction à mesure que $\ell$ s'élargit (une section correcte est plus facile à obtenir qu'un code exact) ; un plateau ou une rupture de cette croissance signalerait un problème structurel plutôt qu'une difficulté croissante attendue.
+
+### Distribution des similarités correct / incorrect
+
+`mean_cosine_sim_correct`/`incorrect` ne donnent que deux moyennes. La distribution complète des similarités des arêtes $k$-NN, séparée par exactitude, montre si les deux populations se recouvrent beaucoup (aucun seuil de confiance exploitable) ou sont assez bien séparées (un seuil de similarité pourrait signaler les cas à faible confiance à renvoyer vers la navigation LLM plutôt que faire confiance au top-1).
+
+### Cas les plus problématiques
+
+Pour chaque libellé, on calcule sa similarité à sa **propre notice cible** (pas à ce qui a été récupéré) puis on trie par ordre croissant. Les valeurs les plus basses sont les libellés où même la bonne réponse ne ressemble pas du tout à la requête — un signal plus fort d'un vrai problème (embedding ou étiquetage) qu'un simple "top-1 faux", qui peut n'être qu'un concurrent proche ayant devancé de peu la bonne notice.
 
 ### Cohésion intra-groupe
 
@@ -69,11 +87,15 @@ Un indice proche de ou supérieur à 1 signifie que deux catégories différente
 
 ### Confusion observée en récupération
 
-À partir des mêmes voisins $k$-NN utilisés pour l'accuracy/recall, on ne garde que les arêtes incorrectes (notice récupérée ≠ notice cible), et on compte les paires (groupe réel → groupe récupéré à tort), en excluant les cas où les deux notices partagent le même groupe (erreur fine, pas une confusion inter-catégories). Indicatif seulement : l'échantillon annoté ne comporte que 30 libellés.
+À partir des mêmes voisins $k$-NN utilisés pour l'accuracy/recall, on ne garde que les arêtes incorrectes (notice récupérée ≠ notice cible), et on compte les paires (groupe réel → groupe récupéré à tort), en excluant les cas où les deux notices partagent le même groupe (erreur fine, pas une confusion inter-catégories).
+
+::: {.callout-note}
+Toutes les métriques ci-dessous (accuracy@1, recall@k, confusion en récupération, écart requête/passage) sont calculées sur l'échantillon annoté complet (`data/eval/eval_set.parquet`, plusieurs milliers de libellés — le nombre exact est affiché dans la section Résultats ci-dessous), pas seulement sur les 30 libellés utilisés pour la projection 2D — un échantillon nettement plus grand rend ces nombres bien plus robustes. La projection reste volontairement limitée à 30 points pour rester lisible ; la cohésion et la confusion inter-groupes ne dépendent, elles, que des notices, donc de la taille de l'échantillon de libellés.
+:::
 
 ### Écart requête / passage (libellés vs. notices)
 
-De nombreux modèles d'embedding de recherche (bi-encodeurs) sont entraînés pour classer la bonne passage devant les autres (*ranking* relatif), pas pour placer requêtes et passages au même endroit dans l'espace vectoriel (position absolue). On quantifie cet écart avec quatre nombres : la similarité intra-notices, la similarité intra-libellés, la similarité croisée libellé → notice (toutes paires), et la similarité des centroïdes :
+De nombreux modèles d'embedding de recherche (bi-encodeurs) sont entraînés pour classer le bon passage devant les autres (*ranking* relatif), pas pour placer requêtes et passages au même endroit dans l'espace vectoriel (position absolue). On quantifie cet écart avec quatre nombres : la similarité intra-notices, la similarité intra-libellés, la similarité croisée libellé → notice (toutes paires), et la similarité des centroïdes :
 
 $$
 \text{centroid\_similarity} = \cos\left(\ \bar{e}_{\text{libellés}},\ \bar{e}_{\text{notices}}\ \right)
@@ -103,7 +125,9 @@ from evaluate_embeddings import (
     EVAL_SAMPLE_PATH,
     build_comparison_figure,
     build_confusion_heatmap,
+    build_hierarchical_accuracy_figure,
     build_level_cohesion_figure,
+    build_similarity_distribution_figure,
     build_similarity_heatmap,
     compute_model_diagnostics,
     load_eval_sample,
@@ -113,19 +137,38 @@ from evaluate_embeddings import (
 
 MODEL_NAME = CANDIDATE_MODELS[0]
 
+EVAL_SET_FULL_PATH = "data/eval/eval_set.parquet"
+
+# eval_df (30 libellés) is used only for the 2D plot, to keep it readable; eval_df_full is
+# used for every numeric metric below (accuracy/recall/confusion/gap) — all 30 of eval_df's
+# libellés are a subset of eval_df_full's.
 eval_df = load_eval_sample(EVAL_SAMPLE_PATH)
+eval_df_full = load_eval_sample(EVAL_SET_FULL_PATH)
 notices_df = load_leaf_notices(NAF2025_NOTICES_PATH)
 notices_df_excludes = load_leaf_notices(NAF2025_NOTICES_PATH, include_excludes=True)
 
-print(f"{len(eval_df)} libellés annotés, {len(notices_df)} notices terminales (NAF2025)")
+print(
+    f"{len(eval_df)} libellés (plot) / {len(eval_df_full)} libellés (métriques), "
+    f"{len(notices_df)} notices terminales (NAF2025)"
+)
 ```
 
 ## Résultats — `{python} MODEL_NAME`
 
 ```{python}
 #| code-summary: "Calcul des diagnostics (baseline)"
+# diag: petit échantillon (30), utilisé uniquement pour la projection 2D (lisibilité).
 diag = compute_model_diagnostics(MODEL_NAME, eval_df, notices_df, run_label=f"{MODEL_NAME}_baseline")
-metrics = diag["metrics"]
+# diag_metrics: échantillon complet, réutilise les embeddings de notices déjà calculés —
+# seuls les libellés sont ré-embeddés. Source de toutes les métriques affichées plus bas.
+diag_metrics = compute_model_diagnostics(
+    MODEL_NAME,
+    eval_df_full,
+    notices_df,
+    run_label=f"{MODEL_NAME}_baseline_full",
+    notice_embeddings=diag["notice_embeddings"],
+)
+metrics = diag_metrics["metrics"]
 ```
 
 ### Précision de récupération
@@ -140,6 +183,51 @@ pd.DataFrame(
         {"métrique": "similarité cosinus moyenne (incorrect)", "valeur": f"{metrics['mean_cosine_sim_incorrect']:.3f}"},
     ]
 )
+```
+
+Calculé sur les `{python} len(eval_df_full)` libellés de l'échantillon complet.
+
+### Précision par niveau hiérarchique
+
+```{python}
+#| code-summary: "Figure : précision par niveau hiérarchique"
+build_hierarchical_accuracy_figure(diag_metrics["hierarchical_accuracy"])
+```
+
+```{python}
+#| code-summary: "Interprétation de la précision par niveau"
+hacc = diag_metrics["hierarchical_accuracy"]
+hacc_order = ["code", "class", "group", "division", "section"]
+hacc_is_increasing = all(
+    hacc[hacc_order[i]] <= hacc[hacc_order[i + 1]] for i in range(len(hacc_order) - 1)
+)
+hacc_sentence = (
+    "La précision croît bien à chaque niveau plus large, comme attendu : les erreurs du "
+    "top-1 se rapprochent donc majoritairement de la bonne réponse au fil de la hiérarchie, "
+    "plutôt que de partir dans une branche totalement différente."
+    if hacc_is_increasing
+    else "La précision ne croît pas strictement à chaque niveau : certaines erreurs de top-1 "
+    "atterrissent dans une branche différente même à un niveau large, ce qui mérite d'être "
+    "creusé (voir la carte de confusion inter-sections plus bas)."
+)
+```
+
+Code exact : `{python} f"{hacc['code']:.1%}"` · Classe : `{python} f"{hacc['class']:.1%}"` · Groupe : `{python} f"{hacc['group']:.1%}"` · Division : `{python} f"{hacc['division']:.1%}"` · Section : `{python} f"{hacc['section']:.1%}"`. `{python} hacc_sentence`
+
+### Distribution des similarités correct / incorrect
+
+```{python}
+#| code-summary: "Figure : distribution des similarités"
+build_similarity_distribution_figure(diag_metrics["edges"])
+```
+
+### Cas les plus problématiques
+
+Les 20 libellés dont la similarité à leur propre notice cible est la plus faible (échantillon complet) :
+
+```{python}
+#| code-summary: "Tableau : cas les plus problématiques"
+pd.DataFrame(diag_metrics["worst_offenders"]).round(3)
 ```
 
 ### Projections 2D
@@ -170,6 +258,26 @@ comparison_fig
 build_level_cohesion_figure(diag["cohesion_by_level"])
 ```
 
+```{python}
+#| code-summary: "Interprétation de la tendance de cohésion"
+cohesion_levels = ["section", "division", "group", "class"]
+cohesion_values = {lvl: diag["cohesion_by_level"][lvl]["cohesion_ratio"] for lvl in cohesion_levels}
+cohesion_is_increasing = all(
+    cohesion_values[cohesion_levels[i]] <= cohesion_values[cohesion_levels[i + 1]]
+    for i in range(len(cohesion_levels) - 1)
+)
+cohesion_trend_sentence = (
+    "C'est la progression attendue : plus le regroupement est fin, plus ses membres se "
+    "ressemblent, et l'embedding respecte donc la hiérarchie NAF à toutes les granularités "
+    "testées (sous-classe n'a volontairement pas de barre, cf. Méthodologie)."
+    if cohesion_is_increasing
+    else "Cette progression n'est pas strictement croissante à chaque niveau : l'embedding ne "
+    "respecte donc pas la hiérarchie de façon uniforme à toutes les granularités."
+)
+```
+
+Le ratio de cohésion passe de `{python} f"{cohesion_values['section']:.2f}"` au niveau section à `{python} f"{cohesion_values['division']:.2f}"` en division, `{python} f"{cohesion_values['group']:.2f}"` en groupe, puis `{python} f"{cohesion_values['class']:.2f}"` en classe. `{python} cohesion_trend_sentence`
+
 ### Similarité entre notices
 
 Similarité cosinus calculée dans l'espace haute dimension (non projeté), notices triées par chemin taxonomique (section → division → groupe → classe → code) — une structure en blocs emboîtés est la preuve visuelle directe que la hiérarchie est reflétée dans l'embedding.
@@ -189,29 +297,61 @@ build_confusion_heatmap(
 ```
 
 ```{python}
+#| code-summary: "Sections à un seul membre (cellules NaN)"
+section_counts = notices_df["SECTION"].value_counts()
+singleton_sections = section_counts[section_counts < 2]
+singleton_sentence = (
+    "Aucune section n'a un seul membre : la diagonale est entièrement renseignée."
+    if singleton_sections.empty
+    else "Section"
+    + ("s " if len(singleton_sections) > 1 else " ")
+    + ", ".join(
+        f"{code} ({notices_df.loc[notices_df['SECTION'] == code, 'SECTION_NAME'].iloc[0]}, "
+        f"{count} notice)"
+        for code, count in singleton_sections.items()
+    )
+    + " : une similarité *intra*-groupe suppose au moins 2 membres pour former une paire, donc "
+    "sa cellule diagonale (et elle seule) reste vide (NaN) sur la carte ci-dessus — pas un défaut "
+    "de calcul, juste l'absence d'une deuxième notice pour comparer."
+)
+```
+
+`{python} singleton_sentence`
+
+```{python}
 #| code-summary: "Tableau : sections les plus confondues"
-pd.DataFrame(diag["top_confusable_sections"]).round(3)
+section_names = dict(zip(notices_df["SECTION"], notices_df["SECTION_NAME"]))
+section_pairs = pd.DataFrame(diag["top_confusable_sections"]).round(3)
+section_pairs.insert(1, "nom_a", section_pairs["group_a"].map(section_names))
+section_pairs.insert(3, "nom_b", section_pairs["group_b"].map(section_names))
+section_pairs
 ```
 
 ```{python}
 #| code-summary: "Tableau : divisions les plus confondues"
-pd.DataFrame(diag["top_confusable_divisions"]).round(3)
+division_names = dict(zip(notices_df["DIVISION"], notices_df["DIVISION_NAME"]))
+division_pairs = pd.DataFrame(diag["top_confusable_divisions"]).round(3)
+division_pairs.insert(1, "nom_a", division_pairs["group_a"].map(division_names))
+division_pairs.insert(3, "nom_b", division_pairs["group_b"].map(division_names))
+division_pairs
 ```
 
 ### Confusions observées en récupération
 
-Échantillon de 30 libellés annotés — indicatif seulement.
-
 ```{python}
 #| code-summary: "Tableau : confusions de récupération"
-pd.DataFrame(diag["retrieval_confusion"])
+retrieval_confusion_df = pd.DataFrame(diag_metrics["retrieval_confusion"])
+retrieval_confusion_df.insert(1, "nom_réel", retrieval_confusion_df["true_group"].map(section_names))
+retrieval_confusion_df.insert(3, "nom_récupéré", retrieval_confusion_df["retrieved_group"].map(section_names))
+print(f"{len(retrieval_confusion_df)} paires de sections différentes confondues au moins une fois — 20 premières :")
+retrieval_confusion_df.head(20)
 ```
 
 ### Écart requête / passage
 
 ```{python}
 #| code-summary: "Tableau : écart requête / passage"
-gap = diag["query_passage_gap"]
+gap = diag_metrics["query_passage_gap"]
 pd.DataFrame(
     [
         {"métrique": "similarité intra-notices", "valeur": round(gap["within_notice_sim"], 3)},
@@ -223,6 +363,34 @@ pd.DataFrame(
 )
 ```
 
+```{python}
+#| code-summary: "Interprétation de l'écart requête/passage"
+gap_exists = gap["within_label_sim"] > gap["label_to_notice_sim"]
+gap_sentence = (
+    f"La similarité intra-libellés ({gap['within_label_sim']:.2f}) dépasse la similarité "
+    f"libellé → notice toutes paires confondues ({gap['label_to_notice_sim']:.2f}) : les "
+    "libellés se regroupent donc bien un peu plus entre eux qu'avec une notice prise au "
+    "hasard — l'écart requête/passage est réel, pas seulement un artefact de projection 2D."
+    if gap_exists
+    else f"La similarité intra-libellés ({gap['within_label_sim']:.2f}) ne dépasse pas la "
+    f"similarité libellé → notice toutes paires confondues ({gap['label_to_notice_sim']:.2f}) : "
+    "pas de signe net d'écart requête/passage sur cet échantillon."
+)
+correct_vs_within_label = (
+    f"Ce qui compte pour la récupération, c'est que la similarité libellé → notice *correcte* "
+    f"({metrics['mean_cosine_sim_correct']:.2f}) reste nettement supérieure à la similarité "
+    f"intra-libellés ({gap['within_label_sim']:.2f}) : le classement relatif entre une notice "
+    "correcte et les autres n'est donc pas remis en cause par cet écart."
+    if metrics["mean_cosine_sim_correct"] > gap["within_label_sim"]
+    else f"Signal à surveiller : la similarité libellé → notice *correcte* "
+    f"({metrics['mean_cosine_sim_correct']:.2f}) ne dépasse même pas la similarité "
+    f"intra-libellés ({gap['within_label_sim']:.2f}), ce qui peut dégrader le classement relatif "
+    "dont dépend la récupération."
+)
+```
+
+`{python} gap_sentence` `{python} correct_vs_within_label`
+
 ## Expérience : le champ "Excludes"
 
 `text_to_embed` (production comme ce diagnostic) construit le texte à partir de `NAME + Implementation_rule + Includes + IncludesAlso`, sans jamais utiliser `Excludes` — le texte rédigé par l'Insee pour dire explicitement "ressemble à ça mais n'en fait pas partie". C'est exactement le signal discriminant qui pourrait aider à séparer des catégories confondues. On teste ici l'effet de son ajout, sans toucher à la pipeline de production.
@@ -232,8 +400,19 @@ pd.DataFrame(
 diag_excludes = compute_model_diagnostics(
     MODEL_NAME, eval_df, notices_df_excludes, run_label=f"{MODEL_NAME}_with_excludes"
 )
-metrics_excludes = diag_excludes["metrics"]
+# Même logique que pour la baseline : réutilise les embeddings de notices déjà calculés
+# (avec Excludes) et ré-embedde seulement les libellés, sur l'échantillon complet.
+diag_excludes_metrics = compute_model_diagnostics(
+    MODEL_NAME,
+    eval_df_full,
+    notices_df_excludes,
+    run_label=f"{MODEL_NAME}_with_excludes_full",
+    notice_embeddings=diag_excludes["notice_embeddings"],
+)
+metrics_excludes = diag_excludes_metrics["metrics"]
 ```
+
+Comparaison calculée sur les `{python} len(eval_df_full)` libellés de l'échantillon complet (même échantillon que dans le reste de cette page).
 
 ```{python}
 #| code-summary: "Tableau comparatif baseline vs. avec Excludes"
@@ -265,6 +444,6 @@ pd.DataFrame(rows)
 
 ## Conclusion
 
-- Ajouter `Excludes` à `text_to_embed` améliore la précision de récupération réelle (accuracy@1 et recall@{python} K_NN), même si le `cohesion_ratio` baisse très légèrement à chaque niveau — la baseline globale de similarité augmente elle aussi (vocabulaire partagé entre notices voisines introduit par les notes d'exclusion). Piste à tester en production, ce qui impliquerait de ré-embedder les notices dans Neo4j.
+- Ajouter `Excludes` à `text_to_embed` améliore la précision de récupération réelle (accuracy@1 et recall@`{python} K_NN`), même si le `cohesion_ratio` baisse très légèrement à chaque niveau — la baseline globale de similarité augmente elle aussi (vocabulaire partagé entre notices voisines introduit par les notes d'exclusion). Piste à tester en production, ce qui impliquerait de ré-embedder les notices dans Neo4j.
 - La carte de confusion inter-sections et les tableaux de paires confondues identifient des chevauchements concrets et nommés, à examiner un par un pour distinguer un vrai défaut d'embedding d'une ambiguïté propre à la nomenclature NAF elle-même.
 - L'écart requête / passage est réel et mesurable, mais la similarité libellé → notice correcte reste nettement supérieure à la similarité intra-libellés : le classement relatif (ce dont dépend la récupération) n'est pas remis en cause par cet écart.
