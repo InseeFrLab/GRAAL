@@ -23,6 +23,9 @@ load_dotenv(override=True)
 client = AsyncOpenAI(
     base_url=os.environ["OPENAI_BASE_URL"],
     api_key=os.environ["OPENAI_API_KEY"],
+    # Fail fast rather than hang: the default 10 min SDK timeout makes a stuck
+    # request on the LLM endpoint indistinguishable from a real freeze.
+    timeout=60.0,
 )
 
 set_default_openai_client(client=client, use_for_tracing=False)
