@@ -3,5 +3,15 @@ project:
 
   render:
     - presentation.qmd
-  
+    - embeddings.qmd
+
   output-dir: _preview
+
+website:
+  title: "GRAAL"
+  navbar:
+    left:
+      - text: "Présentation"
+        href: presentation.qmd
+      - text: "Diagnostic embeddings"
+        href: embeddings.qmd

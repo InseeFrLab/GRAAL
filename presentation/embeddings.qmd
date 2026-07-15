@@ -1,0 +1,270 @@
+---
+title: "Diagnostic de l'espace d'embedding"
+subtitle: "NAF2025 : cohérence, chevauchement et confusion entre notices et libellés"
+author:
+  - name: Meilame Tayebjee
+    email: meilame.tayebjee@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+  - name: Théo Ferry
+    email: theo.ferry@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+date: today
+date-format: "D MMMM YYYY"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Voir le code"
+    embed-resources: false
+execute:
+  echo: true
+  warning: false
+  freeze: true
+---
+
+## Contexte
+
+Le classifieur Agentic RAG ([`src/agents/Text2Code/classifiers/agentic_rag.py`](https://github.com/InseeFrLab/GRAAL/blob/main/src/agents/Text2Code/classifiers/agentic_rag.py)) se sert d'une recherche par similarité entre le libellé d'activité à classer et les embeddings des notices de nomenclature stockées dans Neo4j ([`src/neo4j_graph/graph.py:get_closest_codes`](https://github.com/InseeFrLab/GRAAL/blob/main/src/neo4j_graph/graph.py)) pour choisir un code de départ. Cette page évalue la qualité de cette recherche indépendamment de la navigation LLM qui la suit, sur un petit échantillon annoté de 30 libellés, et regarde si l'espace d'embedding reflète la structure hiérarchique de la nomenclature NAF2025 (section → division → groupe → classe → sous-classe).
+
+Le code source complet est dans [`evaluate_embeddings.py`](https://github.com/InseeFrLab/GRAAL/blob/main/evaluate_embeddings.py) ; cette page réutilise directement ses fonctions plutôt que de dupliquer la logique.
+
+## Méthodologie
+
+### Précision de récupération
+
+Pour chaque libellé, on cherche ses $k$ notices les plus proches au sens du cosinus. Avec $N$ libellés annotés :
+
+$$
+\text{accuracy@1} = \frac{1}{N}\sum_{i=1}^N \mathbb{1}\left[\text{notice}_1(i) = \text{cible}(i)\right]
+\qquad
+\text{recall@k} = \frac{1}{N}\sum_{i=1}^N \mathbb{1}\left[\text{cible}(i) \in \{\text{notice}_1(i), \dots, \text{notice}_k(i)\}\right]
+$$
+
+où $\text{notice}_j(i)$ est la $j$-ème notice la plus proche du libellé $i$.
+
+### Cohésion intra-groupe
+
+Pour un niveau de la taxonomie (section, division, groupe, classe), on regroupe les notices par leur ancêtre commun à ce niveau, puis on compare la similarité moyenne *à l'intérieur* de chaque groupe à la similarité moyenne *globale* (toutes paires de notices confondues) :
+
+$$
+\text{cohesion\_ratio} = \frac{\overline{\text{sim}}_{\text{intra}}}{\overline{\text{sim}}_{\text{globale}}}
+\qquad\text{avec}\qquad
+\overline{\text{sim}}_{\text{intra}} = \frac{\sum_{g} \sum_{i<j \in g} \text{sim}(e_i, e_j)}{\sum_g \binom{|g|}{2}}
+$$
+
+où $g$ parcourt les groupes ayant au moins 2 membres et $\text{sim}(e_i, e_j) = 1 - d_{\cos}(e_i, e_j)$. Un ratio $> 1$ signifie que les notices d'un même groupe (sections, divisions...) sont plus proches entre elles que deux notices prises au hasard — la hiérarchie NAF est donc reflétée dans l'espace d'embedding. Un ratio $\le 1$ signifierait qu'elle ne l'est pas.
+
+### Confusion entre groupes (chevauchement)
+
+La cohésion ne regarde que l'intérieur de chaque groupe ; elle ne dit rien sur les paires de groupes *différents* qui se chevauchent. On calcule donc, pour chaque paire de groupes $(g_i, g_j)$, la similarité croisée moyenne, et on la compare à la cohésion propre de chacun des deux groupes :
+
+$$
+\text{confusability}(g_i, g_j) = \frac{\overline{\text{sim}}(g_i, g_j)}{\min\left(\overline{\text{sim}}_{\text{intra}}(g_i),\ \overline{\text{sim}}_{\text{intra}}(g_j)\right)}
+$$
+
+Un indice proche de ou supérieur à 1 signifie que deux catégories différentes sont, en moyenne, aussi proches l'une de l'autre qu'elles ne le sont chacune en interne — un vrai chevauchement, que l'embedding ne sépare pas nettement (à distinguer d'une ambiguïté propre à la nomenclature elle-même).
+
+### Confusion observée en récupération
+
+À partir des mêmes voisins $k$-NN utilisés pour l'accuracy/recall, on ne garde que les arêtes incorrectes (notice récupérée ≠ notice cible), et on compte les paires (groupe réel → groupe récupéré à tort), en excluant les cas où les deux notices partagent le même groupe (erreur fine, pas une confusion inter-catégories). Indicatif seulement : l'échantillon annoté ne comporte que 30 libellés.
+
+### Écart requête / passage (libellés vs. notices)
+
+De nombreux modèles d'embedding de recherche (bi-encodeurs) sont entraînés pour classer la bonne passage devant les autres (*ranking* relatif), pas pour placer requêtes et passages au même endroit dans l'espace vectoriel (position absolue). On quantifie cet écart avec quatre nombres : la similarité intra-notices, la similarité intra-libellés, la similarité croisée libellé → notice (toutes paires), et la similarité des centroïdes :
+
+$$
+\text{centroid\_similarity} = \cos\left(\ \bar{e}_{\text{libellés}},\ \bar{e}_{\text{notices}}\ \right)
+\qquad\text{avec}\qquad
+\bar{e}_{\text{libellés}} = \frac{1}{N}\sum_i e_i^{\text{libellé}}
+$$
+
+Si la similarité intra-libellés dépasse nettement la similarité croisée libellé → notice, les libellés se regroupent davantage entre eux qu'avec leur notice correspondante — un écart réel, pas un simple artefact de projection 2D.
+
+```{python}
+#| code-summary: "Configuration & chargement des données"
+import os
+import sys
+
+# evaluate_embeddings.py assumes it's run from the repo root (relative data paths, module
+# imports) — Quarto executes this chunk with cwd set to presentation/, so replicate that.
+os.chdir(os.path.abspath(".."))
+sys.path.insert(0, os.getcwd())
+
+import pandas as pd
+
+from evaluate_embeddings import (
+    CANDIDATE_MODELS,
+    K_NN,
+    LEVEL_NAMES,
+    NAF2025_NOTICES_PATH,
+    EVAL_SAMPLE_PATH,
+    build_comparison_figure,
+    build_confusion_heatmap,
+    build_level_cohesion_figure,
+    build_similarity_heatmap,
+    compute_model_diagnostics,
+    load_eval_sample,
+    load_leaf_notices,
+    REDUCTION_METHODS,
+)
+
+MODEL_NAME = CANDIDATE_MODELS[0]
+
+eval_df = load_eval_sample(EVAL_SAMPLE_PATH)
+notices_df = load_leaf_notices(NAF2025_NOTICES_PATH)
+notices_df_excludes = load_leaf_notices(NAF2025_NOTICES_PATH, include_excludes=True)
+
+print(f"{len(eval_df)} libellés annotés, {len(notices_df)} notices terminales (NAF2025)")
+```
+
+## Résultats — `{python} MODEL_NAME`
+
+```{python}
+#| code-summary: "Calcul des diagnostics (baseline)"
+diag = compute_model_diagnostics(MODEL_NAME, eval_df, notices_df, run_label=f"{MODEL_NAME}_baseline")
+metrics = diag["metrics"]
+```
+
+### Précision de récupération
+
+```{python}
+#| code-summary: "Tableau récapitulatif"
+pd.DataFrame(
+    [
+        {"métrique": "accuracy@1", "valeur": f"{metrics['accuracy_at_1']:.1%}"},
+        {"métrique": f"recall@{K_NN}", "valeur": f"{metrics[f'recall_at_{K_NN}']:.1%}"},
+        {"métrique": "similarité cosinus moyenne (correct)", "valeur": f"{metrics['mean_cosine_sim_correct']:.3f}"},
+        {"métrique": "similarité cosinus moyenne (incorrect)", "valeur": f"{metrics['mean_cosine_sim_incorrect']:.3f}"},
+    ]
+)
+```
+
+### Projections 2D
+
+UMAP et PaCMAP préservent mieux la structure locale (cohésion de voisinage) que t-SNE, qui déforme les distances relatives et la taille apparente des clusters, ou que PCA, une projection linéaire peu apte à révéler une séparation non-linéaire des groupes — privilégier les panneaux UMAP/PaCMAP pour juger de la cohésion réelle des clusters. Les libellés (étoiles) peuvent visuellement sembler éloignés de leur notice correcte : voir la section [Écart requête / passage](#écart-requête--passage-1) avant d'interpréter cela comme un défaut.
+
+```{python}
+#| code-summary: "Figure : projections 2D"
+comparison_fig = build_comparison_figure(
+    diag["combined_embeddings"],
+    len(diag["notice_codes"]),
+    diag["notice_hover"],
+    diag["label_hover"],
+    diag["edges"],
+    REDUCTION_METHODS,
+    diag["notice_section"],
+    diag["section_color"],
+    diag["section_legend"],
+)
+comparison_fig.update_layout(height=800)
+comparison_fig
+```
+
+### Cohésion par niveau de granularité
+
+```{python}
+#| code-summary: "Figure : cohésion par niveau"
+build_level_cohesion_figure(diag["cohesion_by_level"])
+```
+
+### Similarité entre notices
+
+Similarité cosinus calculée dans l'espace haute dimension (non projeté), notices triées par chemin taxonomique (section → division → groupe → classe → code) — une structure en blocs emboîtés est la preuve visuelle directe que la hiérarchie est reflétée dans l'embedding.
+
+```{python}
+#| code-summary: "Figure : carte de similarité"
+build_similarity_heatmap(diag["notice_embeddings"], notices_df)
+```
+
+### Chevauchement entre sections
+
+```{python}
+#| code-summary: "Figure : confusion inter-sections"
+build_confusion_heatmap(
+    diag["section_matrix"], diag["section_labels"], "Confusion inter-sections (similarité moyenne)"
+)
+```
+
+```{python}
+#| code-summary: "Tableau : sections les plus confondues"
+pd.DataFrame(diag["top_confusable_sections"]).round(3)
+```
+
+```{python}
+#| code-summary: "Tableau : divisions les plus confondues"
+pd.DataFrame(diag["top_confusable_divisions"]).round(3)
+```
+
+### Confusions observées en récupération
+
+Échantillon de 30 libellés annotés — indicatif seulement.
+
+```{python}
+#| code-summary: "Tableau : confusions de récupération"
+pd.DataFrame(diag["retrieval_confusion"])
+```
+
+### Écart requête / passage
+
+```{python}
+#| code-summary: "Tableau : écart requête / passage"
+gap = diag["query_passage_gap"]
+pd.DataFrame(
+    [
+        {"métrique": "similarité intra-notices", "valeur": round(gap["within_notice_sim"], 3)},
+        {"métrique": "similarité intra-libellés", "valeur": round(gap["within_label_sim"], 3)},
+        {"métrique": "similarité libellé → notice (toutes paires)", "valeur": round(gap["label_to_notice_sim"], 3)},
+        {"métrique": "similarité libellé → notice correcte", "valeur": round(metrics["mean_cosine_sim_correct"], 3)},
+        {"métrique": "similarité des centroïdes", "valeur": round(gap["centroid_similarity"], 3)},
+    ]
+)
+```
+
+## Expérience : le champ "Excludes"
+
+`text_to_embed` (production comme ce diagnostic) construit le texte à partir de `NAME + Implementation_rule + Includes + IncludesAlso`, sans jamais utiliser `Excludes` — le texte rédigé par l'Insee pour dire explicitement "ressemble à ça mais n'en fait pas partie". C'est exactement le signal discriminant qui pourrait aider à séparer des catégories confondues. On teste ici l'effet de son ajout, sans toucher à la pipeline de production.
+
+```{python}
+#| code-summary: "Calcul des diagnostics (avec Excludes)"
+diag_excludes = compute_model_diagnostics(
+    MODEL_NAME, eval_df, notices_df_excludes, run_label=f"{MODEL_NAME}_with_excludes"
+)
+metrics_excludes = diag_excludes["metrics"]
+```
+
+```{python}
+#| code-summary: "Tableau comparatif baseline vs. avec Excludes"
+rows = [
+    {
+        "métrique": "accuracy@1",
+        "baseline": f"{metrics['accuracy_at_1']:.1%}",
+        "avec Excludes": f"{metrics_excludes['accuracy_at_1']:.1%}",
+    },
+    {
+        "métrique": f"recall@{K_NN}",
+        "baseline": f"{metrics[f'recall_at_{K_NN}']:.1%}",
+        "avec Excludes": f"{metrics_excludes[f'recall_at_{K_NN}']:.1%}",
+    },
+]
+for level in LEVEL_NAMES.values():
+    level = level.lower()
+    b = metrics["sibling_cohesion"][level]["cohesion_ratio"]
+    w = metrics_excludes["sibling_cohesion"][level]["cohesion_ratio"]
+    rows.append(
+        {
+            "métrique": f"cohesion_ratio ({level})",
+            "baseline": f"{b:.3f}" if b is not None else "n/a",
+            "avec Excludes": f"{w:.3f}" if w is not None else "n/a",
+        }
+    )
+pd.DataFrame(rows)
+```
+
+## Conclusion
+
+- Ajouter `Excludes` à `text_to_embed` améliore la précision de récupération réelle (accuracy@1 et recall@{python} K_NN), même si le `cohesion_ratio` baisse très légèrement à chaque niveau — la baseline globale de similarité augmente elle aussi (vocabulaire partagé entre notices voisines introduit par les notes d'exclusion). Piste à tester en production, ce qui impliquerait de ré-embedder les notices dans Neo4j.
+- La carte de confusion inter-sections et les tableaux de paires confondues identifient des chevauchements concrets et nommés, à examiner un par un pour distinguer un vrai défaut d'embedding d'une ambiguïté propre à la nomenclature NAF elle-même.
+- L'écart requête / passage est réel et mesurable, mais la similarité libellé → notice correcte reste nettement supérieure à la similarité intra-libellés : le classement relatif (ce dont dépend la récupération) n'est pas remis en cause par cet écart.
