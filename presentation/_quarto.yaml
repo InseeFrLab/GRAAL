@@ -2,8 +2,10 @@ project:
   type: website
 
   render:
+    - index.qmd
     - presentation.qmd
     - embeddings.qmd
+    - multi_method_eval.qmd
 
   output-dir: _preview
 
@@ -11,7 +13,11 @@ website:
   title: "GRAAL"
   navbar:
     left:
+      - text: "Accueil"
+        href: index.qmd
       - text: "Présentation"
         href: presentation.qmd
       - text: "Diagnostic embeddings"
         href: embeddings.qmd
+      - text: "Éval. multi-méthode"
+        href: multi_method_eval.qmd
