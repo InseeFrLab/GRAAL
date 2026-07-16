@@ -9,7 +9,11 @@ class MatchVerificationResult(BaseModel):
     confidence: float = Field(
         description="Confidence level of the verification, between 0 and 1", ge=0, le=1
     )
-    explanation: str = Field(description="Concise explanation for the verification result")
+    explanation: str = Field(
+        description="Concise explanation that justifies the verification result with a "
+        "concrete reason (e.g. a matching or conflicting element of the code's official "
+        "definition) — never a restatement of what you are about to check."
+    )
 
     def __str__(self):
         return self.model_dump_json()
@@ -86,6 +90,9 @@ class MatchVerifier(BaseAgent):
         Réponds en fournissant :
         1. Un booléen indiquant si la correspondance est valide.
         2. Un niveau de confiance entre 0 et 1.
-        3. Une explication concise de ta décision.
+        3. Une explication concise qui justifie ta décision avec un élément concret (ex. un
+           critère de la définition officielle qui correspond ou qui contredit l'activité).
+           N'annonce jamais une vérification à venir ("je vais vérifier...") : la vérification
+           est déjà faite au moment où tu réponds, explique son résultat.
         """
         return prompt

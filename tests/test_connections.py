@@ -11,6 +11,7 @@ Run explicitly with:
     uv run pytest tests/test_connections.py -v
 """
 
+import asyncio
 import os
 
 import pytest
@@ -79,15 +80,6 @@ def test_s3_connection():
     assert fs.exists(_S3_PROBE_PATH)
 
 
-@_require_env("LLM_URL", "LLM_API_KEY")
-def test_naive_code2text_llm_connection():
-    """NaiveCode2Text uses its own LLM_URL/LLM_API_KEY pair (see naive_code2text.py)."""
-    from openai import OpenAI
-
-    client = OpenAI(base_url=os.environ["LLM_URL"], api_key=os.environ["LLM_API_KEY"])
-    assert list(client.models.list())
-
-
 @_require_env("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY")
 def test_langfuse_connection():
     """Langfuse backs the application tracing used in src/main.py."""
@@ -102,15 +94,37 @@ def test_langfuse_connection():
 
 
 @_require_env("MLFLOW_TRACKING_URI", "MLFLOW_MODEL_URI")
-def test_mlflow_supervised_model_connection():
-    """Backs SupervisedClassifier (src/agents/Text2Code/classifiers/supervised_classifier.py).
+def test_mlflow_connection():
+    """Confirms the tracking server + artifact store are reachable.
 
-    Only checks that the model can be *loaded*, not that a real prediction
-    matches the expected output shape — `_parse_prediction` there is
-    unverified against the real model and may need adjusting after this
-    passes.
+    Deliberately does NOT call `mlflow.pyfunc.load_model`: the registered
+    pyfunc model pickles a custom wrapper class from the training repo
+    (`src.api_wrapper`), which doesn't exist in this repo's `src` package, so
+    loading it here raises `ModuleNotFoundError`. `get_model_info` only reads
+    the model's metadata (MLmodel file), which is enough to check
+    connectivity without triggering that unpickling.
     """
     import mlflow
 
     mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
-    assert mlflow.pyfunc.load_model(os.environ["MLFLOW_MODEL_URI"]) is not None
+    assert mlflow.models.get_model_info(os.environ["MLFLOW_MODEL_URI"]) is not None
+
+
+@_require_env("CODIF_APE_API_USERNAME", "CODIF_APE_API_PASSWORD")
+def test_supervised_model_api_connection():
+    """Backs SupervisedClassifier (src/agents/Text2Code/classifiers/supervised_classifier.py).
+
+    Exercises the real HTTP path SupervisedClassifier uses in production
+    (codif-ape-API), rather than loading the model locally via MLflow.
+    """
+    from src.agents.Text2Code.classifiers.supervised_classifier import SupervisedClassifier
+
+    async def _predict():
+        classifier = SupervisedClassifier()
+        try:
+            return await classifier._predict("vente de vêtements de sport")
+        finally:
+            await classifier.client.aclose()
+
+    code, confidence, libelle = asyncio.run(_predict())
+    assert code

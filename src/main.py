@@ -8,6 +8,7 @@ from langfuse import get_client, observe, propagate_attributes
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.agents.Text2Code.classifiers.agentic_rag import AgenticRAGClassifier
 from src.agents.Text2Code.classifiers.navigator_classifier import NavigatorAgenticClassifier
+from src.agents.Text2Code.classifiers.summary_classifier import SummaryAgenticClassifier
 from src.agents.Text2Code.classifiers.supervised_classifier import SupervisedClassifier
 from src.config import neo4j_config
 from src.navigator.navigator import Navigator
@@ -89,6 +90,49 @@ async def classify_agentic_rag(
 
     navigator = Navigator(neo4j_config)
     classifier = AgenticRAGClassifier(navigator)
+
+    results = []
+    for q in queries:
+        logger.info(f"Classifying: {q}")
+        result = await classifier(q)
+        results.append(result)
+        logger.info(f"Le résultat de la classification est : {result}")
+
+    return results[0] if is_single else results
+
+
+@observe
+async def classify_summary(
+    query: str | list[str],
+    experiment_name: str = "Summary Agentic Classification",
+):
+    """Classify by giving the agent the NACE summary (sections/divisions) upfront
+
+    Unlike classify_navigator/classify_agentic_rag, the agent isn't driven by a
+    Python-owned step loop: a single free-running Runner.run call, where the model
+    decides on its own which tool to call, with which code, and when to stop
+    (cf. SummaryAgenticClassifier).
+
+    Requires the NACE summary file to exist (build it with
+    `uv run -m src.neo4j_graph.build_nace_summary`).
+
+    Args:
+        query: A single query string or a list of query strings
+        experiment_name: Name of the experiment
+
+    Returns:
+        Single MatchVerificationInput if query is str, list of them if query is list
+    """
+    get_client().update_current_trace(
+        name=experiment_name, tags=[experiment_name], metadata={"experiment_name": experiment_name}
+    )
+
+    queries = [query] if isinstance(query, str) else query
+    is_single = isinstance(query, str)
+
+    logger.info(f"Summary agentic classification: {len(queries)} query/queries")
+
+    classifier = SummaryAgenticClassifier(Graph(neo4j_config))
 
     results = []
     for q in queries:
@@ -198,6 +242,9 @@ async def main():
 
         if args.agentic_rag:
             methods_to_run.append(("agentic-rag", args.agentic_rag, classify_agentic_rag))
+
+        if args.summary:
+            methods_to_run.append(("summary", args.summary, classify_summary))
 
         if args.supervised:
             methods_to_run.append(("supervised", args.supervised, classify_supervised))

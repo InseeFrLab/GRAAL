@@ -1,0 +1,106 @@
+---
+title: "Évaluation multi-méthode et arbitrage"
+subtitle: "Navigator, Agentic-RAG, Summary, Supervisé et CodeChooser sur un même échantillon, chronométrés"
+author:
+  - name: Théo Ferry
+    email: theo.ferry@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+date: today
+date-format: "D MMMM YYYY"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+---
+
+## Contexte
+
+Les pages précédentes évaluent chaque méthode séparément (modèle supervisé sur le jeu d'évaluation complet, diagnostic de l'espace d'embedding pour l'Agentic RAG). Cette page réunit les 4 méthodes de classification du projet — Navigator, Agentic RAG, Summary et le modèle supervisé de production — sur un même échantillon du jeu d'évaluation, et ajoute deux briques transverses :
+
+- **MatchVerifier** juge si le code de vérité terrain (`apet2025`) est lui-même correct, plutôt que de le prendre pour acquis — la vérité terrain d'un jeu de test annoté n'est pas plus fiable a priori que celle du jeu d'entraînement (cf. l'audit des labels d'entraînement dans la [présentation](presentation.html)).
+- **CodeChooser** arbitre entre la vérité terrain et les 4 prédictions quand elles ne s'accordent pas déjà toutes sur un seul code.
+
+Chaque appel est chronométré individuellement, ce qui donne une vue concrète du coût en temps de chaque méthode — jusqu'ici non mesuré.
+
+Le script reproductible est [`src/evaluation/evaluate_eval_set_multi_method.py`](https://github.com/InseeFrLab/GRAAL/blob/main/src/evaluation/evaluate_eval_set_multi_method.py).
+
+## Protocole
+
+- **Échantillon** : 60 lignes du jeu d'évaluation (`data/eval/eval_set.parquet`), graine fixée (`seed=123`) pour la reproductibilité.
+- **Concurrence bornée** : jusqu'à 6 appels en vol simultanément par étape (`--concurrency 6`), pour rester dans un temps raisonnable — chaque appel Navigator/Agentic-RAG/Summary étant lui-même une boucle agentique multi-tours.
+- **Étapes**, dans l'ordre : MatchVerifier sur la vérité terrain → les 4 classifieurs → arbitrage CodeChooser (dédup des codes par `normalize_code`, arbitrage sauté si tous les candidats s'accordent déjà).
+- Chaque ligne traitée est journalisée au fil de l'eau (checkpoint JSONL), même rationale que `run_eval.py`/`verify_train_labels.py`.
+
+## Résultats
+
+### Temps par étape
+
+Le run complet a pris environ **1h52 en temps mur** (avec `concurrency=6`) ; le "total (séquentiel)" ci-dessous est la somme des durées individuelles, à titre de coût en temps de calcul plutôt que de temps mur.
+
+| Étape | Appels | Échecs | Moyenne | Total (séquentiel) |
+|---|---|---|---|---|
+| Agentic-RAG | 60 | 0 | 237.6 s | 237.6 min |
+| Summary | 60 | 37 | 149.1 s | 149.1 min |
+| CodeChooser | 44 | 24 | 132.4 s | 97.1 min |
+| Navigator | 60 | 0 | 76.4 s | 76.4 min |
+| MatchVerifier | 60 | 0 | 5.9 s | 5.9 min |
+| Supervisé | 60 | 0 | 0.3 s | 0.3 min |
+
+**Constat inattendu** : Agentic-RAG est en moyenne plus lent que Navigator, alors que son point de départ par similarité d'embedding est censé lui épargner des étapes de navigation. L'explication la plus probable n'est pas une propriété de la méthode elle-même mais la contention créée par `concurrency=6` : plusieurs appels multi-tours simultanés vers le même point de terminaison LLM ont provoqué des `openai.APITimeoutError` répétées, chacune coûtant jusqu'à 60s (le timeout client configuré) avant repli ou nouvelle tentative.
+
+### Un écart de robustesse entre les méthodes
+
+Navigator et Agentic-RAG n'ont échoué sur **aucune** des 60 lignes malgré ces timeouts : ce sont les deux méthodes qui héritent du garde-fou ajouté à `BaseClassifier` (descente forcée vers une feuille, filet de sécurité anti-non-final, cf. la présentation). Summary et CodeChooser, qui reposent tous les deux sur un simple `Runner.run` sans boucle Python au-dessus, n'ont pas ce filet : un timeout y interrompt l'appel purement et simplement.
+
+- **Summary** : 37/60 échecs (62%) — mais parmi les 23 réponses obtenues, 60.9% correspondent à la vérité terrain (contre 23.3% en comptant les échecs comme faux), donc la méthode n'est pas nécessairement moins précise que les autres, seulement moins fiable dans ces conditions de charge.
+- **CodeChooser** : 24/44 échecs (55%) sur les lignes nécessitant un arbitrage.
+
+### Exactitude par méthode (60 lignes)
+
+| Méthode | Exactitude (60 lignes) | Exactitude parmi les réponses obtenues |
+|---|---|---|
+| Supervisé | 50.0% | — |
+| Navigator | 46.7% | — |
+| Agentic-RAG | 45.0% | — |
+| Summary | 23.3% | 60.9% (n=23) |
+
+### La vérité terrain elle-même
+
+MatchVerifier confirme le code de vérité terrain sur seulement **33/60 lignes (55%)** — cohérent avec le doute déjà soulevé sur le jeu d'entraînement. La réponse finale (unanime ou arbitrée) ne rejoint la vérité terrain que sur **27/60 lignes (45%)** :
+
+| Issue | Lignes |
+|---|---|
+| Unanimes (tous les candidats s'accordent, donc = vérité terrain) | 16 |
+| Arbitrage réussi, CodeChooser confirme la vérité terrain | 11 |
+| Arbitrage réussi, CodeChooser corrige la vérité terrain | 9 |
+| Arbitrage en échec (timeout CodeChooser) | 24 |
+
+### Exemples d'arbitrage
+
+CodeChooser reçoit un libellé et une liste de codes candidats dédupliqués (vérité terrain + les 4 prédictions), et rend exactement un de ces codes, avec une confiance et une explication — jamais un code inédit.
+
+| Libellé | Vérité terrain | Navigator | Agentic-RAG | Summary | Supervisé | Choix CodeChooser |
+|---|---|---|---|---|---|---|
+| Réparation d'équipements électriques | 3314Y | 33.14Y | 33.14Y | 33.14 | 3314Y | **3314Y** ✅ |
+| Aménagement intérieur de véhicules, installation et réparation | 2920Y | 29.32Y | 43.31Y | — | 2920Y | **29.32Y** |
+| Isolation thermique intérieur/extérieur, rénovation générale | 4323Y | 43.35Y | 43.23Y | 43.23Y | 4323Y | **43.35Y** |
+| CMPP | 4291Y | 86.22Y | 86.93Y | — | 8694H | **86.93Y** |
+| Import-export, vente d'appareils électroménagers | 4643H | 46.43H | 46.43H | — | 4754Y | **4643H** ✅ |
+| Conception et fabrication par impression 3D | 7411Y | 32.99Y | 28.97Y | — | 1813Y | **32.99Y** |
+
+✅ = le choix de CodeChooser rejoint la vérité terrain.
+
+## À retenir
+
+1. **Le coût en temps est très inégal** : de 0.3s (Supervisé) à près de 4 minutes par appel (Agentic-RAG) — un facteur ~800 entre la méthode la plus rapide et la plus lente.
+2. **La robustesse aux timeouts n'est pas uniforme** : seules Navigator et Agentic-RAG bénéficient du garde-fou de `BaseClassifier`. Étendre un mécanisme équivalent (retry + repli) à Summary et CodeChooser serait la prochaine amélioration naturelle avant d'augmenter la taille de l'échantillon.
+3. **La vérité terrain du jeu d'évaluation mérite le même doute que celle du jeu d'entraînement** — moins de la moitié des lignes de cet échantillon la voient confirmée par l'arbitrage final.
+
+## Reproduire ce run
+
+```bash
+uv run -m src.evaluation.evaluate_eval_set_multi_method \
+    --n-samples 60 --seed 123 --concurrency 6 \
+    --output-dir data/eval/multi_method
+```

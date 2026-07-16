@@ -46,10 +46,6 @@ dev = [
 [tool.ruff]
 line-length = 100
 extend-include = ["*.ipynb"]
-# Cell-based scripts meant to be run interactively (VS Code / Jupytext) or
-# rendered with `quarto render`, relying on top-level `await`/IPython magics
-# that are not valid standalone Python syntax.
-extend-exclude = ["explorations.py", "evaluate_train_labels.py"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

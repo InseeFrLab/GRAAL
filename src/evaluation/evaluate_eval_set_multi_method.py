@@ -1,0 +1,265 @@
+"""Multi-méthode + arbitrage sur un échantillon du jeu d'évaluation, chronométré.
+
+Applique à un échantillon du jeu d'évaluation (cf. build_eval_set.py) le même
+principe d'audit que src.evaluation.verify_train_labels applique au jeu
+d'entraînement — juger la vérité terrain, reclassifier, arbitrer — mais en
+mode batch concurrent plutôt que séquentiel, sur les 4 méthodes de
+classification à la fois plutôt qu'une seule, et avec le temps de chaque appel
+(Navigator, Agentic-RAG, Summary, Supervisé, MatchVerifier, CodeChooser)
+enregistré pour estimer le coût en temps de chaque méthode.
+
+Sur un même échantillon (taille et graine fixées pour la reproductibilité) :
+  1. MatchVerifier juge si le label de vérité terrain (apet2025) semble correct
+     (le jeu d'évaluation n'est pas plus digne de confiance a priori que le
+     jeu d'entraînement — cf. verify_train_labels.py)
+  2. Les 4 méthodes de classification (Navigator, Agentic-RAG, Summary,
+     modèle supervisé de production) proposent chacune un code
+  3. CodeChooser arbitre entre la vérité terrain et les 4 prédictions, sauf si
+     elles s'accordent déjà toutes sur un seul code
+
+Chaque ligne traitée est journalisée au fil de l'eau dans
+<output-dir>/eval_multi_method.checkpoint.jsonl (flush immédiat), pour ne
+perdre que le travail non flush si le run est interrompu — même rationale que
+run_eval.py/verify_train_labels.py.
+
+Nécessite à l'exécution : la base Neo4j et l'API LLM configurées dans
+l'environnement (mêmes prérequis que src.main), ainsi que le résumé NACE
+(uv run -m src.neo4j_graph.build_nace_summary) pour SummaryAgenticClassifier.
+
+Usage :
+    uv run -m src.evaluation.evaluate_eval_set_multi_method \
+        --n-samples 60 --seed 123 --output-dir data/eval/multi_method
+"""
+
+import argparse
+import asyncio
+import json
+import logging
+import os
+import time
+
+import polars as pl
+
+from src.agents.closers.code_chooser import CodeChooser
+from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
+from src.config import neo4j_config
+from src.evaluation.config import PATH_EVAL_OUTPUT
+from src.evaluation.metrics import normalize_code
+from src.main import classify_agentic_rag, classify_navigator, classify_summary, classify_supervised
+from src.neo4j_graph.graph import Graph
+from src.utils import storage
+from src.utils.logging import configure_logging
+
+configure_logging()
+logger = logging.getLogger(__name__)
+
+CLASSIFY_METHODS = {
+    "navigator": classify_navigator,
+    "agentic_rag": classify_agentic_rag,
+    "summary": classify_summary,
+    "supervised": classify_supervised,
+}
+
+
+async def timed_call(name: str, thunk, idx: int, total: int):
+    """Await the zero-arg async `thunk()`, returning `(result, duration_seconds)`.
+
+    A failure is logged and returned as `(None, duration)` rather than raised,
+    so one bad label/row doesn't abort the whole run (cf. run_eval.py's
+    per-label try/except).
+    """
+    start = time.perf_counter()
+    try:
+        result = await thunk()
+    except Exception:
+        logger.exception(f"[{name}] {idx}/{total} failed")
+        result = None
+    duration = time.perf_counter() - start
+    logger.info(f"[{name}] {idx}/{total} ({duration:5.1f}s)")
+    return result, duration
+
+
+async def run_batched(name: str, thunks: list, concurrency: int):
+    """Run zero-arg async `thunks` with at most `concurrency` in flight at once.
+
+    Each classifier call builds its own Navigator/classifier instance (cf.
+    src.main), so concurrent calls don't share mutable state; MatchVerifier
+    and CodeChooser share one Graph, but Neo4j drivers are safe for concurrent
+    use across sessions. Order of results matches the order of `thunks`.
+    """
+    semaphore = asyncio.Semaphore(concurrency)
+    total = len(thunks)
+
+    async def guarded(idx: int, thunk):
+        async with semaphore:
+            return await timed_call(name, thunk, idx, total)
+
+    results = await asyncio.gather(*(guarded(i, t) for i, t in enumerate(thunks, 1)))
+    preds = [r for r, _ in results]
+    durations = [d for _, d in results]
+    return preds, durations
+
+
+async def run(args) -> int:
+    with storage.open_path(args.eval_set, "rb") as f:
+        df = pl.read_parquet(f)
+    sample = df.sample(n=args.n_samples, seed=args.seed)
+    labels = sample[args.text_column].to_list()
+    truth = sample[args.code_column].to_list()
+    logger.info(f"Sampled {len(labels)} rows from {args.eval_set} (seed={args.seed})")
+
+    graph = Graph(neo4j_config)
+    verifier = MatchVerifier(graph)
+
+    # Step 1: is the ground truth itself trustworthy? (cf. verify_train_labels.py)
+    verify_thunks = [
+        (lambda vi=MatchVerificationInput(activity=a, code=str(c)): verifier(vi))
+        for a, c in zip(labels, truth)
+    ]
+    verifications, verify_durations = await run_batched(
+        "match_verifier", verify_thunks, args.concurrency
+    )
+
+    # Step 2: each classification method proposes a code. Concurrency is bounded
+    # within a method (each call builds its own Navigator/classifier instance,
+    # cf. src.main, so concurrent calls don't share mutable state); methods run
+    # one after another so log output and failures stay easy to attribute.
+    all_preds: dict[str, list] = {}
+    all_durations: dict[str, list] = {}
+    for name, fn in CLASSIFY_METHODS.items():
+        thunks = [(lambda label=label: fn(label)) for label in labels]
+        preds, durations = await run_batched(name, thunks, args.concurrency)
+        all_preds[name] = preds
+        all_durations[name] = durations
+
+    # Step 3: arbitrate with CodeChooser among {ground truth} ∪ {method predictions},
+    # deduped by normalized code — skipped when they already all agree. Candidate
+    # dedup is pure/cheap, so it's done upfront for every row before batching only
+    # the rows that actually need arbitration.
+    candidates_per_row = []
+    for i in range(len(labels)):
+        raw_candidates = [truth[i]] + [
+            getattr(all_preds[name][i], "code", None) for name in CLASSIFY_METHODS
+        ]
+        unique = {}
+        for code in raw_candidates:
+            norm = normalize_code(code)
+            if norm and norm not in unique:
+                unique[norm] = code
+        candidates_per_row.append(list(unique.values()))
+
+    arbitrate_at = [i for i, codes in enumerate(candidates_per_row) if len(codes) >= 2]
+    chooser_thunks = [
+        (
+            lambda activity=labels[i], codes=candidates_per_row[i]: CodeChooser(
+                graph, num_choices=len(codes)
+            )(activity=activity, codes=codes)
+        )
+        for i in arbitrate_at
+    ]
+    choices, sparse_chooser_durations = await run_batched(
+        "code_chooser", chooser_thunks, args.concurrency
+    )
+    choice_by_row: dict[int, tuple] = dict(
+        zip(arbitrate_at, zip(choices, sparse_chooser_durations))
+    )
+
+    storage.makedirs(args.output_dir)
+    checkpoint_path = os.path.join(args.output_dir, "eval_multi_method.checkpoint.jsonl")
+    rows = []
+    with storage.open_path(checkpoint_path, "w", encoding="utf-8") as ckpt:
+        for i, activity in enumerate(labels):
+            codes = candidates_per_row[i]
+            choice, chooser_duration = choice_by_row.get(i, (None, None))
+
+            verification = verifications[i]
+            row = {
+                args.text_column: activity,
+                args.code_column: truth[i],
+                "ground_truth_is_match": getattr(verification, "is_match", None),
+                "ground_truth_verify_confidence": getattr(verification, "confidence", None),
+                "ground_truth_verify_explanation": getattr(verification, "explanation", None),
+                "ground_truth_verify_duration_s": verify_durations[i],
+                "n_unique_candidates": len(codes),
+                "chosen_code": getattr(choice, "chosen_code", None),
+                "chooser_confidence": getattr(choice, "confidence", None),
+                "chooser_explanation": getattr(choice, "explanation", None),
+                "chooser_duration_s": chooser_duration,
+            }
+            for name in CLASSIFY_METHODS:
+                row[f"{name}_code"] = getattr(all_preds[name][i], "code", None)
+                row[f"{name}_duration_s"] = all_durations[name][i]
+
+            rows.append(row)
+            ckpt.write(json.dumps(row, ensure_ascii=False) + "\n")
+            ckpt.flush()
+    chooser_durations = sparse_chooser_durations
+
+    details = pl.DataFrame(rows)
+    details_path = os.path.join(args.output_dir, "eval_multi_method.parquet")
+    with storage.open_path(details_path, "wb") as f:
+        details.write_parquet(f)
+
+    def stats(durations: list[float]) -> dict | None:
+        if not durations:
+            return None
+        total = sum(durations)
+        return {"n": len(durations), "total_s": total, "mean_s": total / len(durations)}
+
+    def chooser_agrees(row: dict) -> bool:
+        if not row["chosen_code"]:
+            return False
+        return normalize_code(row["chosen_code"]) == normalize_code(row[args.code_column])
+
+    n_agree_truth = sum(1 for r in rows if chooser_agrees(r))
+    n_ground_truth_confirmed = sum(1 for r in rows if r["ground_truth_is_match"])
+    summary = {
+        "n_rows": len(rows),
+        "seed": args.seed,
+        "timings": {
+            "match_verifier": stats(verify_durations),
+            **{name: stats(all_durations[name]) for name in CLASSIFY_METHODS},
+            "code_chooser": stats(chooser_durations),
+        },
+        "n_ground_truth_confirmed": n_ground_truth_confirmed,
+        "n_arbitrated": sum(1 for r in rows if r["n_unique_candidates"] >= 2),
+        "n_chooser_agrees_with_ground_truth": n_agree_truth,
+    }
+    summary_path = os.path.join(args.output_dir, "eval_multi_method_summary.json")
+    with storage.open_path(summary_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
+
+    storage.remove(checkpoint_path)
+
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+    logger.info(f"Details written to {details_path}, summary to {summary_path}")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Run all 4 classification methods + MatchVerifier + CodeChooser on a "
+        "sample of the eval set, with per-call timing"
+    )
+    parser.add_argument(
+        "--eval-set", default=PATH_EVAL_OUTPUT, help="Evaluation parquet (cf. build_eval_set)"
+    )
+    parser.add_argument("--n-samples", type=int, default=60, help="Sample size (default: 60)")
+    parser.add_argument("--seed", type=int, default=123, help="Sampling seed (default: 123)")
+    parser.add_argument("--text-column", default="libelle", help="Text column (default: libelle)")
+    parser.add_argument(
+        "--code-column", default="apet2025", help="Ground-truth column (default: apet2025)"
+    )
+    parser.add_argument("--output-dir", default="data/eval/multi_method", help="Output directory")
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=6,
+        help="Max in-flight calls per stage (default: 6)",
+    )
+    args = parser.parse_args()
+    return asyncio.run(run(args))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
