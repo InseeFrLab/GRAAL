@@ -27,7 +27,7 @@ code de vérité terrain et du code proposé, comme src.main) ; sans connexion,
 la revue reste possible mais sans notice.
 
 Usage :
-    uv run -m src.evaluation.human_review_app \
+    uv run -m src.evaluation.apps.human_review_app \
         --input data/eval/train_verification/train_label_verification.parquet \
         --output data/eval/human_review/match_verifier_review.jsonl \
         --port 5050
