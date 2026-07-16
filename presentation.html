@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/tabby.min.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.9.38">
+
+  <meta name="author" content="Meilame Tayebjee">
+  <meta name="author" content="Théo Ferry">
+  <meta name="dcterms.date" content="2026-04-02">
+  <title>GRAAL – GRAAL: Graph-based Research with Agents for Automatic Labelling</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="site_libs/revealjs/dist/reveal.css">
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      { color: #003b4f; background-color: #f1f3f5; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #003b4f; } /* Normal */
+    code span.al { color: #ad0000; } /* Alert */
+    code span.an { color: #5e5e5e; } /* Annotation */
+    code span.at { color: #657422; } /* Attribute */
+    code span.bn { color: #ad0000; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #003b4f; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #20794d; } /* Char */
+    code span.cn { color: #8f5902; } /* Constant */
+    code span.co { color: #5e5e5e; } /* Comment */
+    code span.cv { color: #5e5e5e; font-style: italic; } /* CommentVar */
+    code span.do { color: #5e5e5e; font-style: italic; } /* Documentation */
+    code span.dt { color: #ad0000; } /* DataType */
+    code span.dv { color: #ad0000; } /* DecVal */
+    code span.er { color: #ad0000; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #ad0000; } /* Float */
+    code span.fu { color: #4758ab; } /* Function */
+    code span.im { color: #00769e; } /* Import */
+    code span.in { color: #5e5e5e; } /* Information */
+    code span.kw { color: #003b4f; font-weight: bold; } /* Keyword */
+    code span.op { color: #5e5e5e; } /* Operator */
+    code span.ot { color: #003b4f; } /* Other */
+    code span.pp { color: #ad0000; } /* Preprocessor */
+    code span.sc { color: #5e5e5e; } /* SpecialChar */
+    code span.ss { color: #20794d; } /* SpecialString */
+    code span.st { color: #20794d; } /* String */
+    code span.va { color: #111111; } /* Variable */
+    code span.vs { color: #20794d; } /* VerbatimString */
+    code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="site_libs/revealjs/dist/theme/quarto-c04a83ec71f912e5167c964db8a16515.css">
+  <link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/InseeFrLab/onyxia/logo.css">
+  <link href="site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
+  <link href="site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+  <script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+  <script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+  <link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" data-background-image="site_libs/quarto-contrib/quarto-project/InseeFrLab/onyxia/background.svg" data-background-size="contain" class="quarto-title-block center">
+  <h1 class="title">GRAAL: Graph-based Research with Agents for Automatic Labelling</h1>
+  <p class="subtitle">Classification automatique dans des nomenclatures statistiques par approche agentique</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Meilame Tayebjee 
+</div>
+<div class="quarto-title-author-email">
+<a href="mailto:meilame.tayebjee@insee.fr">meilame.tayebjee@insee.fr</a>
+</div>
+        <p class="quarto-title-affiliation">
+            Insee, SSP Lab
+          </p>
+    </div>
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Théo Ferry 
+</div>
+<div class="quarto-title-author-email">
+<a href="mailto:theo.ferry@insee.fr">theo.ferry@insee.fr</a>
+</div>
+        <p class="quarto-title-affiliation">
+            Insee, SSP Lab
+          </p>
+    </div>
+</div>
+
+  <p class="date">2 April 2026</p>
+</section>
+<section id="plan" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Plan</h2>
+<ol type="1">
+<li><strong>Contexte</strong>. Défis de la codification automatique</li>
+<li><strong>Le framework GRAAL</strong>. Architecture multi-agents</li>
+<li><strong>Perspectives</strong>. Développements futurs</li>
+</ol>
+</section>
+<section>
+<section id="contexte-le-cas-dusage-de-la-codification-automatique" class="title-slide slide level1 center" data-background-image="background.svg" data-background-size="contain">
+<h1>1️⃣ <strong>Contexte</strong>: le cas d’usage de la codification automatique</h1>
+
+</section>
+<section id="section" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2></h2>
+<div class="columns">
+<div class="column" style="width:80%;">
+<p><strong>NAF</strong> : Nomenclature statistique des Activités économiques</p>
+<ul>
+<li>~700 codes finaux</li>
+<li>Structure hiérarchique sur 5 niveaux</li>
+</ul>
+<p><strong>COICOP</strong> : <em>Classification of Individual Consumption by Purpose</em></p>
+<ul>
+<li>~300 à ~1000 selon la granularité employée</li>
+<li>Structure hiérarchique sur 5 niveaux</li>
+</ul>
+</div><div class="column" style="width:20%;">
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+  A["Agriculture, sylviculture et pêche"]
+
+  D01["Culture et production animale"]
+
+  G011["Cultures non permanentes"]
+
+  C0111["Culture de céréales"]
+
+  A --&gt; D01 --&gt; G011 --&gt; C0111
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</div></div>
+</section>
+<section id="défis" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Défis</h2>
+<ul>
+<li>A l’heure actuelle, apprentissage supervisé classique, avec des modèles de <em>deep learning</em> (PyTorch)
+<ul>
+<li>Frugal, performant et rapide, <em>production-ready</em>… 😎</li>
+<li>… mais nécessite entre 100k et 1M de données labellisées 🫨</li>
+</ul></li>
+</ul>
+</section>
+<section id="une-approche-mlops-grandement-facilitée-par-onyxia-mais-encore-incomplète" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Une approche MLOps grandement facilitée par Onyxia mais encore incomplète</h2>
+<ul>
+<li class="fragment"><strong>Data</strong> : Stockage S3 (Datalab), versionnage avec MLFlow Datasets ✅</li>
+<li class="fragment"><strong>Modèle</strong> : développement internalisé et distribution de l’architecture via le package <a href="https://github.com/InseeFrLab/torchTextClassifiers"><em>torchTextClassifiers</em></a>, entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅</li>
+<li class="fragment"><strong>Déploiement</strong> : FastAPI déployé via conteneurisation (Docker) ✅</li>
+<li class="fragment"><strong>Monitoring</strong> : c’est là que le bât blesse ❌
+<ul>
+<li class="fragment">Investissements humains nécessaires, pas toujours faits</li>
+<li class="fragment"><strong>Comment contrôler le modèle en production sans annotation humaine continue ?</strong></li>
+</ul></li>
+</ul>
+</section>
+<section id="le-besoin-de-saffranchir-des-données-labellisées" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Le besoin de s’affranchir des données labellisées</h2>
+<ul>
+<li class="fragment">Comment faire quand on ne peut pas avoir / n’a pas assez de données labellisées ?</li>
+<li class="fragment">Comment faire quand la nomenclature est mise à jour par le métier ?
+<ul>
+<li class="fragment">Il faut recoder les données existantes</li>
+</ul></li>
+<li class="fragment">Comment faire quand nos données labellisées ne sont pas fiables ?
+<ul>
+<li class="fragment">et qu’idéalement on veuille les corriger…</li>
+</ul></li>
+</ul>
+</section>
+<section class="slide level2">
+
+<ul>
+<li class="fragment">Une première approche <strong>zero-shot</strong> : <span class="orange"><strong>le Retrieval-Augmented Generation (RAG)</strong></span>
+<ul>
+<li class="fragment">Knowledge base = les notices officielles pour chaque code</li>
+<li class="fragment">Très bonne première solution mais…
+<ul>
+<li class="fragment">dépendance au chunking…</li>
+<li class="fragment">dépendance au modèle d’embedding…</li>
+<li class="fragment">saturation du contexte avec les notices…</li>
+<li class="fragment">on compare embedding de <em>notice</em> à un embedding de <em>libellé</em>…</li>
+<li class="fragment">pas de traçabilité, pas de raisonnement…</li>
+<li class="fragment">pas de prise en compte de la hiérarchie !</li>
+</ul></li>
+</ul></li>
+</ul>
+</section>
+<section id="objectifs" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Objectifs</h2>
+<ul>
+<li>On ne veut plus d’embeddings</li>
+<li>On veut du <em>reasoning</em>: le LLM peut/doit justifier ses choix (<em>chain of thought</em>)
+<ul>
+<li>Plutôt que lui <em>imposer du contexte</em> comme dans un RAG, laisser le modèle <strong>compléter son contexte dynamiquement</strong> (<span class="orange"><strong>= agent !</strong></span>)</li>
+<li>Idéalement, avec un raisonnement autour de la hiérarchie</li>
+</ul></li>
+</ul>
+</section></section>
+<section>
+<section id="le-framework-graal" class="title-slide slide level1 center" data-background-image="background.svg" data-background-size="contain">
+<h1>2️⃣ <strong>Le framework GRAAL</strong></h1>
+
+</section>
+<section id="neo4j-une-graph-database" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Neo4j : une <em>graph database</em></h2>
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+  ROOT["Root"]
+
+  %% Sections
+  J["CODE: J&lt;br/&gt;LEVEL: 1"]
+  A["CODE: A&lt;br/&gt;LEVEL: 1"]
+
+  %% Divisions
+  J60["CODE: J60&lt;br/&gt;LEVEL: 2"]
+  J61["CODE: J61&lt;br/&gt;LEVEL: 2"]
+  A01["CODE: A01&lt;br/&gt;LEVEL: 2"]
+
+  %% Groupes
+  J60_1["CODE: J60.1&lt;br/&gt;LEVEL: 3"]
+  J60_2["CODE: J60.2&lt;br/&gt;LEVEL: 3"]
+  A01_1["CODE: A01.1&lt;br/&gt;LEVEL: 3"]
+
+  %% Classes
+  J60_11["CODE: J60.11&lt;br/&gt;LEVEL: 4"]
+  J60_12["CODE: J60.12&lt;br/&gt;LEVEL: 4"]
+  A01_11["CODE: A01.11&lt;br/&gt;LEVEL: 4"]
+
+  %% Relations HAS_PARENT
+  J --&gt;|HAS_PARENT| ROOT
+  A --&gt;|HAS_PARENT| ROOT
+
+  J60 --&gt;|HAS_PARENT| J
+  J61 --&gt;|HAS_PARENT| J
+  A01 --&gt;|HAS_PARENT| A
+
+  J60_1 --&gt;|HAS_PARENT| J60
+  J60_2 --&gt;|HAS_PARENT| J60
+  A01_1 --&gt;|HAS_PARENT| A01
+
+  J60_11 --&gt;|HAS_PARENT| J60_1
+  J60_12 --&gt;|HAS_PARENT| J60_1
+  A01_11 --&gt;|HAS_PARENT| A01_1
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="utilisation-du-graph-comme-support-pour-des-agents" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Utilisation du graph comme support pour des agents</h2>
+<ul>
+<li>On définit un ensemble d’outils <strong>commun à tous les agents</strong>:
+<ul>
+<li>get_code_information</li>
+<li>get_current_children</li>
+<li>get_current_siblings</li>
+<li>go_to_parent</li>
+<li>go_to_child</li>
+<li>etc.</li>
+</ul></li>
+<li>Ils utilisent tous la syntaxe Neo4j</li>
+</ul>
+</section>
+<section id="les-agents" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Les agents</h2>
+<ul>
+<li>Un agent = un prompt, un type d’input et d’output, et des tools</li>
+<li>Les <em>closers</em>
+<ul>
+<li><p><em>CodeChooser</em>:</p></li>
+<li><p><em>MatchVerifier</em>:</p>
+<div id="abbcc610" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a></a><span class="kw">class</span> MatchVerifier(BaseAgent):</span>
+<span id="cb1-2"><a></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, graph: Graph):</span>
+<span id="cb1-3"><a></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(graph)</span>
+<span id="cb1-4"><a></a></span>
+<span id="cb1-5"><a></a>    <span class="kw">def</span> get_agent_name(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb1-6"><a></a>        <span class="cf">return</span> <span class="st">"MatchVerifier Agent"</span></span>
+<span id="cb1-7"><a></a></span>
+<span id="cb1-8"><a></a>    <span class="kw">def</span> get_instructions(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb1-9"><a></a>        <span class="cf">return</span> <span class="st">"""</span></span>
+<span id="cb1-10"><a></a><span class="st">                Tu es un agent spécialisé dans la vérification de la validité d'une correspondance entre un libellé textuel et le code qui lui a été associé. Tu as accès à des outils pour interroger une base de données de nomenclature statistique structurée en graph database Neo4j.</span></span>
+<span id="cb1-11"><a></a><span class="st">            """</span></span>
+<span id="cb1-12"><a></a></span>
+<span id="cb1-13"><a></a>    <span class="kw">def</span> get_output_type(<span class="va">self</span>):</span>
+<span id="cb1-14"><a></a>        <span class="cf">return</span> MatchVerificationResult</span>
+<span id="cb1-15"><a></a></span>
+<span id="cb1-16"><a></a>    <span class="kw">def</span> build_prompt(<span class="va">self</span>, match_verification_input: MatchVerificationInput) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb1-17"><a></a>        <span class="co">"""</span></span>
+<span id="cb1-18"><a></a><span class="co">        Construire le prompt pour l'agent de vérification de correspondance.</span></span>
+<span id="cb1-19"><a></a><span class="co">        """</span></span>
+<span id="cb1-20"><a></a>        prompt <span class="op">=</span> <span class="ss">f"""</span></span>
+<span id="cb1-21"><a></a><span class="ss">        Vérifie si le code suivant correspond bien à l'activité décrite.</span></span>
+<span id="cb1-22"><a></a></span>
+<span id="cb1-23"><a></a><span class="ss">        Activité : </span><span class="sc">{</span>match_verification_input<span class="sc">.</span>activity<span class="sc">}</span></span>
+<span id="cb1-24"><a></a></span>
+<span id="cb1-25"><a></a><span class="ss">        Code proposé : </span><span class="sc">{</span>match_verification_input<span class="sc">.</span>code<span class="sc">}</span></span>
+<span id="cb1-26"><a></a><span class="ss">        Explication proposée : </span><span class="sc">{</span>match_verification_input<span class="sc">.</span>proposed_explanation<span class="sc">}</span></span>
+<span id="cb1-27"><a></a></span>
+<span id="cb1-28"><a></a><span class="ss">        Réponds en fournissant :</span></span>
+<span id="cb1-29"><a></a><span class="ss">        1. Un booléen indiquant si la correspondance est valide.</span></span>
+<span id="cb1-30"><a></a><span class="ss">        2. Un niveau de confiance entre 0 et 1.</span></span>
+<span id="cb1-31"><a></a><span class="ss">        3. Une explication concise de ta décision.</span></span>
+<span id="cb1-32"><a></a><span class="ss">        """</span></span>
+<span id="cb1-33"><a></a>        <span class="cf">return</span> prompt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div></li>
+</ul></li>
+<li><em>Text2Code</em> (classifieur)
+<ul>
+<li>le <em>Navigator</em> est un agent qui hérite de <em>Text2Code</em></li>
+</ul></li>
+<li><em>Code2Text</em> (générateur de données synthétiques)</li>
+</ul>
+</section>
+<section id="exemple-de-classification-par-navigator" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Exemple de classification par <em>Navigator</em></h2>
+<div class="panel-tabset">
+<ul id="tabset-1" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-1-1">Input</a></li><li><a href="#tabset-1-2">Output</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a></a>description <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb2-2"><a></a><span class="st">Entreprise de fabrication artisanale de pains spéciaux</span></span>
+<span id="cb2-3"><a></a><span class="st">et viennoiseries, avec vente directe en boutique</span></span>
+<span id="cb2-4"><a></a><span class="st">"""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-1-2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource json number-lines code-with-copy"><code class="sourceCode json"><span id="cb3-1"><a></a><span class="fu">{</span></span>
+<span id="cb3-2"><a></a>  <span class="dt">"code"</span><span class="fu">:</span> <span class="st">"10.71Z"</span><span class="fu">,</span></span>
+<span id="cb3-3"><a></a>  <span class="dt">"label"</span><span class="fu">:</span> <span class="st">"Fabrication de pain et pâtisserie fraîche"</span><span class="fu">,</span></span>
+<span id="cb3-4"><a></a>  <span class="dt">"confidence"</span><span class="fu">:</span> <span class="fl">0.94</span><span class="fu">,</span></span>
+<span id="cb3-5"><a></a>  <span class="dt">"path"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"C"</span><span class="ot">,</span> <span class="st">"10"</span><span class="ot">,</span> <span class="st">"10.7"</span><span class="ot">,</span> <span class="st">"10.71"</span><span class="ot">,</span> <span class="st">"10.71Z"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb3-6"><a></a>  <span class="dt">"justification"</span><span class="fu">:</span> <span class="st">"Fabrication artisanale (C) de produits</span></span>
+<span id="cb3-7"><a></a><span class="st">                    de boulangerie (10.7) avec vente directe : ce code correspond donc au libellé fourni."</span></span>
+<span id="cb3-8"><a></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="evaluation" class="slide level2 scrollable" data-background-image="background.svg" data-background-size="contain">
+<h2>Evaluation</h2>
+<ul>
+<li class="fragment"><strong>Evaluer un agent classifieur</strong>
+<ul>
+<li class="fragment">Si on fait confiance à notre dataset de test : évaluation straightforward</li>
+<li class="fragment"><strong>Sinon : évaluation manuelle !</strong>
+<ul>
+<li class="fragment">Prédiction <em>ground truth</em>, prédiction du classifieur, jugement du <em>CodeChooser</em> et du <em>MatchVerifier</em> mis bout à bout</li>
+<li class="fragment">Evaluation conjointe de tous les composants</li>
+</ul></li>
+</ul></li>
+<li class="fragment"><strong>Evaluer la génération de données synthétiques</strong>
+<ul>
+<li class="fragment">moins évident</li>
+<li class="fragment">réentraîner un modèle sur un dataset synthétique et voir si on atteint des perfs équivalentes sur le même test set</li>
+</ul></li>
+</ul>
+</section>
+<section id="perspectives" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Perspectives</h2>
+<ul>
+<li>Un cahier des charges respecté
+<ul>
+<li>Plus <em>d’embeddings</em></li>
+<li>Du raisonnement et de la traçabilité</li>
+<li><strong>Utilisable pour n’importe quelle nomenclature</strong> : il suffit de créer une base Neo4j avec les notices et tout fonctionne !
+<ul>
+<li>GRAAL n’est qu’un distributeurs de tools, de prompts et de structures d’appels au LLM (validation input/output)</li>
+</ul></li>
+</ul></li>
+<li><strong>La tâche principale va être l’évaluation</strong> 🎯</li>
+</ul>
+</section>
+<section class="slide level2">
+
+<ul>
+<li><strong>On va en faire quoi ?</strong>
+<ul>
+<li>Un modèle agentique est trop lourd pour la production (pas encore de GPU, temps d’inférence trop élevé…)</li>
+<li>Cependant, GRAAL peut être utilisé pour:
+<ul>
+<li><strong>Monitoring du modèle déployé: <em>MatchVerifier</em> analyse les logs de l’API et évalue le modèle en continu, appelle le <em>Navigator</em> si besoin de recoder…</strong></li>
+<li>Recodage d’une base (même workflow que le monitoring)</li>
+<li>Génération de données synthétiques (<em>Code2Text</em>)</li>
+</ul></li>
+</ul></li>
+</ul>
+</section>
+<section id="merci-de-votre-attention" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Merci de votre attention !</h2>
+<p>🔗 <a href="https://github.com/InseeFrLab/GRAAL">github.com/InseeFrLab/GRAAL</a></p>
+
+
+</section></section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<div class="footer footer-default">
+
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="site_libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="site_libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
+  <script src="site_libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="site_libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': false,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleChalkboard(event)\"><kbd>b</kbd> Toggle Chalkboard</a></li>\n<li class=\"slide-tool-item\" data-item=\"6\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleNotesCanvas(event)\"><kbd>c</kbd> Toggle Notes Canvas</a></li>\n<li class=\"slide-tool-item\" data-item=\"7\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.downloadDrawings(event)\"><kbd>d</kbd> Download Drawings</a></li>\n<li class=\"slide-tool-item\" data-item=\"8\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'chalkboard': {"buttons":true,"theme":"whiteboard"},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: true,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'none',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1050,
+
+        height: 700,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 0.1,
+
+        math: {
+          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp("https:\/\/InseeFrLab\.github\.io\/GRAAL\/");
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>

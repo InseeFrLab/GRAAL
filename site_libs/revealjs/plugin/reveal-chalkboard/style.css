@@ -3,13 +3,13 @@ div.palette, div.boardhandle {
 /*
   height: 260px;
   margin: -130px 0 0 0px;
-*/  
+*/
   top: 50%;
   transform: translateY(-50%);
   font-size: 24px;
   border-radius: 10px;
-  border-top:    4px solid #222; 
-  border-right:  4px solid #222; 
+  border-top:    4px solid #222;
+  border-right:  4px solid #222;
   border-bottom: 4px solid #222;
   background: black;
   transition: transform 0.3s;
@@ -38,7 +38,7 @@ div.boardhandle > ul > li {
 }
 
 @media print {
-	div.palette, div.boardhandle { 
-		display: none!important; 
+	div.palette, div.boardhandle {
+		display: none!important;
 	}
 }

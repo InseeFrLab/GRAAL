@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Théo Ferry">
+<meta name="dcterms.date" content="2026-07-16">
 
-<title>GRAAL</title>
+<title>Évaluation multi-méthode et arbitrage – GRAAL</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +24,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -74,7 +111,7 @@ ul.task-list li input[type="checkbox"] {
 
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -92,7 +129,7 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Accueil</span></a>
   </li>  
   <li class="nav-item">
@@ -104,7 +141,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Diagnostic embeddings</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./multi_method_eval.html"> 
+    <a class="nav-link active" href="./multi_method_eval.html" aria-current="page"> 
 <span class="menu-text">Éval. multi-méthode</span></a>
   </li>  
 </ul>
@@ -118,21 +155,52 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul class="collapse">
+  <li><a href="#contexte" id="toc-contexte" class="nav-link active" data-scroll-target="#contexte">Contexte</a></li>
+  <li><a href="#protocole" id="toc-protocole" class="nav-link" data-scroll-target="#protocole">Protocole</a></li>
+  <li><a href="#résultats" id="toc-résultats" class="nav-link" data-scroll-target="#résultats">Résultats</a></li>
+  <li><a href="#à-retenir" id="toc-à-retenir" class="nav-link" data-scroll-target="#à-retenir">À retenir</a></li>
+  <li><a href="#reproduire-ce-run" id="toc-reproduire-ce-run" class="nav-link" data-scroll-target="#reproduire-ce-run">Reproduire ce run</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">GRAAL</h1>
-<p class="subtitle lead">Graph-based Research with Agents for Automatic Labelling</p>
+<h1 class="title">Évaluation multi-méthode et arbitrage</h1>
+<p class="subtitle lead">Navigator, Agentic-RAG, Summary, Supervisé et CodeChooser sur un même échantillon, chronométrés</p>
 </div>
 
 
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliation</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Théo Ferry <a href="mailto:theo.ferry@insee.fr" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Insee, SSP Lab
+          </p>
+      </div>
+  </div>
 
 <div class="quarto-title-meta">
 
-    
+      
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">16 July 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -142,26 +210,268 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Ce site rassemble les supports du projet GRAAL. Choisissez une page ci-dessous.</p>
-<div class="grid">
-<section id="présentation" class="level3 g-col-12 g-col-md-4">
-<h3 class="anchored" data-anchor-id="présentation">🎤 Présentation</h3>
-<p>Vue d’ensemble du framework GRAAL : contexte, architecture multi-agents, perspectives.</p>
-<p><a href="presentation.html" class="btn btn-primary btn-lg" role="button">Voir la présentation →</a></p>
+<section id="contexte" class="level2">
+<h2 class="anchored" data-anchor-id="contexte">Contexte</h2>
+<p>Les pages précédentes évaluent chaque méthode séparément (modèle supervisé sur le jeu d’évaluation complet, diagnostic de l’espace d’embedding pour l’Agentic RAG). Cette page réunit les 4 méthodes de classification du projet — Navigator, Agentic RAG, Summary et le modèle supervisé de production — sur un même échantillon du jeu d’évaluation, et ajoute deux briques transverses :</p>
+<ul>
+<li><strong>MatchVerifier</strong> juge si le code de vérité terrain (<code>apet2025</code>) est lui-même correct, plutôt que de le prendre pour acquis — la vérité terrain d’un jeu de test annoté n’est pas plus fiable a priori que celle du jeu d’entraînement (cf.&nbsp;l’audit des labels d’entraînement dans la <a href="presentation.html">présentation</a>).</li>
+<li><strong>CodeChooser</strong> arbitre entre la vérité terrain et les 4 prédictions quand elles ne s’accordent pas déjà toutes sur un seul code.</li>
+</ul>
+<p>Chaque appel est chronométré individuellement, ce qui donne une vue concrète du coût en temps de chaque méthode — jusqu’ici non mesuré.</p>
+<p>Le script reproductible est <a href="https://github.com/InseeFrLab/GRAAL/blob/main/src/evaluation/evaluate_eval_set_multi_method.py"><code>src/evaluation/evaluate_eval_set_multi_method.py</code></a>.</p>
 </section>
-<section id="diagnostic-embeddings" class="level3 g-col-12 g-col-md-4">
-<h3 class="anchored" data-anchor-id="diagnostic-embeddings">📊 Diagnostic embeddings</h3>
-<p>Évaluation de la qualité de l’espace d’embedding utilisé par l’Agentic RAG (NAF2025) : cohérence, chevauchement et confusion entre notices et libellés.</p>
-<p><a href="embeddings.html" class="btn btn-outline-primary btn-lg" role="button">Voir le diagnostic →</a></p>
+<section id="protocole" class="level2">
+<h2 class="anchored" data-anchor-id="protocole">Protocole</h2>
+<ul>
+<li><strong>Échantillon</strong> : 60 lignes du jeu d’évaluation (<code>data/eval/eval_set.parquet</code>), graine fixée (<code>seed=123</code>) pour la reproductibilité.</li>
+<li><strong>Concurrence bornée</strong> : jusqu’à 6 appels en vol simultanément par étape (<code>--concurrency 6</code>), pour rester dans un temps raisonnable — chaque appel Navigator/Agentic-RAG/Summary étant lui-même une boucle agentique multi-tours.</li>
+<li><strong>Étapes</strong>, dans l’ordre : MatchVerifier sur la vérité terrain → les 4 classifieurs → arbitrage CodeChooser (dédup des codes par <code>normalize_code</code>, arbitrage sauté si tous les candidats s’accordent déjà).</li>
+<li>Chaque ligne traitée est journalisée au fil de l’eau (checkpoint JSONL), même rationale que <code>run_eval.py</code>/<code>verify_train_labels.py</code>.</li>
+</ul>
 </section>
-<section id="éval.-multi-méthode" class="level3 g-col-12 g-col-md-4">
-<h3 class="anchored" data-anchor-id="éval.-multi-méthode">⏱️ Éval. multi-méthode</h3>
-<p>Navigator, Agentic-RAG, Summary et Supervisé sur un même échantillon, chronométrés, avec arbitrage CodeChooser et vérification de la vérité terrain.</p>
-<p><a href="multi_method_eval.html" class="btn btn-outline-primary btn-lg" role="button">Voir les résultats →</a></p>
+<section id="résultats" class="level2">
+<h2 class="anchored" data-anchor-id="résultats">Résultats</h2>
+<section id="temps-par-étape" class="level3">
+<h3 class="anchored" data-anchor-id="temps-par-étape">Temps par étape</h3>
+<p>Le run complet a pris environ <strong>1h52 en temps mur</strong> (avec <code>concurrency=6</code>) ; le “total (séquentiel)” ci-dessous est la somme des durées individuelles, à titre de coût en temps de calcul plutôt que de temps mur.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Étape</th>
+<th>Appels</th>
+<th>Échecs</th>
+<th>Moyenne</th>
+<th>Total (séquentiel)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Agentic-RAG</td>
+<td>60</td>
+<td>0</td>
+<td>237.6 s</td>
+<td>237.6 min</td>
+</tr>
+<tr class="even">
+<td>Summary</td>
+<td>60</td>
+<td>37</td>
+<td>149.1 s</td>
+<td>149.1 min</td>
+</tr>
+<tr class="odd">
+<td>CodeChooser</td>
+<td>44</td>
+<td>24</td>
+<td>132.4 s</td>
+<td>97.1 min</td>
+</tr>
+<tr class="even">
+<td>Navigator</td>
+<td>60</td>
+<td>0</td>
+<td>76.4 s</td>
+<td>76.4 min</td>
+</tr>
+<tr class="odd">
+<td>MatchVerifier</td>
+<td>60</td>
+<td>0</td>
+<td>5.9 s</td>
+<td>5.9 min</td>
+</tr>
+<tr class="even">
+<td>Supervisé</td>
+<td>60</td>
+<td>0</td>
+<td>0.3 s</td>
+<td>0.3 min</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Constat inattendu</strong> : Agentic-RAG est en moyenne plus lent que Navigator, alors que son point de départ par similarité d’embedding est censé lui épargner des étapes de navigation. L’explication la plus probable n’est pas une propriété de la méthode elle-même mais la contention créée par <code>concurrency=6</code> : plusieurs appels multi-tours simultanés vers le même point de terminaison LLM ont provoqué des <code>openai.APITimeoutError</code> répétées, chacune coûtant jusqu’à 60s (le timeout client configuré) avant repli ou nouvelle tentative.</p>
 </section>
-</div>
+<section id="un-écart-de-robustesse-entre-les-méthodes" class="level3">
+<h3 class="anchored" data-anchor-id="un-écart-de-robustesse-entre-les-méthodes">Un écart de robustesse entre les méthodes</h3>
+<p>Navigator et Agentic-RAG n’ont échoué sur <strong>aucune</strong> des 60 lignes malgré ces timeouts : ce sont les deux méthodes qui héritent du garde-fou ajouté à <code>BaseClassifier</code> (descente forcée vers une feuille, filet de sécurité anti-non-final, cf.&nbsp;la présentation). Summary et CodeChooser, qui reposent tous les deux sur un simple <code>Runner.run</code> sans boucle Python au-dessus, n’ont pas ce filet : un timeout y interrompt l’appel purement et simplement.</p>
+<ul>
+<li><strong>Summary</strong> : 37/60 échecs (62%) — mais parmi les 23 réponses obtenues, 60.9% correspondent à la vérité terrain (contre 23.3% en comptant les échecs comme faux), donc la méthode n’est pas nécessairement moins précise que les autres, seulement moins fiable dans ces conditions de charge.</li>
+<li><strong>CodeChooser</strong> : 24/44 échecs (55%) sur les lignes nécessitant un arbitrage.</li>
+</ul>
+</section>
+<section id="exactitude-par-méthode-60-lignes" class="level3">
+<h3 class="anchored" data-anchor-id="exactitude-par-méthode-60-lignes">Exactitude par méthode (60 lignes)</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Méthode</th>
+<th>Exactitude (60 lignes)</th>
+<th>Exactitude parmi les réponses obtenues</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Supervisé</td>
+<td>50.0%</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>Navigator</td>
+<td>46.7%</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>Agentic-RAG</td>
+<td>45.0%</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>Summary</td>
+<td>23.3%</td>
+<td>60.9% (n=23)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="la-vérité-terrain-elle-même" class="level3">
+<h3 class="anchored" data-anchor-id="la-vérité-terrain-elle-même">La vérité terrain elle-même</h3>
+<p>MatchVerifier confirme le code de vérité terrain sur seulement <strong>33/60 lignes (55%)</strong> — cohérent avec le doute déjà soulevé sur le jeu d’entraînement. La réponse finale (unanime ou arbitrée) ne rejoint la vérité terrain que sur <strong>27/60 lignes (45%)</strong> :</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Issue</th>
+<th>Lignes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Unanimes (tous les candidats s’accordent, donc = vérité terrain)</td>
+<td>16</td>
+</tr>
+<tr class="even">
+<td>Arbitrage réussi, CodeChooser confirme la vérité terrain</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>Arbitrage réussi, CodeChooser corrige la vérité terrain</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>Arbitrage en échec (timeout CodeChooser)</td>
+<td>24</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="exemples-darbitrage" class="level3">
+<h3 class="anchored" data-anchor-id="exemples-darbitrage">Exemples d’arbitrage</h3>
+<p>CodeChooser reçoit un libellé et une liste de codes candidats dédupliqués (vérité terrain + les 4 prédictions), et rend exactement un de ces codes, avec une confiance et une explication — jamais un code inédit.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Libellé</th>
+<th>Vérité terrain</th>
+<th>Navigator</th>
+<th>Agentic-RAG</th>
+<th>Summary</th>
+<th>Supervisé</th>
+<th>Choix CodeChooser</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Réparation d’équipements électriques</td>
+<td>3314Y</td>
+<td>33.14Y</td>
+<td>33.14Y</td>
+<td>33.14</td>
+<td>3314Y</td>
+<td><strong>3314Y</strong> ✅</td>
+</tr>
+<tr class="even">
+<td>Aménagement intérieur de véhicules, installation et réparation</td>
+<td>2920Y</td>
+<td>29.32Y</td>
+<td>43.31Y</td>
+<td>—</td>
+<td>2920Y</td>
+<td><strong>29.32Y</strong></td>
+</tr>
+<tr class="odd">
+<td>Isolation thermique intérieur/extérieur, rénovation générale</td>
+<td>4323Y</td>
+<td>43.35Y</td>
+<td>43.23Y</td>
+<td>43.23Y</td>
+<td>4323Y</td>
+<td><strong>43.35Y</strong></td>
+</tr>
+<tr class="even">
+<td>CMPP</td>
+<td>4291Y</td>
+<td>86.22Y</td>
+<td>86.93Y</td>
+<td>—</td>
+<td>8694H</td>
+<td><strong>86.93Y</strong></td>
+</tr>
+<tr class="odd">
+<td>Import-export, vente d’appareils électroménagers</td>
+<td>4643H</td>
+<td>46.43H</td>
+<td>46.43H</td>
+<td>—</td>
+<td>4754Y</td>
+<td><strong>4643H</strong> ✅</td>
+</tr>
+<tr class="even">
+<td>Conception et fabrication par impression 3D</td>
+<td>7411Y</td>
+<td>32.99Y</td>
+<td>28.97Y</td>
+<td>—</td>
+<td>1813Y</td>
+<td><strong>32.99Y</strong></td>
+</tr>
+</tbody>
+</table>
+<p>✅ = le choix de CodeChooser rejoint la vérité terrain.</p>
+</section>
+</section>
+<section id="à-retenir" class="level2">
+<h2 class="anchored" data-anchor-id="à-retenir">À retenir</h2>
+<ol type="1">
+<li><strong>Le coût en temps est très inégal</strong> : de 0.3s (Supervisé) à près de 4 minutes par appel (Agentic-RAG) — un facteur ~800 entre la méthode la plus rapide et la plus lente.</li>
+<li><strong>La robustesse aux timeouts n’est pas uniforme</strong> : seules Navigator et Agentic-RAG bénéficient du garde-fou de <code>BaseClassifier</code>. Étendre un mécanisme équivalent (retry + repli) à Summary et CodeChooser serait la prochaine amélioration naturelle avant d’augmenter la taille de l’échantillon.</li>
+<li><strong>La vérité terrain du jeu d’évaluation mérite le même doute que celle du jeu d’entraînement</strong> — moins de la moitié des lignes de cet échantillon la voient confirmée par l’arbitrage final.</li>
+</ol>
+</section>
+<section id="reproduire-ce-run" class="level2">
+<h2 class="anchored" data-anchor-id="reproduire-ce-run">Reproduire ce run</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run <span class="at">-m</span> src.evaluation.evaluate_eval_set_multi_method <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">--n-samples</span> 60 <span class="at">--seed</span> 123 <span class="at">--concurrency</span> 6 <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output-dir</span> data/eval/multi_method</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

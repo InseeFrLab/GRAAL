@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://InseeFrLab.github.io/GRAAL/embeddings.html</loc>
-    <lastmod>2026-07-15T14:54:32.967Z</lastmod>
+    <loc>https://InseeFrLab.github.io/GRAAL/multi_method_eval.html</loc>
+    <lastmod>2026-07-16T12:15:49.673Z</lastmod>
+  </url>
+  <url>
+    <loc>https://InseeFrLab.github.io/GRAAL/presentation.html</loc>
+    <lastmod>2026-07-16T12:15:49.673Z</lastmod>
   </url>
   <url>
     <loc>https://InseeFrLab.github.io/GRAAL/index.html</loc>
-    <lastmod>2026-07-15T14:54:32.967Z</lastmod>
+    <lastmod>2026-07-16T12:15:49.673Z</lastmod>
+  </url>
+  <url>
+    <loc>https://InseeFrLab.github.io/GRAAL/embeddings.html</loc>
+    <lastmod>2026-07-16T12:15:49.673Z</lastmod>
   </url>
 </urlset>

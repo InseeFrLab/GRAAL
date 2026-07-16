@@ -291,9 +291,9 @@ const initChalkboard = function ( Reveal ) {
 
 	function whenReady( callback ) {
 		// wait for markdown to be parsed and code to be highlighted
-		if ( !document.querySelector( 'section[data-markdown]:not([data-markdown-parsed])' ) 
-			   && !document.querySelector( '[data-load]:not([data-loaded])') 
-		     && !document.querySelector( 'code[data-line-numbers*="|"]') 	
+		if ( !document.querySelector( 'section[data-markdown]:not([data-markdown-parsed])' )
+			   && !document.querySelector( '[data-load]:not([data-loaded])')
+		     && !document.querySelector( 'code[data-line-numbers*="|"]')
 		) {
 			callback();
 		} else {
@@ -417,7 +417,7 @@ const initChalkboard = function ( Reveal ) {
 			mode,
 			board
 		};
-		document.dispatchEvent( message );	
+		document.dispatchEvent( message );
 	}
 
 	function setupDrawingCanvas( id ) {
@@ -693,7 +693,7 @@ const initChalkboard = function ( Reveal ) {
 				return data;
 			}
 		}
-		var page = Number( Reveal.getCurrentSlide().getAttribute('data-pdf-page-number') ); 
+		var page = Number( Reveal.getCurrentSlide().getAttribute('data-pdf-page-number') );
 //console.log( indices, Reveal.getCurrentSlide() );
 		storage[ id ].data.push( {
 			slide: indices,
@@ -935,7 +935,7 @@ const initChalkboard = function ( Reveal ) {
 			}
 		}
 	}
- 
+
 	function eraseWithSponge( context, x, y ) {
 		context.save();
 		context.beginPath();
@@ -1062,7 +1062,7 @@ const initChalkboard = function ( Reveal ) {
 	/**
 	 * Set the  color
 	 */
-	function setColor( index, record ) {    
+	function setColor( index, record ) {
  		// protect against out of bounds (this could happen when
   	// replaying events recorded with different color settings).
     if ( index >= pens[ mode ].length ) index = 0;
