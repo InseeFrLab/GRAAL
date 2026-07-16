@@ -19,6 +19,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 
 import polars as pl
 
@@ -80,8 +81,10 @@ async def run(args) -> int:
     # written since the checkpoint file was opened.
     checkpoint_path = os.path.join(args.output_dir, f"predictions_{args.method}.checkpoint.jsonl")
     predictions = []
+    durations = []
     with storage.open_path(checkpoint_path, "w", encoding="utf-8") as ckpt:
         for label in labels:
+            start = time.perf_counter()
             try:
                 pred = await method(label)
             except Exception as e:
@@ -97,6 +100,7 @@ async def run(args) -> int:
                 pred = MatchVerificationInput(
                     activity=label, code="", proposed_explanation=str(e), proposed_confidence=0.0
                 )
+            durations.append(time.perf_counter() - start)
             predictions.append(pred)
             ckpt.write(pred.model_dump_json() + "\n")
             ckpt.flush()
@@ -110,6 +114,8 @@ async def run(args) -> int:
     confidences = [getattr(pred, "proposed_confidence", None) for pred in predictions]
 
     report = evaluate(y_true, y_pred, weights=weights, confidences=confidences)
+    report["total_duration_seconds"] = sum(durations)
+    report["mean_duration_seconds"] = sum(durations) / len(durations) if durations else float("nan")
 
     if args.bootstrap > 0:
         if "eval_stratum" in df.columns:
@@ -147,6 +153,7 @@ async def run(args) -> int:
         pl.Series("prediction", y_pred),
         pl.Series("explanation", explanations),
         pl.Series("confidence", confidences),
+        pl.Series("duration_seconds", durations),
     )
     details_path = os.path.join(args.output_dir, f"predictions_{args.method}.parquet")
     with storage.open_path(details_path, "wb") as f:
