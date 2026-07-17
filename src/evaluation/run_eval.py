@@ -20,13 +20,16 @@ import json
 import logging
 import os
 import time
+from datetime import datetime
 
 import polars as pl
+from langfuse import propagate_attributes
 
 from src.agents.closers.match_verifier import MatchVerificationInput
 from src.evaluation.bootstrap import bootstrap_ci
 from src.evaluation.config import PATH_EVAL_OUTPUT
 from src.evaluation.metrics import accuracy_at_depth, evaluate
+from src.evaluation.row_id import row_id_for
 from src.main import (
     classify_agentic_rag,
     classify_navigator,
@@ -35,6 +38,7 @@ from src.main import (
 )
 from src.utils import storage
 from src.utils.logging import configure_logging
+from src.utils.retry import call_with_retries
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -69,6 +73,14 @@ async def run(args) -> int:
     storage.makedirs(args.output_dir)
     method = METHODS[args.method]
 
+    # Groups every Langfuse trace this run produces under one session_id, and tags
+    # each one with the eval row it corresponds to — so a specific prediction's full
+    # LLM/tool-call trace can be found in Langfuse later (by row_id), and this
+    # campaign's traces can be filtered/grouped apart from ad hoc CLI usage (by
+    # session_id), rather than only by the generic per-classifier experiment_name
+    # classify_navigator/etc. already set.
+    session_id = f"run_eval_{args.method}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
     # Predictions are checkpointed to disk as they're produced (one JSONL line per
     # label, flushed immediately) instead of only written after the whole batch
     # succeeds: classify_navigator/classify_agentic_rag/classify_supervised already
@@ -83,22 +95,34 @@ async def run(args) -> int:
     predictions = []
     durations = []
     with storage.open_path(checkpoint_path, "w", encoding="utf-8") as ckpt:
-        for label in labels:
+        for i, label in enumerate(labels):
             start = time.perf_counter()
-            try:
-                pred = await method(label)
-            except Exception as e:
+            with propagate_attributes(
+                session_id=session_id,
+                metadata={"row_id": row_id_for(label, y_true[i])},
+                tags=["eval", "run_eval", args.method],
+            ):
                 # Not every classifier has BaseClassifier's own try/except+fallback
                 # (e.g. SummaryAgenticClassifier is a single free-running Runner.run
                 # with no Python-owned guard rail — cf. its docstring), so an error
                 # reaching the LLM endpoint (e.g. openai.APITimeoutError) can still
-                # propagate here. Record it as a failed prediction instead of losing
-                # the rest of the batch: code="" reads as a missing prediction in
-                # evaluate() (cf. normalize_code), the same convention classifiers'
-                # own fallbacks use for "no final code reached".
-                logger.exception(f"Classification failed for {label!r}, recording as a failure")
+                # propagate here — retried once (cf. call_with_retries, same
+                # harmonized policy as evaluate_eval_set_multi_method.py and
+                # verify_train_labels.py) before being recorded as a failed
+                # prediction instead of losing the rest of the batch: code=""
+                # reads as a missing prediction in evaluate() (cf. normalize_code),
+                # the same convention classifiers' own fallbacks use for "no final
+                # code reached".
+                pred = await call_with_retries(
+                    lambda label=label: method(label),
+                    what=f"{args.method} classification of {label!r}",
+                )
+            if pred is None:
                 pred = MatchVerificationInput(
-                    activity=label, code="", proposed_explanation=str(e), proposed_confidence=0.0
+                    activity=label,
+                    code="",
+                    proposed_explanation="Classification failed after retrying.",
+                    proposed_confidence=0.0,
                 )
             durations.append(time.perf_counter() - start)
             predictions.append(pred)
@@ -112,10 +136,29 @@ async def run(args) -> int:
     y_pred = [getattr(pred, "code", None) for pred in predictions]
     explanations = [getattr(pred, "proposed_explanation", None) for pred in predictions]
     confidences = [getattr(pred, "proposed_confidence", None) for pred in predictions]
+    tool_call_counts = [getattr(pred, "tool_call_count", None) for pred in predictions]
+    attempt_counts = [getattr(pred, "attempt_count", None) for pred in predictions]
 
-    report = evaluate(y_true, y_pred, weights=weights, confidences=confidences)
+    report = evaluate(
+        y_true,
+        y_pred,
+        weights=weights,
+        confidences=confidences,
+        explanations=explanations,
+        attempt_counts=attempt_counts,
+    )
     report["total_duration_seconds"] = sum(durations)
     report["mean_duration_seconds"] = sum(durations) / len(durations) if durations else float("nan")
+
+    # Sanity check, not an accuracy metric: how much tool use actually happened per
+    # method (e.g. confirming Navigator/Agentic-RAG/Summary explore the graph rather
+    # than finalizing on zero tool calls; always 0/None for non-agentic methods like
+    # the supervised baseline).
+    known_tool_calls = [c for c in tool_call_counts if c is not None]
+    report["total_tool_calls"] = sum(known_tool_calls) if known_tool_calls else None
+    report["mean_tool_calls"] = (
+        sum(known_tool_calls) / len(known_tool_calls) if known_tool_calls else float("nan")
+    )
 
     if args.bootstrap > 0:
         if "eval_stratum" in df.columns:
@@ -154,6 +197,8 @@ async def run(args) -> int:
         pl.Series("explanation", explanations),
         pl.Series("confidence", confidences),
         pl.Series("duration_seconds", durations),
+        pl.Series("tool_call_count", tool_call_counts),
+        pl.Series("attempt_count", attempt_counts),
     )
     details_path = os.path.join(args.output_dir, f"predictions_{args.method}.parquet")
     with storage.open_path(details_path, "wb") as f:

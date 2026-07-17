@@ -1,16 +1,28 @@
 from pydantic import BaseModel, Field
 
 from agents import Runner
-from src.agents.base_agent import BaseAgent
+from src.agents.base_agent import BaseAgent, count_tool_calls
 from src.neo4j_graph.graph import Graph
 
 
 class CodeChoice(BaseModel):
+    # Field order matches generation order for structured output (cf.
+    # base_agent.py): the explanation is asked for before the code/confidence it
+    # justifies, so the model's reasoning can actually inform the choice instead of
+    # just rationalizing one it already committed to a few tokens earlier.
+    explanation: str = Field(description="Concise explanation for the choice made")
     chosen_code: str = Field(description="Chosen code among the provided options")
     confidence: float = Field(
         description="Confidence level of the choice, between 0 and 1", ge=0, le=1
     )
-    explanation: str = Field(description="Concise explanation for the choice made")
+    tool_call_count: int | None = Field(
+        default=None,
+        description="Do not fill this in — populated automatically after the call completes.",
+    )
+    attempt_count: int | None = Field(
+        default=None,
+        description="Do not fill this in — populated automatically after the call completes.",
+    )
 
     def __str__(self):
         return self.model_dump_json()
@@ -29,7 +41,9 @@ class CodeChooser(BaseAgent):
         prompt = self.build_prompt(activity, codes)
         result = await Runner.run(self.agent, prompt)
 
-        return result.final_output
+        output = result.final_output
+        output.tool_call_count = count_tool_calls(result)
+        return output
 
     def get_agent_name(self) -> str:
         return "Code Chooser Agent"
@@ -60,9 +74,9 @@ class CodeChooser(BaseAgent):
                 Les codes candidats sont :
                 {codes_text}
 
-                Choisissez le code le plus approprié parmi ces options. Analysez chaque code en utilisant les outils disponibles si nécessaire, puis fournissez :
-                1. Le code choisi (exactement comme fourni dans la liste)
-                2. Votre niveau de confiance (entre 0 et 1)
-                3. Une explication concise de votre choix
+                Choisissez le code le plus approprié parmi ces options. Analysez chaque code en utilisant les outils disponibles si nécessaire, puis fournissez, dans cet ordre :
+                1. Une explication concise qui raisonne sur votre choix avant de le formuler
+                2. Le code choisi (exactement comme fourni dans la liste)
+                3. Votre niveau de confiance (entre 0 et 1)
 
                 Assurez-vous que le code choisi correspond exactement à l'un des codes fournis."""

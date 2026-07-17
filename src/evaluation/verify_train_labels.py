@@ -8,11 +8,11 @@ lui-même (cf. src.evaluation.run_eval pour l'évaluation d'un classifieur).
 Pour chaque libellé où le vérificateur signale un désaccord (llm_is_match =
 False), demande dans la foulée au SummaryAgenticClassifier (cf.
 src.agents.Text2Code.classifiers.summary_classifier) sa propre proposition de
-code — un second avis indépendant, calculé une bonne fois pour toutes ici
-plutôt qu'à la demande dans src.evaluation.apps.human_review_app, qui se contente
-de lire les colonnes summary_code/summary_confidence/summary_explanation du
-parquet produit. Coûte un appel agentique de plus, mais seulement sur les
-libellés effectivement en désaccord.
+code — un second avis indépendant, calculé une bonne fois pour toutes ici et
+stocké dans les colonnes summary_code/summary_confidence/summary_explanation du
+parquet produit, plutôt que recalculé à la demande par un outil de revue. Coûte
+un appel agentique de plus, mais seulement sur les libellés effectivement en
+désaccord.
 
 Chaque appel (MatchVerifier et SummaryAgenticClassifier) est retenté une fois en
 cas d'échec (timeout LLM notamment) avant d'abandonner : une ligne où
@@ -53,6 +53,7 @@ from src.evaluation.build_eval_set import load_dataframe
 from src.neo4j_graph.graph import Graph
 from src.utils import storage
 from src.utils.logging import configure_logging
+from src.utils.retry import call_with_retries
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -68,23 +69,6 @@ _SUMMARY_CLASSIFIER_MAX_ATTEMPTS = 2
 # mode above, but a transient timeout can still hit it — worth the same one retry
 # rather than losing the row entirely.
 _VERIFIER_MAX_ATTEMPTS = 2
-
-
-async def _call_with_retries(coro_fn, max_attempts: int, what: str):
-    """Await `coro_fn()`, retrying up to `max_attempts` times on any exception.
-
-    Returns the result, or None if every attempt failed (logged as a warning per
-    retry, and as a full exception only once all attempts are exhausted).
-    """
-    for attempt in range(1, max_attempts + 1):
-        try:
-            return await coro_fn()
-        except Exception:
-            if attempt < max_attempts:
-                logger.warning(f"{what} failed (attempt {attempt}/{max_attempts}), retrying")
-            else:
-                logger.exception(f"{what} failed after {max_attempts} attempts")
-    return None
 
 
 async def verify_rows(
@@ -105,8 +89,7 @@ async def verify_rows(
     crashing the whole batch.
 
     When `summary_classifier` is given, also asks it for a second-opinion code on
-    every row flagged as a mismatch (is_match=False) — this is the only case
-    src.evaluation.apps.human_review_app needs it for — and stores the result in the
+    every row flagged as a mismatch (is_match=False), and stores the result in the
     summary_code/summary_confidence/summary_explanation columns. Also retries once
     on failure (cf. _SUMMARY_CLASSIFIER_MAX_ATTEMPTS); left null otherwise, including
     when both attempts fail.
@@ -128,7 +111,7 @@ async def verify_rows(
             code = row[code_column]
             logger.info(f"{i}/{len(rows)}: {text!r} -> {code}")
 
-            verification = await _call_with_retries(
+            verification = await call_with_retries(
                 lambda: verifier(MatchVerificationInput(activity=text, code=str(code))),
                 _VERIFIER_MAX_ATTEMPTS,
                 f"MatchVerifier for {text!r}",
@@ -149,7 +132,7 @@ async def verify_rows(
             }
 
             if not verification.is_match and summary_classifier is not None:
-                proposal = await _call_with_retries(
+                proposal = await call_with_retries(
                     lambda: summary_classifier(text),
                     _SUMMARY_CLASSIFIER_MAX_ATTEMPTS,
                     f"SummaryAgenticClassifier for {text!r}",

@@ -62,8 +62,9 @@ class SummaryAgenticClassifier(BaseAgent):
         imposée, et vous pouvez conclure directement si le résumé suffit déjà à trancher
         avec certitude.
 
-        Ne renvoyez comme réponse finale qu'un code terminal (is_final = 1). Justifiez
-        votre choix et indiquez votre niveau de confiance entre 0 et 1.
+        Renvoyez votre réponse finale dans cet ordre : justifiez votre choix (raisonnez
+        avant de conclure), indiquez le code terminal retenu (is_final = 1
+        obligatoirement), puis votre niveau de confiance entre 0 et 1.
         """
 
     def build_prompt(self, activity: str) -> str:
@@ -75,4 +76,26 @@ class SummaryAgenticClassifier(BaseAgent):
         # reliable source for this field, so it's always overridden with the caller's
         # own known value.
         result.activity = activity
+
+        if not self.graph.get_code_information(result.code).get("is_final"):
+            # No Python-owned guard rail forces the free-running loop above to stop on
+            # a terminal code (cf. this module's docstring) — descend deterministically
+            # to a real leaf rather than silently surfacing a non-final one. Same
+            # "confidence 0.0 marks a forced fallback" convention as
+            # BaseClassifier._fallback_output.
+            logger.warning(
+                f"SummaryAgenticClassifier returned non-final code {result.code!r}, "
+                "falling back to nearest leaf"
+            )
+            result = MatchVerificationInput(
+                activity=activity,
+                code=self.graph.first_leaf_from(result.code),
+                proposed_explanation=(
+                    f"[non-final fallback] Code non terminal retourné par le modèle : "
+                    f"{result.code}."
+                ),
+                proposed_confidence=0.0,
+                tool_call_count=result.tool_call_count,
+            )
+
         return result
