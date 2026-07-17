@@ -3,15 +3,14 @@
 For each row of the multi-method eval parquet (cf.
 src.evaluation.evaluate_eval_set_multi_method), shows the activity text and every
 distinct candidate code proposed for it (ground truth + Navigator + Agentic RAG +
-Summary + supervised model, deduplicated and grouped by which method(s) proposed
-each one, same collapse as before), each with its official notice, CodeChooser's
-own arbitration (when it ran), and MatchVerifier's verdict on that specific
-candidate (taken from whichever method proposed it first, since predictions that
-agree on the same code get near-identical verdicts). Independently for each
-candidate, a human judges: is this code actually correct, and is MatchVerifier's
-verdict on it right? This is what scores CodeChooser's arbitration, each method's
-raw proposal, and MatchVerifier itself against something other than a training
-label of unknown quality.
+Summary + supervised model, deduplicated by normalized code and grouped by which
+method(s) proposed each one), each with its official notice, CodeChooser's own
+arbitration (when it ran), and every source's own MatchVerifier verdict on that
+candidate (kept distinct per source, never collapsed to one). Independently for
+each candidate, a human judges whether the code is actually correct, and for each
+source's verdict on it, whether that verdict is right. This is what scores
+CodeChooser's arbitration, each method's raw proposal, and MatchVerifier itself
+against something other than a training label of unknown quality.
 
 Three reviewers each work through a ~100-row slice: a shared pool every reviewer
 sees (for inter-rater agreement) plus a slice unique to them (cf. --reviewers/
@@ -19,6 +18,13 @@ sees (for inter-rater agreement) plus a slice unique to them (cf. --reviewers/
 those arguments, so reviewing is fully asynchronous — anyone can pick up their own
 progress at any time, as long as the input file and those four arguments don't
 change mid-review.
+
+When two or more sources (ground truth, Navigator, Agentic RAG, Summary,
+Supervisé) propose the same code, each one still ran its own MatchVerifier call
+(same code, but that source's own proposed explanation/confidence as input), so
+their verdicts can disagree or simply justify themselves differently even when
+`is_match` matches — every source's verdict is shown and judged separately,
+never collapsed to a single one.
 
 Judgments are logged append-only to JSONL (keyed by (reviewer_id, row_id), so
 re-running is idempotent and safe to interrupt). The /metrics page derives, from
@@ -74,8 +80,8 @@ METHOD_LABELS = {
     "summary": "Summary",
     "supervised": "Supervisé",
 }
-LABEL_TO_METHOD = {label: name for name, label in METHOD_LABELS.items()}
 GROUND_TRUTH_LABEL = "Vérité terrain"
+GROUND_TRUTH_KEY = "ground_truth"
 
 # Per source label, the (is_match, confidence, explanation) column names to pull a
 # candidate's MatchVerifier verdict from — only the first source to propose a given
@@ -96,35 +102,42 @@ VERIFY_COLUMNS = {
 def build_candidates(row: dict, code_column: str) -> list[dict]:
     """Dedupe (ground truth + each method's code) by normalized value.
 
-    Returns a list of {code, norm, sources, verifier_is_match, verifier_confidence,
-    verifier_explanation} ordered by first appearance (ground truth first, then
-    methods in METHOD_LABELS order), `sources` being the list of labels that
-    proposed this normalized code. The verifier fields come from whichever source
-    proposed the code first — predictions that agree on the same code are expected
-    to get near-identical MatchVerifier verdicts, so a human reviews one verdict per
-    candidate rather than one per source.
+    Multiple sources proposing the same code each ran their own MatchVerifier call
+    (same code, but a source-specific proposed explanation/confidence as input), so
+    their verdicts can differ even when they agree on is_match — every source's
+    verdict is kept, never collapsed to one. Returns a list of {code, norm,
+    sources, verdicts} ordered by first appearance (ground truth first, then
+    methods in METHOD_LABELS order): `sources` is the list of labels that proposed
+    this normalized code, `verdicts` is one entry per source that has MatchVerifier
+    data for it — {source, key, is_match, confidence, explanation} — in the same
+    order.
     """
-    raw = [(GROUND_TRUTH_LABEL, row[code_column])]
-    raw += [(label, row.get(f"{name}_code")) for name, label in METHOD_LABELS.items()]
+    raw = [(GROUND_TRUTH_LABEL, GROUND_TRUTH_KEY, row[code_column])]
+    raw += [(label, name, row.get(f"{name}_code")) for name, label in METHOD_LABELS.items()]
 
     by_norm: dict[str, dict] = {}
     order: list[str] = []
-    for source, code in raw:
+    for source, key, code in raw:
         norm = normalize_code(code)
         if norm is None:
             continue
         if norm not in by_norm:
-            is_match_col, conf_col, expl_col = VERIFY_COLUMNS[source]
-            by_norm[norm] = {
-                "code": code,
-                "norm": norm,
-                "sources": [],
-                "verifier_is_match": row.get(is_match_col),
-                "verifier_confidence": row.get(conf_col),
-                "verifier_explanation": row.get(expl_col),
-            }
+            by_norm[norm] = {"code": code, "norm": norm, "sources": [], "verdicts": []}
             order.append(norm)
-        by_norm[norm]["sources"].append(source)
+        candidate = by_norm[norm]
+        candidate["sources"].append(source)
+        is_match_col, conf_col, expl_col = VERIFY_COLUMNS[source]
+        is_match = row.get(is_match_col)
+        if is_match is not None:
+            candidate["verdicts"].append(
+                {
+                    "source": source,
+                    "key": key,
+                    "is_match": is_match,
+                    "confidence": row.get(conf_col),
+                    "explanation": row.get(expl_col),
+                }
+            )
     return [by_norm[norm] for norm in order]
 
 
@@ -206,9 +219,9 @@ def compute_metrics(
 
     A method/ground-truth/chooser's accuracy denominator is judgments where it
     actually produced a code (a None/failed prediction is excluded rather than
-    counted wrong). A candidate's MatchVerifier verdict is attributed to every
-    source method sharing its normalized code, consistent with the review UI
-    collapsing them into one judged card.
+    counted wrong). Each source's MatchVerifier verdict on a candidate is counted
+    on its own — a candidate shared by several sources contributes one verdict per
+    source, not one shared verdict.
     """
     rows_by_id = {r["row_id"]: r for r in rows}
 
@@ -253,23 +266,24 @@ def compute_metrics(
             for c in judgment["candidates"]:
                 norm = normalize_code(c["code"])
                 is_correct = norm in correct_norms
-                verifier_is_match = c.get("verifier_is_match")
-                verdict_correct = c.get("verifier_verdict_correct")
 
-                if verifier_is_match is not None:
-                    if verifier_is_match and is_correct:
-                        verify_tp += 1
-                    elif verifier_is_match and not is_correct:
-                        verify_fp += 1
-                    elif not verifier_is_match and is_correct:
-                        verify_fn += 1
-                    else:
-                        verify_tn += 1
+                for v in c.get("verdicts", []):
+                    is_match = v.get("is_match")
+                    verdict_correct = v.get("verdict_correct")
 
-                if verdict_correct is not None:
-                    for source in c.get("sources", []):
-                        name = LABEL_TO_METHOD.get(source)
-                        if name is None:
+                    if is_match is not None:
+                        if is_match and is_correct:
+                            verify_tp += 1
+                        elif is_match and not is_correct:
+                            verify_fp += 1
+                        elif not is_match and is_correct:
+                            verify_fn += 1
+                        else:
+                            verify_tn += 1
+
+                    if verdict_correct is not None:
+                        name = v.get("key")
+                        if name not in method_verify_totals:
                             continue
                         method_verify_totals[name] += 1
                         if verdict_correct:
@@ -313,9 +327,10 @@ def compute_metrics(
 def compute_inter_rater_agreement(
     all_judgments: dict[str, dict[str, dict]], shared_ids: set[str]
 ) -> dict:
-    """Percent agreement between every pair of reviewers on the shared pool, matched
-    by normalized candidate code, for both the "correct?" and "verifier verdict
-    correct?" judgments.
+    """Percent agreement between every pair of reviewers on the shared pool. The
+    "correct?" judgment is matched by normalized candidate code; "verifier verdict
+    correct?" is matched by (normalized code, source) since each source's verdict
+    on a shared code is judged independently.
     """
     reviewers = sorted(all_judgments)
     pairs = []
@@ -342,13 +357,18 @@ def compute_inter_rater_agreement(
                     if ca.get("correct") == cb.get("correct"):
                         pair_match += 1
                         correct_match += 1
-                    if (
-                        ca.get("verifier_verdict_correct") is not None
-                        and cb.get("verifier_verdict_correct") is not None
-                    ):
-                        verify_total += 1
-                        if ca["verifier_verdict_correct"] == cb["verifier_verdict_correct"]:
-                            verify_match += 1
+
+                    vb_by_key = {v["key"]: v for v in cb.get("verdicts", [])}
+                    for va in ca.get("verdicts", []):
+                        vb = vb_by_key.get(va["key"])
+                        if (
+                            vb is not None
+                            and va.get("verdict_correct") is not None
+                            and vb.get("verdict_correct") is not None
+                        ):
+                            verify_total += 1
+                            if va["verdict_correct"] == vb["verdict_correct"]:
+                                verify_match += 1
             if pair_total:
                 pairs.append(
                     {"reviewers": (a, b), "n": pair_total, "agreement": pair_match / pair_total}
@@ -512,15 +532,15 @@ REVIEW_TEMPLATE = (
     {% if notice %} &mdash; {{ notice.name }}{% endif %}
     <div class="sources">Proposé par : {{ c.sources | join(", ") }}</div>
     {% if notice and notice.description %}<div class="notice">{{ notice.description }}</div>{% endif %}
-    {% if c.verifier_is_match is not none %}
+    {% for v in c.verdicts %}
       <div class="muted">
-        MatchVerifier : {{ "match" if c.verifier_is_match else "no match" }}
-        {% if c.verifier_confidence is not none %}
-          (confiance {{ "%.0f"|format(c.verifier_confidence * 100) }}%)
+        MatchVerifier ({{ v.source }}) : {{ "match" if v.is_match else "no match" }}
+        {% if v.confidence is not none %}
+          (confiance {{ "%.0f"|format(v.confidence * 100) }}%)
         {% endif %}
-        — {{ c.verifier_explanation }}
+        — {{ v.explanation }}
       </div>
-    {% endif %}
+    {% endfor %}
   </div>
   <div class="judgments">
     <div class="judgment-group">
@@ -530,15 +550,16 @@ REVIEW_TEMPLATE = (
       <label><input type="radio" name="correct__{{ c.norm }}" value="no"
         {{ "checked" if existing_c and not existing_c.correct }}> Non</label>
     </div>
-    {% if c.verifier_is_match is not none %}
+    {% for v in c.verdicts %}
+    {% set existing_v = existing_verdicts.get((c.norm, v.key)) if existing else none %}
     <div class="judgment-group">
-      <span class="jg-label">Verdict MatchVerifier correct ?</span>
-      <label><input type="radio" name="verifier__{{ c.norm }}" value="yes" required
-        {{ "checked" if existing_c and existing_c.verifier_verdict_correct }}> Oui</label>
-      <label><input type="radio" name="verifier__{{ c.norm }}" value="no"
-        {{ "checked" if existing_c and existing_c.verifier_verdict_correct == false }}> Non</label>
+      <span class="jg-label">Verdict MatchVerifier correct ? ({{ v.source }})</span>
+      <label><input type="radio" name="verifier__{{ c.norm }}__{{ v.key }}" value="yes" required
+        {{ "checked" if existing_v and existing_v.verdict_correct }}> Oui</label>
+      <label><input type="radio" name="verifier__{{ c.norm }}__{{ v.key }}" value="no"
+        {{ "checked" if existing_v and existing_v.verdict_correct == false }}> Non</label>
     </div>
-    {% endif %}
+    {% endfor %}
   </div>
 </div>
 {% endfor %}
@@ -690,6 +711,12 @@ def create_app(
         existing_by_norm = (
             {normalize_code(c["code"]): c for c in existing["candidates"]} if existing else {}
         )
+        existing_verdicts = {}
+        if existing:
+            for c in existing["candidates"]:
+                norm = normalize_code(c["code"])
+                for v in c.get("verdicts", []):
+                    existing_verdicts[(norm, v["key"])] = v
         return render_template_string(
             REVIEW_TEMPLATE,
             row=row,
@@ -704,6 +731,7 @@ def create_app(
             next_id=order[idx + 1] if idx + 1 < len(order) else None,
             existing=existing,
             existing_by_norm=existing_by_norm,
+            existing_verdicts=existing_verdicts,
         )
 
     @app.route("/judge/<row_id>", methods=["POST"])
@@ -715,22 +743,28 @@ def create_app(
 
         candidates_out = []
         for c in row["candidates"]:
-            key = c["norm"]
-            correct = request.form.get(f"correct__{key}") == "yes"
-            verdict_correct = None
-            if c.get("verifier_is_match") is not None:
-                raw = request.form.get(f"verifier__{key}")
-                if raw in ("yes", "no"):
-                    verdict_correct = raw == "yes"
+            norm = c["norm"]
+            correct = request.form.get(f"correct__{norm}") == "yes"
+            verdicts_out = []
+            for v in c["verdicts"]:
+                raw = request.form.get(f"verifier__{norm}__{v['key']}")
+                verdict_correct = (raw == "yes") if raw in ("yes", "no") else None
+                verdicts_out.append(
+                    {
+                        "source": v["source"],
+                        "key": v["key"],
+                        "is_match": v["is_match"],
+                        "confidence": v["confidence"],
+                        "explanation": v["explanation"],
+                        "verdict_correct": verdict_correct,
+                    }
+                )
             candidates_out.append(
                 {
                     "code": c["code"],
                     "sources": c["sources"],
                     "correct": correct,
-                    "verifier_is_match": c.get("verifier_is_match"),
-                    "verifier_confidence": c.get("verifier_confidence"),
-                    "verifier_explanation": c.get("verifier_explanation"),
-                    "verifier_verdict_correct": verdict_correct,
+                    "verdicts": verdicts_out,
                 }
             )
 
@@ -741,10 +775,7 @@ def create_app(
                     "code": other_code,
                     "sources": ["Autre (revue)"],
                     "correct": True,
-                    "verifier_is_match": None,
-                    "verifier_confidence": None,
-                    "verifier_explanation": None,
-                    "verifier_verdict_correct": None,
+                    "verdicts": [],
                 }
             )
 
