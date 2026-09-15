@@ -112,7 +112,7 @@ def main() -> int:
         "--stratum-depth",
         type=int,
         default=5,
-        help="Code prefix length defining a stratum (default: 2 = NAF division)",
+        help="Code prefix length defining a stratum (default: 5)",
     )
     parser.add_argument("--seed", type=int, default=42, help="Sampling seed (default: 42)")
     args = parser.parse_args()

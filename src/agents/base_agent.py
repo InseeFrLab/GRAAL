@@ -33,6 +33,16 @@ set_default_openai_api("chat_completions")
 set_tracing_disabled(True)
 
 
+def count_tool_calls(result) -> int:
+    """Number of tool calls in a single `Runner.run` result's `new_items`.
+
+    Pure Python bookkeeping (not model-reported), attached to output objects after
+    the fact as a sanity-check signal — e.g. confirming Navigator/Agentic-RAG
+    actually explore the graph rather than finalizing on zero tool calls.
+    """
+    return sum(1 for item in result.new_items if item.type == "tool_call_item")
+
+
 class BaseAgent(ABC):
     def __init__(self, graph: Graph):
         super().__init__()
@@ -69,7 +79,10 @@ class BaseAgent(ABC):
         prompt = self.build_prompt(*args, **kwargs)
         result = await Runner.run(self.agent, prompt, max_turns=int(os.environ["MAX_TURNS"]))
         logger.info(f"Result of the __call__ in BaseAgent: \n {result.final_output}")
-        return result.final_output
+        output = result.final_output
+        if hasattr(output, "tool_call_count"):
+            output.tool_call_count = count_tool_calls(result)
+        return output
 
     def get_model_settings(self) -> ModelSettings:
         return ModelSettings(

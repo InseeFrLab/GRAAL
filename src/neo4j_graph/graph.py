@@ -190,6 +190,24 @@ class Graph:
         data = self._with_dotted_retry(code, self._cached_get_parent)
         return _unfreeze_dict(data) if data else None
 
+    def first_leaf_from(self, code: str) -> str:
+        """Deterministic, non-LLM walk down to a real leaf (first child at each level).
+
+        Used as a last-resort fallback target when a classifier's own answer isn't a
+        terminal position: this can't time out or hallucinate, at the cost of the
+        resulting leaf being an arbitrary descendant rather than a considered choice.
+        """
+        seen = set()
+        while code not in seen:
+            seen.add(code)
+            if self.get_code_information(code).get("is_final"):
+                return code
+            children = self.get_children(code)
+            if not children:
+                return code
+            code = children[0]["code"]
+        return code
+
     async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
         retrieval = await self.db.asimilarity_search(
             f"query : {activity}", k=top_k, filter={"FINAL": 1}

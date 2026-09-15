@@ -58,12 +58,17 @@ Navigator et Agentic-RAG n'ont échoué sur **aucune** des 60 lignes malgré ces
 
 ### Exactitude par méthode (60 lignes)
 
-| Méthode | Exactitude (60 lignes) | Exactitude parmi les réponses obtenues |
-|---|---|---|
-| Supervisé | 50.0% | — |
-| Navigator | 46.7% | — |
-| Agentic-RAG | 45.0% | — |
-| Summary | 23.3% | 60.9% (n=23) |
+Deux références possibles pour juger une méthode : la vérité terrain administrative (`apet2025`) et le choix final de CodeChooser — disponible sur 36/60 lignes (16 unanimes + 20 arbitrages réussis, cf. répartition ci-dessous). La vérité terrain elle-même est ajoutée comme une méthode parmi les autres : c'est un classifieur humain, au même titre que les 4 automatiques, et elle peut donc se voir contredite par l'arbitrage.
+
+| Méthode | vs vérité terrain (60 lignes) | vs vérité terrain, parmi réponses obtenues | vs choix CodeChooser (36 lignes avec décision finale) |
+|---|---|---|---|
+| Vérité terrain (humain) | — | — | 75.0% (27/36) |
+| Supervisé | 50.0% | — | 55.6% (20/36) |
+| Navigator | 46.7% | — | 83.3% (30/36) |
+| Agentic-RAG | 45.0% | — | 69.4% (25/36) |
+| Summary | 23.3% | 60.9% (n=23) | 36.1% (13/36) |
+
+**Navigator rejoint le choix final de CodeChooser plus souvent (83.3%) que la vérité terrain elle-même (75.0%)** : quand un arbitrage est nécessaire ou tranchable, CodeChooser donne le plus souvent raison à Navigator plutôt qu'au code administratif ou aux 3 autres méthodes.
 
 ### La vérité terrain elle-même
 

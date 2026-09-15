@@ -364,7 +364,12 @@ def build_similarity_heatmap(notice_embeddings: np.ndarray, notices_df: pd.DataF
         ["SECTION", "DIVISION", "GROUP", "CLASS", "CODE"]
     ).index.to_numpy()
     sorted_codes = notices_df["CODE"].to_numpy()[order]
+    sorted_names = notices_df["NAME"].to_numpy()[order]
     sorted_sections = notices_df["SECTION"].to_numpy()[order]
+    # Ticks stay hidden below (747 labels wouldn't fit anyway) but the code+name still needs to
+    # reach the hover — carried in the x/y category values themselves rather than a full n×n
+    # hover-text matrix, which at this size would dwarf the already-considered bdata cost below.
+    axis_labels = [f"{code} — {name}" for code, name in zip(sorted_codes, sorted_names)]
 
     sims = 1 - cosine_distances(notice_embeddings[order])
     np.fill_diagonal(sims, np.nan)  # self-similarity is always 1.0 and would wash out the scale
@@ -379,13 +384,14 @@ def build_similarity_heatmap(notice_embeddings: np.ndarray, notices_df: pd.DataF
     fig = go.Figure(
         go.Heatmap(
             z=sims.astype(np.float32),
-            x=sorted_codes,
-            y=sorted_codes,
+            x=axis_labels,
+            y=axis_labels,
             zmin=zmin,
             zmax=zmax,
             colorscale="Viridis",
             colorbar=dict(title="cosinus"),
             hoverongaps=False,
+            hovertemplate="%{y}<br>%{x}<br>similarité cosinus : %{z:.3f}<extra></extra>",
         )
     )
     fig.update_xaxes(
@@ -541,16 +547,56 @@ def compute_retrieval_confusion(
     return rows
 
 
-def build_confusion_heatmap(matrix: np.ndarray, group_labels: list, title: str) -> go.Figure:
+def build_confusion_heatmap(
+    matrix: np.ndarray, group_labels: list, title: str, group_names: dict | None = None
+) -> go.Figure:
+    """Plots the confusability *ratio* (cross-group similarity relative to each group's own
+    within-group cohesion — the same normalized metric top_confusable_pairs ranks by), not the
+    raw cosine similarity matrix stores on its diagonal: coloring by raw similarity would let a
+    section's own baseline cohesion (already shown in the level-cohesion figure) dominate the
+    scale and swamp the actual cross-group overlap this figure exists to surface — e.g. a pair
+    at cross_sim=0.50 but confusability=100% (as confusable as either section is with itself)
+    would look unremarkable next to a naturally tight section's own ~0.75 diagonal. A ratio near
+    or above 1 means two different categories are, on average, as close to each other as either
+    is to itself; the diagonal (self-ratio, always exactly 1) is masked like the notice-
+    similarity heatmap masks self-similarity. group_names, if given, maps a group code to a
+    human-readable label for the hover (a bare code like a NAF section letter isn't enough on
+    its own for a reader to place it)."""
+    group_diag = np.diag(matrix).copy()
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio = matrix / np.minimum(group_diag[:, None], group_diag[None, :])
+    np.fill_diagonal(ratio, np.nan)
+
+    off_diag = ratio[~np.isnan(ratio)]
+    zmin = float(np.nanmin(off_diag)) if off_diag.size else 0.0
+    zmax = float(np.nanmax(off_diag)) if off_diag.size else 1.0
+
+    labels = [
+        f"{g} — {group_names[g]}" if group_names and g in group_names else str(g)
+        for g in group_labels
+    ]
+    n = len(group_labels)
+    hover_text = [
+        [
+            f"{labels[i]}<br>{labels[j]}<br>confusabilité : {ratio[i, j]:.2f}<br>"
+            f"similarité croisée : {matrix[i, j]:.2f}"
+            for j in range(n)
+        ]
+        for i in range(n)
+    ]
+
     fig = go.Figure(
         go.Heatmap(
-            z=matrix,
+            z=ratio,
             x=group_labels,
             y=group_labels,
             colorscale="Viridis",
-            colorbar=dict(title="cosinus"),
-            zmin=float(np.nanmin(matrix)),
-            zmax=float(np.nanmax(matrix)),
+            colorbar=dict(title="confusabilité"),
+            zmin=zmin,
+            zmax=zmax,
+            text=hover_text,
+            hoverinfo="text",
+            hoverongaps=False,
         )
     )
     fig.update_yaxes(autorange="reversed")
@@ -987,10 +1033,12 @@ def evaluate_model(
     )
     heatmap_fig = build_similarity_heatmap(diag["notice_embeddings"], notices_df)
     level_fig = build_level_cohesion_figure(diag["cohesion_by_level"])
+    section_names = dict(zip(notices_df["SECTION"], notices_df["SECTION_NAME"]))
     confusion_fig = build_confusion_heatmap(
         diag["section_matrix"],
         diag["section_labels"],
-        "Confusion inter-sections (similarité moyenne)",
+        "Confusion inter-sections (confusabilité : similarité croisée / cohésion la plus faible)",
+        group_names=section_names,
     )
     section_pairs_html = render_table_html(
         diag["top_confusable_sections"],

@@ -5,7 +5,7 @@ from langfuse import get_client
 
 from agents import Runner
 from agents.model_settings import ModelSettings
-from src.agents.base_agent import BaseAgent
+from src.agents.base_agent import BaseAgent, count_tool_calls
 from src.agents.closers.match_verifier import MatchVerificationInput
 
 logger = logging.getLogger(__name__)
@@ -48,9 +48,10 @@ class BaseClassifier(BaseAgent):
     def get_finalize_instructions(self) -> str:
         return """
         Vous avez terminé l'exploration de la hiérarchie NACE ci-dessus. Sur la base des
-        informations recueillies, renvoyez votre réponse finale : le code retenu (qui doit
-        être une position terminale, is_final = 1), une explication concise de votre choix,
-        et votre niveau de confiance entre 0 et 1.
+        informations recueillies, renvoyez votre réponse finale, dans cet ordre : une
+        explication concise qui raisonne sur votre choix avant de le formuler, le code
+        retenu (qui doit être une position terminale, is_final = 1), et votre niveau de
+        confiance entre 0 et 1.
         """
 
     def __init__(self, graph):
@@ -78,45 +79,31 @@ class BaseClassifier(BaseAgent):
             model_settings=ModelSettings(temperature=0, tool_choice="none"),
         )
 
-    def _first_leaf_from(self, code: str) -> str:
-        """Deterministic, non-LLM walk down to a real leaf (first child at each level).
-
-        Used as the last-resort fallback target so that a failure can never surface a
-        non-final code — unlike the rest of the navigator loop this can't time out or
-        hallucinate, at the cost of the resulting leaf being an arbitrary descendant
-        rather than a considered choice (acceptable: it's only ever paired with
-        proposed_confidence=0.0).
-        """
-        seen = set()
-        while code not in seen:
-            seen.add(code)
-            if self.graph.get_code_information(code).get("is_final"):
-                return code
-            children = self.graph.get_children(code)
-            if not children:
-                return code
-            code = children[0]["code"]
-        return code
-
-    def _fallback_output(self, activity: str) -> MatchVerificationInput:
+    def _fallback_output(self, activity: str, tool_call_count: int = 0) -> MatchVerificationInput:
         return MatchVerificationInput(
             activity=activity,
-            code=self._first_leaf_from(self.graph.current_code),
+            code=self.graph.first_leaf_from(self.graph.current_code),
             proposed_explanation=(
                 "Échec de la génération de la réponse finale par le modèle ; dernière "
                 f"position atteinte lors de l'exploration : {self.graph.current_code}."
             ),
             proposed_confidence=0.0,
+            tool_call_count=tool_call_count,
         )
 
     async def _step(self, agent, conversation, last_call):
         """Run one exploration turn with `agent`. If it repeats the previous tool call
         verbatim (no progress), retry once at a higher temperature with an explicit
         nudge, using a clone of the same `agent` so any tool restriction is preserved.
+
+        Returns (conversation, call, n_tool_calls) — n_tool_calls counts every tool
+        call made in this step (including the repeated-call retry), for the caller's
+        running total (cf. _run_navigator_loop's tool_call_count sanity-check stat).
         """
         result = await Runner.run(agent, conversation, max_turns=1)
         conversation = result.to_input_list()
         call = _last_tool_call(result)
+        n_tool_calls = count_tool_calls(result)
 
         if call is not None and call == last_call:
             logger.info(f"Navigator loop: repeated call {call}, retrying")
@@ -137,8 +124,9 @@ class BaseClassifier(BaseAgent):
             result = await Runner.run(retry_agent, conversation, max_turns=1)
             conversation = result.to_input_list()
             call = _last_tool_call(result)
+            n_tool_calls += count_tool_calls(result)
 
-        return conversation, call
+        return conversation, call, n_tool_calls
 
     async def _force_descent_to_leaf(self, conversation):
         """Exploration stalled on a non-final node (step budget exhausted, still not
@@ -147,8 +135,11 @@ class BaseClassifier(BaseAgent):
         category in place of a classification, restrict the model to go_to_child only
         and keep forcing descent until it reaches a real leaf (capped to bound the
         loop; a well-formed NAF path is at most a few hops from any node).
+
+        Returns (conversation, n_tool_calls).
         """
         last_call = None
+        n_tool_calls = 0
         for _ in range(_MAX_FORCED_DESCENT_STEPS):
             if self.graph.is_current_final():
                 break
@@ -163,23 +154,30 @@ class BaseClassifier(BaseAgent):
                     ),
                 }
             ]
-            conversation, last_call = await self._step(
+            conversation, last_call, step_tool_calls = await self._step(
                 self.forced_descent_agent, conversation, last_call
             )
-        return conversation
+            n_tool_calls += step_tool_calls
+        return conversation, n_tool_calls
 
     async def _run_navigator_loop(
         self, activity: str, initial_prompt: str
     ) -> MatchVerificationInput:
         conversation = initial_prompt
         max_turns = int(os.environ["MAX_TURNS"])
+        # Accumulated across every Runner.run call this loop makes (exploration steps,
+        # forced descent, finalize) — a sanity-check stat, not model-reported, so it
+        # stays valid even down the exception path below (whatever was tallied before
+        # the failure).
+        tool_calls = 0
 
         try:
             last_call = None
             for step in range(max_turns):
-                conversation, call = await self._step(
+                conversation, call, step_tool_calls = await self._step(
                     self.exploration_agent, conversation, last_call
                 )
+                tool_calls += step_tool_calls
                 last_call = call
 
                 # Only stop right after an actual move: a read-only lookup (e.g. checking
@@ -197,14 +195,19 @@ class BaseClassifier(BaseAgent):
             natural_stop_code = None
             if not self.graph.is_current_final():
                 natural_stop_code = self.graph.current_code
-                conversation = await self._force_descent_to_leaf(conversation)
+                conversation, descent_tool_calls = await self._force_descent_to_leaf(conversation)
+                tool_calls += descent_tool_calls
 
             result = await Runner.run(self.finalize_agent, conversation, max_turns=2)
+            tool_calls += count_tool_calls(
+                result
+            )  # expected 0 (tool_choice="none"), counted anyway
             final_output = result.final_output
             # The model is not a reliable source for this field — observed in practice
             # leaking a tool name or a raw code instead of echoing the input text — so
             # it's always overridden with the caller's own known value.
             final_output.activity = activity
+            final_output.tool_call_count = tool_calls
 
             if natural_stop_code is not None:
                 final_output.proposed_explanation = (
@@ -218,7 +221,7 @@ class BaseClassifier(BaseAgent):
                     f"Navigator loop: finalize returned non-final code "
                     f"{final_output.code!r}, falling back"
                 )
-                final_output = self._fallback_output(activity)
+                final_output = self._fallback_output(activity, tool_call_count=tool_calls)
         except Exception as e:
             # Catches failures anywhere above (exploration/retry/forced-descent/finalize
             # Runner.run calls, e.g. openai.APITimeoutError from the shared LLM endpoint)
@@ -234,7 +237,7 @@ class BaseClassifier(BaseAgent):
                 level="ERROR",
                 status_message=f"Navigator loop failed, fell back to last position: {e}",
             )
-            final_output = self._fallback_output(activity)
+            final_output = self._fallback_output(activity, tool_call_count=tool_calls)
 
         logger.info(f"Result of the navigator loop: \n {final_output}")
         return final_output
