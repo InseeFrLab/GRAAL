@@ -16,7 +16,10 @@ jobs:
           python-version: "3.13"
 
       - name: Install tooling
-        run: pip install ruff pytest
+        # ruff pinned to match pyproject.toml's dev dependency floor: an unpinned
+        # install floats to whatever's newest, which has already broken this job once
+        # (a newer ruff release widened its default rule set out from under us).
+        run: pip install ruff==0.14.9 pytest
 
       - name: Lint
         run: ruff check .
