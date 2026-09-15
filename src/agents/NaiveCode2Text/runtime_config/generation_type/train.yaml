@@ -1,0 +1,14 @@
+# Large randomly sampled codes for testing
+
+main:
+  exhaustive_sampling: true
+  n_random_codes: 0
+  n_labels_per_gen: 10
+
+exhaustivity:
+  min_prompts_per_code: 100
+  n_spec_per_prompt: 5          # Number of includes/examples per prompt
+
+export:
+  output_format: ".parquet"
+  save_batch_size: 1000

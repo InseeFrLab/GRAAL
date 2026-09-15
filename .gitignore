@@ -1,5 +1,9 @@
 # Personnal usage
 test.ipynb
+test.py
+
+# Hydra
+outputs/
 
 # Generated evaluation run artifacts (predictions, metrics, diagnostics, review
 # logs) - reproducible outputs of scripts in src/evaluation/ and the root-level

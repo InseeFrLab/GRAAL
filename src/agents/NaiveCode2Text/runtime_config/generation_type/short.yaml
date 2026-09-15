@@ -1,0 +1,21 @@
+# Small random sampling
+
+main:
+  exhaustive_sampling: false
+  n_random_codes: 10
+  n_labels_per_gen: 10
+
+
+random:
+  includes:
+    geom_prob: 0.3
+    min: 1
+    max: null                   # null = up to the max number of includes
+
+  examples:
+    geom_prob: 0.2
+    min: 1
+    max: null                   # null = up to the max number of includes
+
+export:
+  output_format: ".txt"

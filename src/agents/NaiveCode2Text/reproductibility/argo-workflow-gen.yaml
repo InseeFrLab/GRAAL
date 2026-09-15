@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: naive-code2text-
+
+spec:
+  entrypoint: create-and-run
+  serviceAccountName: workflow
+
+  templates:
+    - name: create-and-run
+      container:
+        image: mateomorin/graal-synth-generation:latest
+
+        env:
+          # adresse Vault
+          - name: VAULT_ADDR
+            value: https://vault.lab.sspcloud.fr
+
+          # token récupéré depuis Kubernetes
+          - name: VAULT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: argo-vault
+                key: VAULT_TOKEN
+
+        command: ["bash", "-c"]
+
+        args:
+          - |
+            set -e
+
+            echo "=== Vault authentication ==="
+
+            # vérifie que le token fonctionne
+            vault token lookup
+
+            echo "=== Loading secrets from Vault ==="
+
+            export $(vault kv get -format=json onyxia-kv/mateom/graal \
+              | jq -r '.data.data
+                | to_entries
+                | map("\(.key)=\(.value)")
+                | .[]')
+
+            echo "=== Secrets loaded ==="
+
+            set -x
+
+            # clone repo
+            git clone -b mateom https://github.com/InseeFrLab/GRAAL.git
+            cd GRAAL/
+
+            uv sync
+            uv run -m src.agents.NaiveCode2Text.naive_code2text
