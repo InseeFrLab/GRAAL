@@ -77,4 +77,3 @@ No multilingual content.
 Only ASCII characters.
 The output must be stylistically indistinguishable from the examples for a human.
 Any output that is too correct, too smooth or too standardized is invalid.
-The model reacts better to a notion of validation / invalidation.

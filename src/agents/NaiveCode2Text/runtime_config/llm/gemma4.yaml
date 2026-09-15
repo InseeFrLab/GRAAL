@@ -1,0 +1,10 @@
+llm:
+  model: "gemma4-26b-moe"
+  temperature: 1.0
+  generation_batch_size: 10                     # Depends on GPU performances
+
+prompt:
+  prompt_path: "src/agents/NaiveCode2Text/prompt_creation/"
+
+export:
+  model_name: "gemma4-26b-moe"           # For file name

@@ -75,4 +75,3 @@ Pas de contenu multilingue.
 Que des caractères ASCII.
 La sortie doit être stylistiquement indistinguable des exemples pour un humain.
 Toute sortie trop correcte, trop fluide ou trop normalisée est invalide.
-Le modèle réagit mieux à une notion de validation / invalidation.

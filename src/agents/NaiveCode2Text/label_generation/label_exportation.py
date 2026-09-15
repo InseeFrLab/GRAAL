@@ -192,7 +192,8 @@ def print_in_terminal(
         codes: list,
         names: list,
         labels: list,
-        generation_time: float
+        generation_time: float,
+        ai_confidence: list = None
         ) -> bool:
     """
     Save results to file .txt
@@ -205,6 +206,7 @@ def print_in_terminal(
         labels (list of lists): List of labels for each code
         file_path (str): The .txt file path.
         generation_time (float): The time it took to generate.
+        ai_confidence (list): optional - The discriminator confidence for AI-generated content.
 
     Returns:
         bool: True if the file has been correctly saved.
@@ -217,13 +219,19 @@ def print_in_terminal(
     logger.info(f"{nb_labels} wordings have been generated in {generation_time:.2f} sec.\n\n")
     logger.info("=" * 36 + "\n")
 
-    for code, name, generated_labels in zip(codes, names, labels):
+    for i, (code, name, generated_labels) in enumerate(zip(codes, names, labels)):
+        if ai_confidence is not None:
+            ai_conf = ai_confidence[i]
         logger.info(f"Code: {code}\n")
         logger.info(f"Name: {name}\n")
         logger.info("Result:\n")
 
         for j, label in enumerate(generated_labels):
-            logger.info(f"{j}. {label}\n")
+            if ai_conf is not None:
+                conf = f" | conf: {ai_conf[j]:.3f}"
+            else:
+                conf = ""
+            logger.info(f"{j}. {label}{conf}\n")
 
         logger.info("\n" + "=" * 36 + "\n")
 
