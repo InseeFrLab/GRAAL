@@ -45,8 +45,8 @@ def make_tools(graph):
             Dictionnaire avec code, level, name, description, includes, includes_also,
             excludes, implementation_rule, parent_code, children_codes, children_count
         """
-        data = graph._cached_get_code_information(code)
-        return _unfreeze_dict(data) if data else {"error": f"Code {code} not found"}
+        data = graph.get_code_information(code)
+        return data if data else {"error": f"Code {code} not found"}
 
     @function_tool
     def get_children(code: str) -> List[Dict[str, Any]]:
@@ -59,7 +59,7 @@ def make_tools(graph):
         Returns:
             Liste des codes enfants avec code, level, name, description, includes, excludes
         """
-        return _unfreeze_list_of_dicts(graph._cached_get_children(code))
+        return graph.get_children(code)
 
     @function_tool
     def get_descendants(code: str, levels: int = 2) -> List[Dict[str, Any]]:
@@ -73,7 +73,7 @@ def make_tools(graph):
         Returns:
             Liste de tous les descendants jusqu'au niveau spécifié
         """
-        return _unfreeze_list_of_dicts(graph._cached_get_descendants(code, levels))
+        return graph.get_descendants(code, levels)
 
     @function_tool
     def get_siblings(code: str) -> List[Dict[str, Any]]:
@@ -86,7 +86,7 @@ def make_tools(graph):
         Returns:
             Liste des codes siblings (excluant le code d'origine)
         """
-        return _unfreeze_list_of_dicts(graph._cached_get_siblings(code))
+        return graph.get_siblings(code)
 
     @function_tool
     def get_parent(code: str) -> Optional[Dict[str, Any]]:
@@ -99,8 +99,7 @@ def make_tools(graph):
         Returns:
             Dictionnaire du parent ou None si pas de parent
         """
-        data = graph._cached_get_parent(code)
-        return _unfreeze_dict(data) if data else None
+        return graph.get_parent(code)
 
     return [get_code_information, get_children, get_descendants, get_siblings, get_parent]
 
@@ -119,11 +118,12 @@ class Graph:
             password=neo4j_config.password,
             enhanced_schema=True,
         )
-    
+
         self.emb_model = OpenAIEmbeddings(
             model=os.environ["EMBEDDING_MODEL"],
             openai_api_base=os.environ["URL_EMBEDDING_API"],
             openai_api_key=os.environ["OPENAI_API_KEY"],
+            check_embedding_ctx_length=False,
         )
 
         self.db = Neo4jVector.from_existing_graph(
@@ -150,11 +150,89 @@ class Graph:
         """
         return make_tools(self)
 
+    def _with_dotted_retry(self, code: str, fetch):
+        """Call `fetch(code)`, retrying once on a dotted variant if it comes back empty.
+
+        Les noeuds du graphe utilisent un code pointé (ex: "85.51Y"), alors que les
+        jeux de données bruts type NAF et l'API codif-ape en donnent la forme non
+        pointée (ex: "8551Y"). Si le code tel quel ne matche aucun noeud, on retente
+        avec un point inséré après les 2 premiers caractères. Partagé par tous les
+        lookups par code (get_code_information, get_children, get_descendants,
+        get_siblings, get_parent) plutôt que dupliqué dans chacun.
+        """
+        data = fetch(code)
+        if not data and "." not in code and len(code) > 2:
+            data = fetch(f"{code[:2]}.{code[2:]}")
+        return data
+
+    def get_code_information(self, code: str) -> Dict[str, Any]:
+        """Retourne les informations d'un code (nom, description, parent, enfants)."""
+        data = self._with_dotted_retry(code, self._cached_get_code_information)
+        return _unfreeze_dict(data) if data else {}
+
+    def get_children(self, code: str) -> List[Dict[str, Any]]:
+        """Retourne les enfants directs d'un code (niveau N+1)."""
+        data = self._with_dotted_retry(code, self._cached_get_children)
+        return _unfreeze_list_of_dicts(data) if data else []
+
+    def get_descendants(self, code: str, levels: int = 2) -> List[Dict[str, Any]]:
+        """Retourne les descendants d'un code jusqu'à N niveaux de profondeur."""
+        data = self._with_dotted_retry(code, lambda c: self._cached_get_descendants(c, levels))
+        return _unfreeze_list_of_dicts(data) if data else []
+
+    def get_siblings(self, code: str) -> List[Dict[str, Any]]:
+        """Retourne les codes au même niveau hiérarchique (même parent)."""
+        data = self._with_dotted_retry(code, self._cached_get_siblings)
+        return _unfreeze_list_of_dicts(data) if data else []
+
+    def get_parent(self, code: str) -> Optional[Dict[str, Any]]:
+        """Retourne le parent direct d'un code (niveau N-1), ou None si pas de parent."""
+        data = self._with_dotted_retry(code, self._cached_get_parent)
+        return _unfreeze_dict(data) if data else None
+
+    def first_leaf_from(self, code: str) -> str:
+        """Deterministic, non-LLM walk down to a real leaf (first child at each level).
+
+        Used as a last-resort fallback target when a classifier's own answer isn't a
+        terminal position: this can't time out or hallucinate, at the cost of the
+        resulting leaf being an arbitrary descendant rather than a considered choice.
+        """
+        seen = set()
+        while code not in seen:
+            seen.add(code)
+            if self.get_code_information(code).get("is_final"):
+                return code
+            children = self.get_children(code)
+            if not children:
+                return code
+            code = children[0]["code"]
+        return code
+
     async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
         retrieval = await self.db.asimilarity_search(
             f"query : {activity}", k=top_k, filter={"FINAL": 1}
         )
         return [item.metadata["CODE"] for item in retrieval]
+
+    def get_summary_tree(self, max_level: int) -> List[Dict[str, Any]]:
+        """Retourne tous les codes de niveau 1 à `max_level` (racine exclue), triés par
+        niveau puis code, avec leur parent direct.
+
+        Sert de matière première à `build_nace_summary.py`, appelé une seule fois à la
+        construction du résumé (pas un lookup à la volée) : pas de mise en cache, à la
+        différence des autres méthodes de cette classe.
+        """
+        query = """
+        MATCH (node)
+        WHERE node.LEVEL > 0 AND node.LEVEL <= $max_level
+        OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
+        RETURN node.CODE as code,
+               node.LEVEL as level,
+               node.NAME as name,
+               parent.CODE as parent_code
+        ORDER BY node.LEVEL, node.CODE
+        """
+        return self.graph.query(query, params={"max_level": max_level})
 
     # ------------------------------------------------------------------
     # Cache management
@@ -179,7 +257,8 @@ class Graph:
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
         OPTIONAL MATCH (node)-[:HAS_CHILD]->(child)
-        WITH node, parent, collect({code: child.CODE, name: child.NAME}) as children
+        WITH node, parent,
+            [c IN collect(child) WHERE c IS NOT NULL | {code: c.CODE, name: c.NAME}] as children
         RETURN node.CODE as code,
             node.LEVEL as level,
             node.NAME as name,
@@ -281,7 +360,7 @@ class Graph:
         return _freeze_dict(result[0])
 
     # ------------------------------------------------------------------
-    # search_codes 
+    # search_codes
     # ------------------------------------------------------------------
 
     @lru_cache(maxsize=0)
@@ -292,7 +371,7 @@ class Graph:
            OR toLower(node.text) CONTAINS toLower($search_term)
         RETURN node.CODE as code,
                node.LEVEL as level,
-               node.FINAL as is_final, 
+               node.FINAL as is_final,
                node.NAME as name,
                node.text as description
         ORDER BY node.LEVEL, node.CODE

@@ -9,7 +9,7 @@ author:
   - name: Théo Ferry
     email: theo.ferry@insee.fr
     affiliations:
-      - name: Insee, SSP Lab 
+      - name: Insee, SSP Lab
 date: "04/02/2026"
 date-format: "D MMMM YYYY"
 slide-number: true
@@ -22,8 +22,7 @@ chalkboard: # press the B key to toggle chalkboard
 # uncomment to use the multiplex mode:
 # multiplex: true
 format:
-  onyxia-revealjs:
-    output-file: index.html
+  onyxia-revealjs: default
 controls: true
 ascii: true
 ---
@@ -60,13 +59,13 @@ ascii: true
 ```{mermaid}
 flowchart TD
   A["Agriculture, sylviculture et pêche"]
-  
+
   D01["Culture et production animale"]
-  
+
   G011["Cultures non permanentes"]
-  
+
   C0111["Culture de céréales"]
-  
+
   A --> D01 --> G011 --> C0111
 ```
 :::
@@ -75,7 +74,7 @@ flowchart TD
 ## Défis
 
 - A l'heure actuelle, apprentissage supervisé classique, avec des modèles de *deep learning* (PyTorch)
-  - Frugal, performant et rapide, *production-ready*... 😎 
+  - Frugal, performant et rapide, *production-ready*... 😎
   - ... mais nécessite entre 100k et 1M de données labellisées 🫨
 
 
@@ -83,10 +82,10 @@ flowchart TD
 
 :::{.incremental}
 - **Data** : Stockage S3 (Datalab), versionnage avec MLFlow Datasets ✅
-- **Modèle** : développement internalisé et distribution de l’architecture via le package  
+- **Modèle** : développement internalisé et distribution de l’architecture via le package
   [*torchTextClassifiers*](https://github.com/InseeFrLab/torchTextClassifiers), entraînement parallélisé avec Argo Workflows, model storage avec MLFlow ✅
 - **Déploiement** : FastAPI déployé via conteneurisation (Docker) ✅
-- **Monitoring** : c’est là que le bât blesse ❌  
+- **Monitoring** : c’est là que le bât blesse ❌
   - Investissements humains nécessaires, pas toujours faits
   - **Comment contrôler le modèle en production sans annotation humaine continue ?**
 :::
@@ -122,7 +121,7 @@ flowchart TD
   - Plutôt que lui *imposer du contexte* comme dans un RAG, laisser le modèle **compléter son contexte dynamiquement** ([**= agent !**]{.orange})
   - Idéalement, avec un raisonnement autour de la hiérarchie
 
-# 2️⃣ **Le framework GRAAL** 
+# 2️⃣ **Le framework GRAAL**
 
 ## Neo4j : une *graph database* {.scrollable}
 ```{mermaid}
@@ -168,7 +167,7 @@ graph TD
 ## Utilisation du graph comme support pour des agents
 
 
-- On définit un ensemble d'outils **commun à tous les agents**: 
+- On définit un ensemble d'outils **commun à tous les agents**:
     - get_code_information
     - get_current_children
     - get_current_siblings
@@ -182,7 +181,7 @@ graph TD
 
 - Un agent = un prompt, un type d'input et d'output, et des tools
 - Les *closers*
-  - *CodeChooser*: 
+  - *CodeChooser*:
   - *MatchVerifier*:
 
     ```{python}
@@ -238,7 +237,7 @@ graph TD
 ### Input
 ```python
 description = """
-Entreprise de fabrication artisanale de pains spéciaux 
+Entreprise de fabrication artisanale de pains spéciaux
 et viennoiseries, avec vente directe en boutique
 """
 ```
@@ -250,7 +249,7 @@ et viennoiseries, avec vente directe en boutique
   "label": "Fabrication de pain et pâtisserie fraîche",
   "confidence": 0.94,
   "path": ["C", "10", "10.7", "10.71", "10.71Z"],
-  "justification": "Fabrication artisanale (C) de produits 
+  "justification": "Fabrication artisanale (C) de produits
                     de boulangerie (10.7) avec vente directe : ce code correspond donc au libellé fourni."
 }
 ```
@@ -279,7 +278,7 @@ et viennoiseries, avec vente directe en boutique
     - GRAAL n'est qu'un distributeurs de tools, de prompts et de structures d'appels au LLM (validation input/output)
 - **La tâche principale va être l'évaluation** 🎯
 
---- 
+---
 
 - **On va en faire quoi ?**
   - Un modèle agentique est trop lourd pour la production (pas encore de GPU, temps d'inférence trop élevé...)

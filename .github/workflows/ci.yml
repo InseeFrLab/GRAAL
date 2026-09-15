@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install tooling
+        # ruff pinned to match pyproject.toml's dev dependency floor: an unpinned
+        # install floats to whatever's newest, which has already broken this job once
+        # (a newer ruff release widened its default rule set out from under us).
+        # python-dotenv is for tests/test_connections.py: it calls load_dotenv() at
+        # module level (before any skipif runs), so collection fails without it even
+        # though every actual connection test skips cleanly without secrets.
+        run: pip install ruff==0.14.9 pytest python-dotenv
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Syntax check
+        run: python -m compileall -q src tests
+
+      # Full dependency-free run: test_connections.py's per-service imports (neo4j,
+      # openai, s3fs, mlflow, langfuse) are deferred inside each test function and
+      # only reached if its required env vars are set, so every one of those tests
+      # skips cleanly here without Datalab/Onyxia secrets or a full `uv sync`.
+      - name: Unit tests
+        run: pytest -q

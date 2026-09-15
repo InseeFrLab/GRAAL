@@ -6,20 +6,15 @@ Used to convert notices into correct parquet format.
 
 # openpyxl==3.1.5 and pyarrow==23.0.0 have been used
 
-import os
-
-from dotenv import load_dotenv
-import s3fs
-import pandas as pd
 import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
+
+from src.utils.storage import get_file_system
 
 load_dotenv(override=True)
 
-fs = s3fs.S3FileSystem(
-    client_kwargs={'endpoint_url': 'https://'+'minio.lab.sspcloud.fr'},
-    key=os.environ["AWS_ACCESS_KEY_ID"],
-    secret=os.environ["AWS_SECRET_ACCESS_KEY"],
-    token=os.environ["AWS_SESSION_TOKEN"])
+fs = get_file_system()
 
 # NACE
 # XLSX_PATH = "projet-ape/notices/NACE_Rev2.1_Structure_Explanatory_Notes_EN.xlsx"
@@ -47,16 +42,20 @@ ORDERED_COLUMNS = [
 
 
 def convert_xlsx_to_parquet(xlsx_path, parquet_path):
-    with fs.open(xlsx_path, 'rb') as f:
+    with fs.open(xlsx_path, "rb") as f:
         df = pd.read_excel(f)
     df.rename(columns={"HEADING": "NAME"}, inplace=True)
     df["FINAL"] = (df["ID"].str.len() == 4).astype(int)
     df["text_content"] = (
-        df["NAME"].fillna("") + " " +
-        df["Implementation_rule"].fillna("") + " " +
-        df["Includes"].fillna("") + " " +
-        df["IncludesAlso"].fillna("") + " " +
-        df["Excludes"].fillna("")
+        df["NAME"].fillna("")
+        + " "
+        + df["Implementation_rule"].fillna("")
+        + " "
+        + df["Includes"].fillna("")
+        + " "
+        + df["IncludesAlso"].fillna("")
+        + " "
+        + df["Excludes"].fillna("")
     )
     df = df[ORDERED_COLUMNS]
 
@@ -64,7 +63,7 @@ def convert_xlsx_to_parquet(xlsx_path, parquet_path):
 
 
 def convert_csv_to_parquet(csv_path, parquet_path, language_suffix="_en"):
-    with fs.open(csv_path, 'rb') as f:
+    with fs.open(csv_path, "rb") as f:
         df = pd.read_csv(f, sep=";")
 
     # Select columns
@@ -76,7 +75,7 @@ def convert_csv_to_parquet(csv_path, parquet_path, language_suffix="_en"):
         "note_generale" + language_suffix,
         "contenu_central" + language_suffix,
         "contenu_additionnel" + language_suffix,
-        "note_exclusion" + language_suffix
+        "note_exclusion" + language_suffix,
     ]
     df = df[columns_to_keep].copy()
 
@@ -88,7 +87,7 @@ def convert_csv_to_parquet(csv_path, parquet_path, language_suffix="_en"):
         "note_generale" + language_suffix: "text_content",
         "contenu_central" + language_suffix: "Includes",
         "contenu_additionnel" + language_suffix: "IncludesAlso",
-        "note_exclusion" + language_suffix: "Excludes"
+        "note_exclusion" + language_suffix: "Excludes",
     }
     df.rename(columns=new_columns_names, inplace=True)
 
@@ -104,6 +103,7 @@ def convert_csv_to_parquet(csv_path, parquet_path, language_suffix="_en"):
             return 4
         if x == "Poste":
             return 5
+
     df["LEVEL"] = df["type"].map(level_mapping)
 
     # ID mapping
@@ -126,6 +126,6 @@ if __name__ == "__main__":
     convert_csv_to_parquet(
         CSV_PATH,
         PARQUET_PATH,
-        language_suffix="_fr"
+        language_suffix="_fr",
         # language_suffix="_en"
     )

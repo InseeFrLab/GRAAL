@@ -100,10 +100,10 @@ def build_single_user_prompt(
     if language == "English":
         user_prompt = "I would like to generate labels corresponding to the following code:"
 
-        user_prompt += f"\n\nCode : {code_details["code"]}"
+        user_prompt += f"""\n\nCode : {code_details["code"]}"""
 
         if code_details["name"]:
-            user_prompt += f"\n\nTitle : {code_details["name"]}"
+            user_prompt += f"""\n\nTitle : {code_details["name"]}"""
 
         if len(includes) >= 1:
             user_prompt += "\n\nIncluded domains:"
@@ -115,7 +115,7 @@ def build_single_user_prompt(
             for exclude in excludes:
                 user_prompt += "\n" + exclude
 
-        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic" \
+        user_prompt += f"\n\nInstruction:\nGenerate {nb_labels} different, diverse, and realistic " \
             + "labels that strictly correspond to this code, fully complying with the official" \
             + " description."
 
@@ -123,10 +123,10 @@ def build_single_user_prompt(
     elif language == "French":
         user_prompt = "Génère des libellés correspondant au code suivant :"
 
-        user_prompt += f"\n\nCode : {code_details["code"]}"
+        user_prompt += f"""\n\nCode : {code_details["code"]}"""
 
         if code_details["name"]:
-            user_prompt += f"\n\nTitre : {code_details["name"]}"
+            user_prompt += f"""\n\nTitre : {code_details["name"]}"""
 
         if len(includes) >= 1:
             user_prompt += "\n\n Domaines inclus :"

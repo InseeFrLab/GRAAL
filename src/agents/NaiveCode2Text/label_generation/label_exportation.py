@@ -34,7 +34,8 @@ def create_file_name(
         model: str = None,
 
     Returns:
-        bool: True if the file has been correctly saved.
+        str: The generated output file path, or an empty string if
+            ``output_format`` is ``"terminal"``.
     """
     if output_format == "terminal":
         return ""
@@ -43,12 +44,11 @@ def create_file_name(
 
     temp_string = f"_temp{temperature}".replace(".", "")
 
-    if model_name is None and model_name:
-        model_string = "_" + model
-        if model_name is None:
-            model_string = ""
+    selected_model = model_name or model or ""
+    if selected_model:
+        model_string = "_" + selected_model
     else:
-        model_string = "_" + model_name
+        model_string = ""
 
     model_string = re.sub(r"[^a-zA-Z0-9_-]", "-", model_string)
 
