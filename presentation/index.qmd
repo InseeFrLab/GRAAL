@@ -1,0 +1,37 @@
+---
+title: "GRAAL"
+subtitle: "Graph-based Research with Agents for Automatic Labelling"
+format:
+  html:
+    toc: false
+---
+
+Ce site rassemble les supports du projet GRAAL. Choisissez une page ci-dessous.
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4}
+### 🎤 Présentation
+
+Vue d'ensemble du framework GRAAL : contexte, architecture multi-agents, perspectives.
+
+[Voir la présentation →](presentation.html){.btn .btn-primary .btn-lg role="button"}
+:::
+
+::: {.g-col-12 .g-col-md-4}
+### 📊 Diagnostic embeddings
+
+Évaluation de la qualité de l'espace d'embedding utilisé par l'Agentic RAG (NAF2025) : cohérence, chevauchement et confusion entre notices et libellés.
+
+[Voir le diagnostic →](embeddings.html){.btn .btn-outline-primary .btn-lg role="button"}
+:::
+
+::: {.g-col-12 .g-col-md-4}
+### ⏱️ Éval. multi-méthode
+
+Navigator, Agentic-RAG, Summary et Supervisé sur un même échantillon, chronométrés, avec arbitrage CodeChooser et vérification de la vérité terrain.
+
+[Voir les résultats →](multi_method_eval.html){.btn .btn-outline-primary .btn-lg role="button"}
+:::
+
+:::

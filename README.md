@@ -28,7 +28,7 @@ It is intended to be used with reasoning LLM agents (that support tool-calling).
 
 3. Run a small experiment:
 
-    uv run -m src.test
+    uv run -m src.main --navigator "Boulangerie artisanale avec vente directe"
 
 ## Repository layout
 
@@ -74,4 +74,3 @@ This project includes a `LICENSE` file in the repository root. Please refer to i
 ## Authors & contact
 
 Maintained by InseeFrLab. For questions or contributions, please open an issue or contact the maintainers via the project repository.
-
