@@ -43,7 +43,8 @@ def make_tools(graph):
 
         Returns:
             Dictionnaire avec code, level, name, description, includes, includes_also,
-            excludes, implementation_rule, parent_code, children_codes, children_count
+            excludes, implementation_rule, is_final, parent_code et children (code et
+            nom de chaque enfant direct)
         """
         data = graph.get_code_information(code)
         return data if data else {"error": f"Code {code} not found"}
@@ -166,9 +167,37 @@ class Graph:
         return data
 
     def get_code_information(self, code: str) -> Dict[str, Any]:
-        """Retourne les informations d'un code (nom, description, parent, enfants)."""
+        """Retourne les informations d'un code (nom, notice complète, parent, enfants).
+
+        `description` est la notice telle qu'indexée (nom + section « comprend ») ;
+        `includes`, `includes_also`, `excludes` et `implementation_rule` en donnent les
+        sections séparément, `excludes` (« ne comprend pas ») n'étant présente que là.
+        Certaines sections sont déjà incluses dans `description` selon le niveau du
+        code : `get_notice` les recompose en dédupliquant.
+        """
         data = self._with_dotted_retry(code, self._cached_get_code_information)
         return _unfreeze_dict(data) if data else {}
+
+    def get_notice(self, code: str) -> str:
+        """Notice officielle complète d'un code, prête à être mise dans un prompt.
+
+        Recompose les sections renvoyées par `get_code_information` en dédupliquant :
+        `description` (le champ indexé du noeud) contient déjà, selon le niveau du
+        code, tout ou partie des autres sections, qu'il serait inutile de faire relire
+        deux fois au modèle. Chaîne vide si le code est inconnu de la base.
+
+        C'est ce que les agents « fermeurs » (cf. src.agents.closers) mettent dans leur
+        prompt à la place des outils de navigation : la notice est la seule information
+        dont ils ont besoin, et un lookup Neo4j la donne en entier, sans tour de dialogue
+        ni risque que le modèle ne pense pas à la demander.
+        """
+        code_info = self.get_code_information(code)
+        sections: List[str] = []
+        for key in ("description", "implementation_rule", "includes", "includes_also", "excludes"):
+            section = (code_info.get(key) or "").strip()
+            if section and not any(section in seen for seen in sections):
+                sections.append(section)
+        return "\n\n".join(sections)
 
     def get_children(self, code: str) -> List[Dict[str, Any]]:
         """Retourne les enfants directs d'un code (niveau N+1)."""
@@ -253,6 +282,13 @@ class Graph:
 
     @lru_cache(maxsize=0)
     def _cached_get_code_information(self, code: str) -> Tuple[Tuple[str, Any], ...]:
+        # `text` is only the first half of a notice (the node's name plus its "comprend"
+        # section), so a caller given `description` alone sees what the code covers and
+        # never what it explicitly sends elsewhere. The exclusions are precisely what
+        # settles a borderline case ("vente à domicile" is not 47.91Z because 47.91Z's
+        # own notice says so), so they're selected here alongside the two other sections
+        # the notice carries - which is also what this method's tool wrapper
+        # (`get_code_information` in make_tools) has always advertised.
         query = """
         MATCH (node {CODE: $code})
         OPTIONAL MATCH (node)<-[:HAS_CHILD]-(parent)
@@ -264,6 +300,10 @@ class Graph:
             node.NAME as name,
             node.FINAL as is_final,
             node.text as description,
+            node.Includes as includes,
+            node.IncludesAlso as includes_also,
+            node.Excludes as excludes,
+            node.Implementation_rule as implementation_rule,
             parent.CODE as parent_code,
             children
         """
