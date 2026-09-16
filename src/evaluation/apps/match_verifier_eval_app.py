@@ -469,6 +469,16 @@ def get_graph() -> Graph | None:
 
 
 def get_code_notice(code: str) -> dict | None:
+    """Nom du code et notice officielle complète, ou None si Neo4j est indisponible.
+
+    `text` vient de `Graph.get_notice` et non du seul champ `description` de
+    `get_code_information` : ce dernier n'est que le nom suivi de la section
+    « comprend », sans les exclusions — or « ne comprend pas » est précisément ce
+    qui tranche les cas limites qu'on demande au relecteur d'arbitrer, et sans quoi
+    il juge sur moins d'information que le MatchVerifier dont il relit le verdict.
+    `get_notice` recompose toutes les sections en dédupliquant, soit exactement la
+    notice que les agents mettent dans leur prompt.
+    """
     if code in _code_notice_cache:
         return _code_notice_cache[code]
     graph = get_graph()
@@ -477,7 +487,7 @@ def get_code_notice(code: str) -> dict | None:
         try:
             info = graph.get_code_information(code)
             if info and not info.get("error"):
-                notice = info
+                notice = {"name": info.get("name"), "text": graph.get_notice(code)}
         except Exception:
             logger.exception(f"Failed to fetch code information for {code}")
     _code_notice_cache[code] = notice
@@ -618,7 +628,7 @@ REVIEW_TEMPLATE = (
   <div>
     <span class="code-badge">{{ row.current_code }}</span>
     {% if notice %} &mdash; {{ notice.name }}{% endif %}
-    {% if notice and notice.description %}<div class="notice">{{ notice.description }}</div>{% endif %}
+    {% if notice and notice.text %}<div class="notice">{{ notice.text }}</div>{% endif %}
   </div>
   <div class="muted">
     MatchVerifier :
