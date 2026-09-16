@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE: meilametayebjee/graal
+  IMAGE: meilametayebjee/graal-match-verifier-review
 
 jobs:
   build-and-push:
