@@ -45,7 +45,8 @@ class Code2Text:
             )
             verification_result = await self.verifier(match_verifier_input)
             verifier_decision = verification_result.final_output.is_match
-            verifier_confidence = verification_result.final_output.confidence
+            # Même conversion que dans Text2Code : le contrat de ce champ est [0, 1].
+            verifier_confidence = verification_result.final_output.is_match_score / 100
             verifier_explanation = verification_result.final_output.explanation
         else:
             verifier_decision = None

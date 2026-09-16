@@ -191,7 +191,7 @@ async def verify_classification(prediction: MatchVerificationInput, verifier: Ma
         verifier: MatchVerifier agent instance
 
     Returns:
-        MatchVerificationResult (is_match, confidence, explanation)
+        MatchVerificationResult (is_match, is_match_score, alternative_code, explanation)
     """
     verification = await verifier(prediction)
     logger.info(f"Le résultat de la vérification est : {verification}")
@@ -276,7 +276,7 @@ async def main():
                 line = f"  {result['query']:40s} → {code}"
                 if result["verification"] is not None:
                     status = "✅" if result["verification"].is_match else "❌"
-                    line += f" | verifier: {status} ({result['verification'].confidence:.2f})"
+                    line += f" | verifier: {status} ({result['verification'].is_match_score}%)"
                 print(line)
             print("=" * 80)
             return 0
@@ -296,7 +296,7 @@ async def main():
             if verifier is not None and isinstance(result, MatchVerificationInput):
                 verification = await verify_classification(result, verifier)
                 status = "✅ validé" if verification.is_match else "❌ rejeté"
-                print(f"🔍 Verification: {status} ({verification.confidence:.2f})")
+                print(f"🔍 Verification: {status} ({verification.is_match_score}%)")
                 print(f"   {verification.explanation}")
 
         return 0

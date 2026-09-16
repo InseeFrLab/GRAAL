@@ -8,15 +8,24 @@ surtout la matière première de l'évaluation du MatchVerifier lui-même — le
 parquet produit ici est relu par src.evaluation.apps.match_verifier_eval_app,
 où des annotateurs humains jugent chaque verdict.
 
-Le parquet de sortie tient en sept colonnes, volontairement : libelle,
-current_code, match_verifier_verdict, match_verifier_explanation,
-match_verifier_confidence, match_verifier_p_match (la probabilité du verdict lue
-dans les logprobs, cf. MatchVerifier) et match_verifier_duration_s (le temps
-d'inférence de l'appel, cf. verify_rows). C'est ce dont l'app de revue a besoin —
-plus `p_match`, qui n'a de sens qu'une fois les annotations humaines disponibles :
-c'est en le seuillant a posteriori qu'on choisit un point de fonctionnement pour
-le vérificateur au lieu de subir celui de son prompt, rien de plus
-(les versions précédentes de ce script demandaient en plus au
+Le parquet de sortie tient en dix colonnes, volontairement : libelle,
+current_code, puis tout ce que le MatchVerifier produit sur la paire —
+match_verifier_verdict (is_match), match_verifier_match_score,
+match_verifier_alternative_code, match_verifier_alternative_score,
+match_verifier_explanation, match_verifier_is_match_score — plus
+match_verifier_p_match (la probabilité du verdict lue dans les logprobs, cf.
+MatchVerifier) et match_verifier_duration_s (le temps d'inférence de l'appel, cf.
+verify_rows).
+
+Les quatre colonnes autour du verdict sont ce qui donne à l'annotateur de quoi
+juger autre chose qu'une impression : le vérificateur note le code en place,
+nomme le meilleur code concurrent qu'il ait trouvé — à chaque ligne, y compris
+quand il valide (cf. MatchVerifier) — et note celui-là aussi. Un verdict devient
+alors relisible : on voit contre quoi le code a été comparé, et de combien il a
+gagné. `p_match`, lui, n'a de sens qu'une fois les annotations humaines
+disponibles : c'est en le seuillant a posteriori qu'on choisit un point de
+fonctionnement pour le vérificateur au lieu de subir celui de son prompt, rien de
+plus (les versions précédentes de ce script demandaient en plus au
 SummaryAgenticClassifier un second avis sur les lignes en désaccord ; ce second
 avis relève de l'évaluation des classifieurs — cf.
 src.evaluation.evaluate_eval_set_multi_method — pas de celle du vérificateur).
@@ -46,9 +55,12 @@ l'environnement (mêmes prérequis que src.main).
 
 Usage :
     uv run -m src.evaluation.match_verifier_eval \
-        --train-set projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet \
         --n-samples 500 \
         --output s3://projet-ape/graal/data/eval/match_verifier_eval
+
+Le millésime du jeu d'entraînement décide du nom de la colonne de label : `apet2025`
+pour celui de TRAIN_SET_PATH (défaut), `nace2025` pour le millésime
+08112022_27102024, d'où `--code-column`.
 """
 
 import argparse
@@ -92,23 +104,35 @@ SUMMARY_FILENAME = "match_verifier_eval_summary.json"
 # Files whose content *is* what this eval measures: a run made while these carry
 # uncommitted edits cannot honestly be filed under the current commit (cf.
 # src.utils.run_provenance). Extend this list if the prompt grows new inputs — the
-# notice that makes up most of the prompt is composed by Graph.get_notice, and the
-# toolset and turn budget the verifier runs under are decided in BaseAgent, so all
-# three files define what a run measures.
+# notice that makes up most of the prompt is composed by Graph.get_notice, the
+# nomenclature summary that opens it by build_nace_summary.build_summary_text, and
+# the toolset and turn budget the verifier runs under are decided in BaseAgent, so
+# all four files define what a run measures.
 PROMPT_FILES = [
     "src/agents/closers/match_verifier.py",
     "src/agents/base_agent.py",
     "src/neo4j_graph/graph.py",
+    "src/neo4j_graph/build_nace_summary.py",
 ]
 
 # Output column names, fixed: match_verifier_eval_app reads exactly these.
 TEXT_COLUMN_OUT = "libelle"
 CODE_COLUMN_OUT = "current_code"
 VERDICT_COLUMN = "match_verifier_verdict"
+MATCH_SCORE_COLUMN = "match_verifier_match_score"
+ALTERNATIVE_CODE_COLUMN = "match_verifier_alternative_code"
+ALTERNATIVE_SCORE_COLUMN = "match_verifier_alternative_score"
 EXPLANATION_COLUMN = "match_verifier_explanation"
-CONFIDENCE_COLUMN = "match_verifier_confidence"
+IS_MATCH_SCORE_COLUMN = "match_verifier_is_match_score"
 P_MATCH_COLUMN = "match_verifier_p_match"
 DURATION_COLUMN = "match_verifier_duration_s"
+
+# Écart (alternative_score - match_score) à partir duquel on considère que le
+# vérificateur a vraiment trouvé mieux. Reporté dans le résumé parce que c'est le
+# chiffre qui dit si la recherche d'alternative sert à quelque chose : une
+# alternative systématiquement notée loin derrière le code en place signifierait que
+# le modèle la remplit pour la forme.
+ALTERNATIVE_BEATS_MARGIN = 20
 
 # Seuils auxquels le taux de rejet est reporté dans le résumé : `is_match` est un
 # point de fonctionnement parmi d'autres, et p_match permet de les parcourir sans
@@ -198,14 +222,19 @@ async def verify_rows(
             TEXT_COLUMN_OUT: text,
             CODE_COLUMN_OUT: str(code),
             VERDICT_COLUMN: verification.is_match,
+            MATCH_SCORE_COLUMN: verification.match_score,
+            ALTERNATIVE_CODE_COLUMN: verification.alternative_code,
+            ALTERNATIVE_SCORE_COLUMN: verification.alternative_score,
             EXPLANATION_COLUMN: verification.explanation,
-            CONFIDENCE_COLUMN: verification.confidence,
+            IS_MATCH_SCORE_COLUMN: verification.is_match_score,
             P_MATCH_COLUMN: verification.p_match,
             DURATION_COLUMN: duration,
         }
         results[i] = entry
         logger.info(
-            f"{i + 1}/{total} ({duration:5.1f}s): {text!r} -> {code} : "
+            f"{i + 1}/{total} ({duration:5.1f}s): {text!r} -> {code} "
+            f"({verification.match_score}%) vs {verification.alternative_code} "
+            f"({verification.alternative_score}%) : "
             f"{'match' if verification.is_match else 'no match'}"
         )
         if checkpoint is not None:
@@ -262,8 +291,11 @@ async def run(args) -> int:
             (TEXT_COLUMN_OUT, pl.Utf8),
             (CODE_COLUMN_OUT, pl.Utf8),
             (VERDICT_COLUMN, pl.Boolean),
+            (MATCH_SCORE_COLUMN, pl.Int64),
+            (ALTERNATIVE_CODE_COLUMN, pl.Utf8),
+            (ALTERNATIVE_SCORE_COLUMN, pl.Int64),
             (EXPLANATION_COLUMN, pl.Utf8),
-            (CONFIDENCE_COLUMN, pl.Float64),
+            (IS_MATCH_SCORE_COLUMN, pl.Int64),
             (P_MATCH_COLUMN, pl.Float64),
             (DURATION_COLUMN, pl.Float64),
         ],
@@ -288,7 +320,33 @@ async def run(args) -> int:
         else None,
         "mean_p_match": float(p_match.mean()) if len(p_match) else None,
         "n_missing_p_match": n - len(p_match),
-        "mean_confidence": float(details[CONFIDENCE_COLUMN].mean()) if n else None,
+        "mean_is_match_score": float(details[IS_MATCH_SCORE_COLUMN].mean()) if n else None,
+        # Les trois chiffres qui disent si la recherche d'alternative fait son travail.
+        # `alternative_differs_rate` doit rester très proche de 1 : le prompt exige une
+        # alternative *différente* du code jugé à chaque ligne, donc un taux qui s'en
+        # écarte est un manquement à la consigne, pas une propriété des données.
+        # `alternative_beats_rate` est la part de lignes où le concurrent trouvé est
+        # nettement mieux noté que le code en place, et devrait de près suivre le taux de
+        # rejet ; un écart entre les deux signale un verdict qui ne suit pas ses propres
+        # scores.
+        "mean_match_score": float(details[MATCH_SCORE_COLUMN].mean()) if n else None,
+        "mean_alternative_score": float(details[ALTERNATIVE_SCORE_COLUMN].mean()) if n else None,
+        "alternative_differs_rate": float(
+            (
+                details[ALTERNATIVE_CODE_COLUMN].str.replace_all(r"\.", "")
+                != details[CODE_COLUMN_OUT].str.replace_all(r"\.", "")
+            ).mean()
+        )
+        if n
+        else None,
+        "alternative_beats_rate": float(
+            (
+                (details[ALTERNATIVE_SCORE_COLUMN] - details[MATCH_SCORE_COLUMN])
+                >= ALTERNATIVE_BEATS_MARGIN
+            ).mean()
+        )
+        if n
+        else None,
         "mean_duration_s": float(details[DURATION_COLUMN].mean()) if n else None,
         "total_duration_s": float(details[DURATION_COLUMN].sum()) if n else None,
         "session_id": session_id,
@@ -312,7 +370,11 @@ async def run(args) -> int:
     if len(flagged):
         print("\nFlagged rows (MatchVerifier thinks the label may be wrong):")
         for r in flagged.to_dicts():
-            print(f"  {r[TEXT_COLUMN_OUT]!r} -> {r[CODE_COLUMN_OUT]}: {r[EXPLANATION_COLUMN]}")
+            print(
+                f"  {r[TEXT_COLUMN_OUT]!r} -> {r[CODE_COLUMN_OUT]} "
+                f"({r[MATCH_SCORE_COLUMN]}%) vs {r[ALTERNATIVE_CODE_COLUMN]} "
+                f"({r[ALTERNATIVE_SCORE_COLUMN]}%): {r[EXPLANATION_COLUMN]}"
+            )
 
     logger.info(f"Details written to {details_path}, summary to {summary_path}")
     return 0
@@ -329,7 +391,10 @@ def main() -> int:
         "--text-column", default="libelle", help="Input text column (default: libelle)"
     )
     parser.add_argument(
-        "--code-column", default="nace2025", help="Input label column (default: nace2025)"
+        "--code-column",
+        default="apet2025",
+        help="Input label column (default: apet2025, the label column of --train-set's "
+        "default; the 08112022_27102024 vintage names the same column nace2025)",
     )
     parser.add_argument(
         "--n-samples", type=int, default=500, help="Number of rows to sample (default: 500)"

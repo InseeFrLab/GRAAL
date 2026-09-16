@@ -106,6 +106,18 @@ def traced(thunk, *, session_id: str, row_id: str, tag: str):
     return _call
 
 
+def _verify_confidence(verification) -> float | None:
+    """La confiance du MatchVerifier dans son verdict, ramenée sur [0, 1].
+
+    L'agent l'exprime désormais en pourcentage entier (`is_match_score`, cf.
+    MatchVerifier) ; les colonnes de ce parquet et `apps/multi_method_review_app.py`
+    attendent le flottant sur [0, 1] qu'elles ont toujours reçu, d'où la conversion
+    ici plutôt qu'une migration des deux à la fois.
+    """
+    score = getattr(verification, "is_match_score", None)
+    return score / 100 if score is not None else None
+
+
 async def process_row(
     *,
     idx: int,
@@ -220,7 +232,9 @@ async def process_row(
         text_column: activity,
         code_column: code,
         "ground_truth_is_match": getattr(gt_verification, "is_match", None),
-        "ground_truth_verify_confidence": getattr(gt_verification, "confidence", None),
+        # Renommé côté agent en `is_match_score` (entier en %) ; la colonne, elle, garde
+        # son nom et son échelle [0, 1], que multi_method_review_app.py lit telle quelle.
+        "ground_truth_verify_confidence": _verify_confidence(gt_verification),
         "ground_truth_verify_explanation": getattr(gt_verification, "explanation", None),
         "ground_truth_verify_duration_s": gt_duration,
         "ground_truth_verify_tool_calls": getattr(gt_verification, "tool_call_count", None),
@@ -242,7 +256,7 @@ async def process_row(
         row[f"{name}_attempt_count"] = getattr(pred, "attempt_count", None)
         method_verification = verifications.get(name)
         row[f"{name}_is_match"] = getattr(method_verification, "is_match", None)
-        row[f"{name}_verify_confidence"] = getattr(method_verification, "confidence", None)
+        row[f"{name}_verify_confidence"] = _verify_confidence(method_verification)
         row[f"{name}_verify_explanation"] = getattr(method_verification, "explanation", None)
         row[f"{name}_verify_duration_s"] = verify_durations.get(name)
         row[f"{name}_verify_tool_calls"] = getattr(method_verification, "tool_call_count", None)

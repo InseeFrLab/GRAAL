@@ -105,6 +105,46 @@ def make_tools(graph):
     return [get_code_information, get_children, get_descendants, get_siblings, get_parent]
 
 
+def make_notice_tools(graph):
+    """Un seul outil, volontairement : lire la notice de codes candidats.
+
+    Les cinq outils de `make_tools` sont ceux d'un agent qui *explore* la hiérarchie
+    sans la connaître. Un agent à qui le résumé complet de la nomenclature a déjà été
+    donné (cf. MatchVerifier) la connaît : ce qui lui manque n'est jamais la structure,
+    c'est le contenu d'une notice — inclusions, exclusions, règle d'affectation — pour
+    départager deux codes qu'il a déjà en tête. Lui tendre les cinq outils lui coûterait
+    ~500 tokens de schémas et autant d'occasions de repartir en navigation, sur un
+    jugement qui tient en un tour.
+
+    L'outil est *batch* (une liste de codes, pas un code) pour la même raison : un
+    modèle qui interroge ses candidats un par un paie un aller-retour LLM complet par
+    candidat, là où la latence visée se compte en secondes. En demander plusieurs d'un
+    coup ramène l'exploration à un seul tour supplémentaire, quel que soit le nombre de
+    codes examinés.
+    """
+
+    @function_tool
+    def get_notices(codes: List[str]) -> Dict[str, str]:
+        """
+        Retourne la notice officielle (nom, inclusions, exclusions, règle d'affectation)
+        de plusieurs codes NACE d'un coup.
+
+        Args:
+            codes: Codes NACE à consulter, pointés ou non (ex: ["47.91A", "4799A"]).
+                   Demande-les tous dans un seul appel plutôt qu'un par appel.
+
+        Returns:
+            Dictionnaire {code demandé: notice}, avec un message explicite pour un code
+            inconnu de la base
+        """
+        return {
+            code: graph.get_notice(code) or f"Aucune notice : code {code} inconnu de la base."
+            for code in codes
+        }
+
+    return [get_notices]
+
+
 class Neo4JConfig(BaseModel):
     url: str
     username: str
@@ -150,6 +190,11 @@ class Graph:
             Tuple des tools de navigation avec état
         """
         return make_tools(self)
+
+    def get_notice_tools(self):
+        """Le seul outil des agents qui connaissent déjà la nomenclature (cf.
+        `make_notice_tools`) : la lecture batch de notices."""
+        return make_notice_tools(self)
 
     def _with_dotted_retry(self, code: str, fetch):
         """Call `fetch(code)`, retrying once on a dotted variant if it comes back empty.

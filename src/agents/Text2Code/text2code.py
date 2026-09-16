@@ -44,7 +44,9 @@ class Text2Code:
 
             verification_result = await self.verifier(classifier_output)
             verifier_decision = verification_result.final_output.is_match
-            verifier_confidence = verification_result.final_output.confidence
+            # is_match_score est un pourcentage entier côté agent ; ce champ-ci est un
+            # flottant sur [0, 1] depuis toujours, et il est lu comme tel en aval.
+            verifier_confidence = verification_result.final_output.is_match_score / 100
             verifier_explanation = verification_result.final_output.explanation
         else:
             verifier_decision = None

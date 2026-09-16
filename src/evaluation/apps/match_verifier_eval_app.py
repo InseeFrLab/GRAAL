@@ -2,8 +2,14 @@
 
 For each row of the MatchVerifier eval parquet (cf. src.evaluation.match_verifier_eval
 — columns libelle, current_code, match_verifier_verdict, match_verifier_explanation,
-match_verifier_confidence), shows the activity text, the code currently attached to it
-with its official notice, and MatchVerifier's own verdict on that pair. The reviewer
+match_verifier_match_score, match_verifier_alternative_code,
+match_verifier_alternative_score, match_verifier_is_match_score), shows the activity
+text, the code currently attached to it with its official notice, and MatchVerifier's
+own verdict on that pair — with, next to it, how well it scored that code, which other
+code it found closest, and how that one scored, so the reviewer sees what the verdict
+was weighed against rather than just its conclusion. Runs produced before the verifier
+scored in percentages are still readable: their `match_verifier_confidence` is read in
+fallback and the score columns simply stay empty. The reviewer
 answers one question — is MatchVerifier's verdict on that pair correct — plus a free
 field for the code they would have assigned. An earlier version also asked, separately,
 whether the code itself was correct (which let /metrics recompute precision/recall
@@ -93,7 +99,14 @@ TEXT_COLUMN = "libelle"
 CODE_COLUMN = "current_code"
 VERDICT_COLUMN = "match_verifier_verdict"
 EXPLANATION_COLUMN = "match_verifier_explanation"
-CONFIDENCE_COLUMN = "match_verifier_confidence"
+MATCH_SCORE_COLUMN = "match_verifier_match_score"
+ALTERNATIVE_CODE_COLUMN = "match_verifier_alternative_code"
+ALTERNATIVE_SCORE_COLUMN = "match_verifier_alternative_score"
+IS_MATCH_SCORE_COLUMN = "match_verifier_is_match_score"
+# Le nom que portait `is_match_score` avant que le vérificateur ne note en pourcentage
+# (cf. MatchVerifier) : lu en repli, pour que les runs antérieurs restent relisibles
+# dans cette app plutôt que de perdre leur colonne de confiance en silence.
+LEGACY_CONFIDENCE_COLUMN = "match_verifier_confidence"
 
 
 def available_runs(input_path: str) -> list[str]:
@@ -165,7 +178,21 @@ def load_rows(input_path: str) -> list[dict]:
                 "current_code": code,
                 "verdict": r[VERDICT_COLUMN],
                 "explanation": r.get(EXPLANATION_COLUMN),
-                "confidence": r.get(CONFIDENCE_COLUMN),
+                "match_score": r.get(MATCH_SCORE_COLUMN),
+                "alternative_code": r.get(ALTERNATIVE_CODE_COLUMN),
+                "alternative_score": r.get(ALTERNATIVE_SCORE_COLUMN),
+                # Les deux échelles cohabitent : un pourcentage entier pour les runs
+                # récents, un flottant sur [0, 1] pour les anciens. Normalisé ici, une
+                # fois, pour que le reste de l'app n'ait qu'un format à afficher.
+                "is_match_score": (
+                    r[IS_MATCH_SCORE_COLUMN]
+                    if r.get(IS_MATCH_SCORE_COLUMN) is not None
+                    else (
+                        round(r[LEGACY_CONFIDENCE_COLUMN] * 100)
+                        if r.get(LEGACY_CONFIDENCE_COLUMN) is not None
+                        else None
+                    )
+                ),
             }
         )
     return rows
@@ -302,7 +329,10 @@ REVIEW_SCHEMA = [
     (CODE_COLUMN, pl.Utf8),
     (VERDICT_COLUMN, pl.Boolean),
     (EXPLANATION_COLUMN, pl.Utf8),
-    (CONFIDENCE_COLUMN, pl.Float64),
+    (MATCH_SCORE_COLUMN, pl.Int64),
+    (ALTERNATIVE_CODE_COLUMN, pl.Utf8),
+    (ALTERNATIVE_SCORE_COLUMN, pl.Int64),
+    (IS_MATCH_SCORE_COLUMN, pl.Int64),
     ("human_code_correct", pl.Boolean),
     ("human_verdict_correct", pl.Boolean),
     ("human_suggested_code", pl.Utf8),
@@ -746,8 +776,18 @@ REVIEW_TEMPLATE = (
     <span class="verdict-badge {{ 'verdict-yes' if row.verdict else 'verdict-no' }}">
       {{ "correspondance" if row.verdict else "pas de correspondance" }}
     </span>
-    {% if row.confidence is not none %}
-      (confiance {{ "%.0f"|format(row.confidence * 100) }}%)
+    {% if row.is_match_score is not none %}
+      (verdict net à {{ row.is_match_score }}%)
+    {% endif %}
+    {% if row.match_score is not none %}
+      <div>
+        Correspondance avec {{ row.current_code }} : <b>{{ row.match_score }}%</b>
+        {% if row.alternative_code %}
+          &mdash; meilleur autre code trouvé :
+          <span class="code-badge">{{ row.alternative_code }}</span>
+          {% if row.alternative_score is not none %}<b>{{ row.alternative_score }}%</b>{% endif %}
+        {% endif %}
+      </div>
     {% endif %}
     <div class="notice">{{ row.explanation }}</div>
   </div>
@@ -1038,7 +1078,10 @@ def create_app(
                     CODE_COLUMN: row["current_code"],
                     VERDICT_COLUMN: row["verdict"],
                     EXPLANATION_COLUMN: row["explanation"],
-                    CONFIDENCE_COLUMN: row["confidence"],
+                    MATCH_SCORE_COLUMN: row["match_score"],
+                    ALTERNATIVE_CODE_COLUMN: row["alternative_code"],
+                    ALTERNATIVE_SCORE_COLUMN: row["alternative_score"],
+                    IS_MATCH_SCORE_COLUMN: row["is_match_score"],
                     "human_code_correct": radio("code_correct"),
                     "human_verdict_correct": radio("verdict_correct"),
                     "human_suggested_code": suggested_code or None,
