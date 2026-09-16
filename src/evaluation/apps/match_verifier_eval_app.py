@@ -60,7 +60,7 @@ sans connexion, la revue reste possible mais sans notice.
 Usage :
     uv run -m src.evaluation.apps.match_verifier_eval_app \
         --input s3://projet-ape/graal/data/eval/match_verifier_eval \
-        --commit ec8bf27 --model qwen3-6-35b-moe \
+        --commit v0.0.1-1-g2441f54 --model qwen3-6-35b-moe \
         --reviewers meilame,theo,nathan \
         --port 5052
 """

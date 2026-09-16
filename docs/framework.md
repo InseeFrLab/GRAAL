@@ -204,6 +204,8 @@ Le `summary.json` porte en plus `commit`, `commit_sha` et `model`. Le commit vie
 
 Le découpage vaut aussi pour la revue humaine : des jugements portant sur les verdicts de deux prompts — ou de deux modèles — poolés dans un même JSONL fausseraient silencieusement `/metrics`. Le run `ec8bf27/qwen3-6-35b-moe` (500 lignes, 2026-09-15) a été reclassé a posteriori dans ce format ; le modèle y est celui de `GENERATION_MODEL` aujourd'hui, ce run étant antérieur à l'enregistrement du modèle dans le `summary.json`.
 
+**Run courant à relire** : `v0.0.1-1-g2441f54/qwen3-6-35b-moe` (2 000 lignes, 2026-09-16), le premier du *MatchVerifier* qui note et propose une alternative (§3.5). Soit, en chemin complet, `s3://projet-ape/graal/data/eval/match_verifier_eval/v0.0.1-1-g2441f54/qwen3-6-35b-moe/match_verifier_eval.parquet`. Les verdicts de `ec8bf27` portent sur l'ancien prompt : ils ne se poolent pas avec ceux-ci, c'est précisément ce que le découpage par commit empêche. Le déploiement de l'app de revue doit donc voir son `--commit` passer à `v0.0.1-1-g2441f54` — argument qui vit dans le `Deployment` du dépôt GitOps `codif-ape-cd`, pas ici.
+
 > **Limite** : le tag nomme HEAD, donc l'arbre entier, alors que la garde ne couvre que `PROMPT_FILES`. Un run est reproductible depuis son commit pour le prompt, pas nécessairement pour le reste de l'arbre de travail. Côté modèle, le nom ne capte que l'identifiant servi par l'API : deux runs d'un même `GENERATION_MODEL` derrière un endpoint dont les poids ont changé seraient indistinguables.
 
 ### 5.2 Diagnostic de l'espace d'embedding (`evaluate_embeddings.py`)
