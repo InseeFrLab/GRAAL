@@ -22,6 +22,14 @@ The split is deterministic from the input file and those arguments, so reviewing
 fully asynchronous — anyone can pick up their own progress at any time, as long as the
 input file and those four arguments don't change mid-review.
 
+Un annotateur absent de --reviewers peut s'ajouter lui-même depuis la page d'accueil,
+en disant combien de libellés il veut relire et quelle part doit recouper ce que les
+autres ont déjà (le reste est tiré parmi les lignes que personne n'a encore). Cette
+tranche-là ne se déduit pas des arguments : elle dépend de l'état du moment — qui avait
+déjà quoi, et quoi était déjà jugé — donc elle est calculée une fois puis persistée à
+côté du JSONL (match_verifier_assignments.json) et relue au démarrage, faute de quoi
+un redémarrage rebattrait les cartes sous une revue en cours.
+
 Judgments are logged append-only to JSONL (keyed by (reviewer, row_id), so re-running
 is idempotent and safe to interrupt) and, after each submission, materialized as a
 parquet next to it — one row per (reviewer, judged row), carrying the reviewer's name
@@ -75,6 +83,8 @@ logger = logging.getLogger(__name__)
 DEFAULT_INPUT = "s3://projet-ape/graal/data/eval/match_verifier_eval"
 DEFAULT_OUTPUT_DIR = "data/eval/human_review"
 REVIEW_FILENAME = "match_verifier_review.jsonl"
+ASSIGNMENT_FILENAME = "match_verifier_assignments.json"
+DEFAULT_OVERLAP_PCT = 30
 
 # Input file and columns, as written by match_verifier_eval.py (duplicated rather
 # than imported: that module pulls in the whole agent stack at import time).
@@ -187,6 +197,66 @@ def build_assignment(
         random.Random(f"{seed}:{reviewer}").shuffle(working_set)
         assignment[reviewer] = working_set
     return assignment, set(shared_pool)
+
+
+def assignments_path_for(output_path: str) -> str:
+    """Where the self-added reviewers' slices live, next to the JSONL log of the run."""
+    return os.path.join(os.path.dirname(output_path) or ".", ASSIGNMENT_FILENAME)
+
+
+def load_extra_assignments(path: str) -> dict[str, dict]:
+    """{reviewer: {row_ids, overlap_ids, ...}} for the reviewers who joined mid-campaign."""
+    if not storage.path_exists(path):
+        return {}
+    with storage.open_path(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_extra_assignments(path: str, extras: dict[str, dict]) -> None:
+    storage.makedirs(os.path.dirname(path) or ".")
+    with storage.open_path(path, "w", encoding="utf-8") as f:
+        json.dump(extras, f, ensure_ascii=False, indent=2)
+
+
+def build_extra_assignment(
+    row_ids: list[str],
+    assigned_ids: set[str],
+    judged_ids: set[str],
+    n_rows: int,
+    overlap_pct: int,
+    seed_key: str,
+) -> tuple[list[str], list[str]]:
+    """Slice for a reviewer joining mid-campaign: `overlap_pct` % of rows somebody else
+    already has, the rest drawn from rows nobody has yet.
+
+    The overlap is what makes the newcomer comparable to the others (inter-rater
+    agreement only counts rows two reviewers both judged), so it is drawn from the
+    already-*judged* rows first and only then from rows assigned but still pending —
+    an overlap on a row nobody has judged yet buys agreement only if its owner gets
+    round to it. The rest is drawn from the unassigned remainder, which is where the
+    review's coverage of the run's parquet actually grows.
+
+    Returns (working set in review order, the ids of it that someone else already had).
+    Both pools can run dry — a small parquet, or a newcomer asking for more rows than
+    are left unassigned — so whichever one is short is topped up from the other rather
+    than handing back a slice shorter than asked for.
+    """
+    n_overlap = min(round(n_rows * overlap_pct / 100), n_rows)
+    rng = random.Random(seed_key)
+    judged_pool = [r for r in row_ids if r in judged_ids]
+    pending_pool = [r for r in row_ids if r in assigned_ids and r not in judged_ids]
+    fresh_pool = [r for r in row_ids if r not in assigned_ids]
+    for pool in (judged_pool, pending_pool, fresh_pool):
+        rng.shuffle(pool)
+
+    chosen = (judged_pool + pending_pool)[:n_overlap]
+    chosen += fresh_pool[: n_rows - len(chosen)]
+    if len(chosen) < n_rows:
+        taken = set(chosen)
+        leftovers = [r for r in fresh_pool + judged_pool + pending_pool if r not in taken]
+        chosen += leftovers[: n_rows - len(chosen)]
+    rng.shuffle(chosen)
+    return chosen, [r for r in chosen if r in assigned_ids]
 
 
 def load_judgments(output_path: str) -> dict[str, dict[str, dict]]:
@@ -572,6 +642,18 @@ STYLE = """
   @media (prefers-color-scheme: dark) {
     .row-picker select { background: #262626; border-color: #3a3a3a; color: #e8e8e8; }
   }
+  .join-form { display: grid; gap: 0.8rem; margin-top: 0.9rem; }
+  .join-form label { display: grid; gap: 0.3rem; font-size: 0.9rem; font-weight: 600; }
+  .join-form input {
+    padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid #ccc;
+    background: #fff; color: inherit; font-size: 0.95rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    .join-form input { background: #1f1f1f; border-color: #3a3a3a; color: #e8e8e8; }
+  }
+  .join-form button { justify-self: start; }
+  .error { color: #991b1b; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .error { color: #ffb4b4; } }
 </style>
 """
 
@@ -590,8 +672,37 @@ PICKER_TEMPLATE = (
 <p class="progress">Revue du run <code>{{ run }}</code></p>
 <div class="picker">
   {% for r in reviewers %}
-  <a href="{{ url_for('index', reviewer=r) }}">{{ r }}</a>
+  <a href="{{ url_for('index', reviewer=r) }}">
+    {{ r }} <span class="progress">&mdash; {{ counts[r].reviewed }} / {{ counts[r].total }} jugés</span>
+  </a>
   {% endfor %}
+  {% if not reviewers %}
+  <p class="muted">Aucun annotateur pour l'instant : ajoutez-vous ci-dessous.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="label">Vous n'êtes pas dans la liste</div>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ url_for('add_reviewer') }}" class="join-form">
+    <label>Votre nom
+      <input type="text" name="reviewer" maxlength="40" required value="{{ name or '' }}">
+    </label>
+    <label>Combien de libellés voulez-vous relire ?
+      <input type="number" name="n_rows" min="1" max="{{ n_rows_total }}"
+        value="{{ default_n }}" required>
+    </label>
+    <label>Part recoupant les autres annotateurs (%)
+      <input type="number" name="overlap_pct" min="0" max="100" value="{{ default_overlap }}">
+    </label>
+    <button type="submit" class="submit-all">Rejoindre la revue</button>
+  </form>
+  <p class="muted">
+    Cette part-là est tirée parmi les lignes déjà assignées aux autres (les déjà jugées
+    d'abord), ce qui donne de l'accord inter-annotateurs ; le reste est tiré parmi les
+    {{ n_rows_total }} lignes du run que personne n'a encore. Votre tranche est fixée
+    une fois pour toutes au moment où vous vous ajoutez.
+  </p>
 </div>
 """
 )
@@ -750,6 +861,7 @@ def create_app(
     shared_n: int,
     unique_n: int,
     seed: int,
+    overlap_pct: int = DEFAULT_OVERLAP_PCT,
     url_prefix: str = "",
 ) -> Flask:
     app = Flask(__name__)
@@ -762,8 +874,28 @@ def create_app(
     assignment, shared_ids = build_assignment(row_ids, reviewers, shared_n, unique_n, seed)
     logger.info(
         f"Loaded {len(rows)} rows for run {run}; {shared_n} shared + {unique_n} unique "
-        f"per reviewer ({', '.join(reviewers)})"
+        f"per reviewer ({', '.join(reviewers) or 'none yet'})"
     )
+
+    # Les annotateurs ajoutés en cours de campagne : leur tranche a été calculée à
+    # partir de l'état du moment, elle ne se recalcule pas, elle se relit. Une ligne
+    # devenue inconnue (le parquet du run a changé sous la revue) est écartée plutôt
+    # que de faire planter une navigation sur un row_id absent de rows_by_id.
+    extras_path = assignments_path_for(output_path)
+    for name, extra in load_extra_assignments(extras_path).items():
+        if name in assignment:
+            logger.warning(f"{name} is in --reviewers and self-added: keeping the CLI slice")
+            continue
+        known = [rid for rid in extra["row_ids"] if rid in rows_by_id]
+        if len(known) != len(extra["row_ids"]):
+            logger.warning(
+                f"{len(extra['row_ids']) - len(known)} of {name}'s assigned rows are absent "
+                f"from {input_path} and were dropped"
+            )
+        assignment[name] = known
+        reviewers.append(name)
+        shared_ids.update(rid for rid in extra.get("overlap_ids", []) if rid in rows_by_id)
+        logger.info(f"Self-added reviewer {name}: {len(known)} rows from {extras_path}")
 
     def order_for(reviewer: str) -> list[str]:
         return assignment[reviewer]
@@ -775,15 +907,89 @@ def create_app(
                 return row_id
         return None
 
+    def render_picker(error: str | None = None, name: str = ""):
+        judgments = load_judgments(output_path)
+        counts = {
+            r: {"reviewed": len(judgments.get(r, {})), "total": len(assignment[r])}
+            for r in reviewers
+        }
+        return render_template_string(
+            PICKER_TEMPLATE,
+            reviewers=reviewers,
+            counts=counts,
+            run=run,
+            error=error,
+            name=name,
+            n_rows_total=len(rows),
+            default_n=min(shared_n + unique_n, len(rows)),
+            default_overlap=overlap_pct,
+        )
+
     @app.route("/")
     def index():
         reviewer = request.args.get("reviewer")
         if reviewer not in reviewers:
-            return render_template_string(PICKER_TEMPLATE, reviewers=reviewers, run=run)
+            return render_picker()
         next_id = first_unreviewed(reviewer)
         if next_id is None:
             return redirect(url_for("metrics"))
         return redirect(url_for("review", row_id=next_id, reviewer=reviewer))
+
+    @app.route("/reviewers", methods=["POST"])
+    def add_reviewer():
+        """Assign a slice to a reviewer who joins mid-campaign, from the home page.
+
+        Under the same lock as the judgment writes: the slice is derived from who is
+        assigned what and what is already judged, then persisted, so two people
+        joining at once must not read the same state and be handed the same "fresh"
+        rows (which would silently turn into an overlap neither asked for).
+        """
+        name = (request.form.get("reviewer") or "").strip()
+        try:
+            n_rows_wanted = int(request.form.get("n_rows") or 0)
+        except ValueError:
+            n_rows_wanted = 0
+        try:
+            pct = int(request.form.get("overlap_pct") or overlap_pct)
+        except ValueError:
+            pct = -1
+
+        if not name:
+            error = "Indiquez un nom."
+        elif any(name.lower() == r.lower() for r in reviewers):
+            error = f"« {name} » est déjà dans la liste : reprenez cette ligne ci-dessus."
+        elif not 1 <= n_rows_wanted <= len(rows):
+            error = f"Le nombre de libellés doit être compris entre 1 et {len(rows)}."
+        elif not 0 <= pct <= 100:
+            error = "La part de recouvrement doit être comprise entre 0 et 100 %."
+        else:
+            error = None
+        if error:
+            return render_picker(error=error, name=name), 400
+
+        with _write_lock:
+            extras = load_extra_assignments(extras_path)
+            assigned = {rid for r in reviewers for rid in assignment[r]}
+            judged = {rid for by_row in load_judgments(output_path).values() for rid in by_row}
+            order, overlap_ids = build_extra_assignment(
+                row_ids, assigned, judged, n_rows_wanted, pct, f"{seed}:{name}"
+            )
+            extras[name] = {
+                "row_ids": order,
+                "overlap_ids": overlap_ids,
+                "n_requested": n_rows_wanted,
+                "overlap_pct": pct,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            save_extra_assignments(extras_path, extras)
+            assignment[name] = order
+            shared_ids.update(overlap_ids)
+            reviewers.append(name)
+        logger.info(
+            f"Added reviewer {name}: {len(order)} rows ({len(overlap_ids)} shared with "
+            f"other reviewers, {pct}% asked)"
+        )
+        return redirect(url_for("index", reviewer=name))
 
     @app.route("/review/<row_id>")
     def review(row_id):
@@ -889,11 +1095,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--reviewers",
-        required=True,
+        default="",
         help="Comma-separated reviewer names (e.g. meilame,theo,nathan). Keep this, "
         "--shared-n, --unique-n and --input unchanged for the whole review period: "
         "the row split is deterministically derived from all four, so changing any "
-        "of them reshuffles it out from under in-progress work.",
+        "of them reshuffles it out from under in-progress work. Anyone missing from "
+        "the list can instead add themselves from the home page, which assigns them "
+        f"a slice recorded in <output-dir>/<commit>/<model>/{ASSIGNMENT_FILENAME} "
+        "(so the list may legitimately be left empty here).",
     )
     parser.add_argument(
         "--shared-n", type=int, default=50, help="Rows every reviewer sees (default: 50)"
@@ -902,6 +1111,14 @@ def main() -> int:
         "--unique-n", type=int, default=50, help="Extra rows unique to each reviewer (default: 50)"
     )
     parser.add_argument("--seed", type=int, default=42, help="Row-split seed (default: 42)")
+    parser.add_argument(
+        "--overlap-pct",
+        type=int,
+        default=DEFAULT_OVERLAP_PCT,
+        help="Default share, in percent, of a self-added reviewer's rows drawn from "
+        f"rows other reviewers already have (default: {DEFAULT_OVERLAP_PCT}); they can "
+        "change it on the home page",
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5052)
     parser.add_argument("--debug", action="store_true")
@@ -914,8 +1131,8 @@ def main() -> int:
     args = parser.parse_args()
 
     reviewers = [r.strip() for r in args.reviewers.split(",") if r.strip()]
-    if not reviewers:
-        parser.error("--reviewers needs at least one name")
+    if not 0 <= args.overlap_pct <= 100:
+        parser.error("--overlap-pct must be between 0 and 100")
 
     commit = args.commit or revision_tag()
     model = model_slug(args.model)
@@ -939,6 +1156,7 @@ def main() -> int:
         args.shared_n,
         args.unique_n,
         args.seed,
+        overlap_pct=args.overlap_pct,
         url_prefix=url_prefix,
     )
     if url_prefix:
