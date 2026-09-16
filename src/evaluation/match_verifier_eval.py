@@ -256,6 +256,11 @@ async def run(args) -> int:
     # to a commit, rather than discovering it after 500 LLM calls.
     assert_clean(PROMPT_FILES, allow_dirty=args.allow_dirty)
     commit = revision_tag(allow_dirty=args.allow_dirty)
+    # Le SHA est lu ici, avec le tag, et non au moment d'écrire le résumé : un run dure
+    # des heures, et un commit fait entre-temps (même sans rapport avec le prompt) ferait
+    # dire au `summary.json` que ces résultats viennent d'un commit qui n'existait pas
+    # quand ils ont été produits — précisément l'erreur que ce module sert à empêcher.
+    commit_sha = revision_sha()
     subpath = run_subpath(allow_dirty=args.allow_dirty)
     output_dir = os.path.join(args.output, subpath)
     logger.info(f"Pinning this run to {subpath}; writing to {output_dir}")
@@ -352,7 +357,7 @@ async def run(args) -> int:
         "session_id": session_id,
         "seed": args.seed,
         "commit": commit,
-        "commit_sha": revision_sha(),
+        "commit_sha": commit_sha,
         "model": os.environ["GENERATION_MODEL"],
     }
 
