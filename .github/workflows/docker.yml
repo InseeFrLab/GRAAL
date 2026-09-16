@@ -1,6 +1,6 @@
 # Construit et pousse sur Docker Hub l'image de l'app de revue MatchVerifier (cf.
-# Dockerfile). Le déploiement Argo CD (cf. deploy/argocd/) pointe sur le tag `latest`
-# de cette image.
+# Dockerfile). Le déploiement Argo CD, qui pointe sur le tag `latest` de cette image,
+# vit dans le dépôt GitOps codif-ape-cd (dossier graal-match-verifier-review/).
 #
 # Secrets attendus dans le dépôt : DOCKERHUB_USERNAME et DOCKERHUB_TOKEN (un access
 # token Docker Hub avec la permission Read & Write sur l'espace de noms visé par
@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE: inseefrlab/graal-match-verifier-review
+  IMAGE: meilametayebjee/graal
 
 jobs:
   build-and-push:

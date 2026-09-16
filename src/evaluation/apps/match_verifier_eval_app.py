@@ -204,8 +204,8 @@ def load_judgments(output_path: str) -> dict[str, dict[str, dict]]:
     return judgments
 
 
-# Les annotateurs travaillent en parallèle sur une même instance (cf.
-# deploy/argocd/), et Flask sert les requêtes sur des threads. Or ajouter une ligne à
+# Les annotateurs travaillent en parallèle sur une même instance (le déploiement
+# vit dans codif-ape-cd), et Flask sert les requêtes sur des threads. Or ajouter une ligne à
 # un JSONL sur S3 est un read-modify-write — s3fs recharge l'objet puis le réécrit
 # entier en dessous de 5 Mo — donc deux soumissions simultanées perdraient l'une des
 # deux. Ce verrou sérialise l'append et la réécriture du parquet qui le suit ; il ne
