@@ -1,0 +1,25 @@
+# L'unique manifeste Argo CD qui ne se déploie pas *depuis* un dépôt : c'est lui qu'on
+# applique à la main, une fois, dans le namespace d'Argo CD
+# (`kubectl apply -n argocd -f deploy/argocd/argocd-templates/graal-match-verifier-review.yaml`,
+# ou « New App » dans l'UI avec les mêmes champs). Il n'a donc pas de copie faisant
+# autorité ailleurs, d'où sa présence ici.
+#
+# Ce qu'il déclare : Argo CD lit le dossier graal-match-verifier-review/ du dépôt GitOps
+# codif-ape-cd (deployment, service, ingress de l'app de revue) et le synchronise dans le
+# namespace projet-ape. Ces trois manifestes-là ne vivent que là-bas.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: graal-match-verifier-review
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/InseeFrLab/codif-ape-cd.git
+    targetRevision: main
+    path: graal-match-verifier-review
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: projet-ape
+  syncPolicy:
+    automated:
+      selfHeal: true
