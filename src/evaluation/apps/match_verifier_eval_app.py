@@ -56,6 +56,7 @@ import json
 import logging
 import os
 import random
+import threading
 from datetime import datetime, timezone
 
 import polars as pl
@@ -201,6 +202,15 @@ def load_judgments(output_path: str) -> dict[str, dict[str, dict]]:
             entry = json.loads(line)
             judgments.setdefault(entry["reviewer"], {})[entry["row_id"]] = entry
     return judgments
+
+
+# Les annotateurs travaillent en parallèle sur une même instance (cf.
+# deploy/argocd/), et Flask sert les requêtes sur des threads. Or ajouter une ligne à
+# un JSONL sur S3 est un read-modify-write — s3fs recharge l'objet puis le réécrit
+# entier en dessous de 5 Mo — donc deux soumissions simultanées perdraient l'une des
+# deux. Ce verrou sérialise l'append et la réécriture du parquet qui le suit ; il ne
+# vaut que dans un processus, d'où le `replicas: 1` du Deployment.
+_write_lock = threading.Lock()
 
 
 def append_judgment(output_path: str, entry: dict) -> None:
@@ -802,23 +812,24 @@ def create_app(
             return (raw == "yes") if raw in ("yes", "no") else None
 
         suggested_code = request.form.get("suggested_code", "").strip()
-        append_judgment(
-            output_path,
-            {
-                "row_id": row_id,
-                "reviewer": reviewer,
-                TEXT_COLUMN: row["libelle"],
-                CODE_COLUMN: row["current_code"],
-                VERDICT_COLUMN: row["verdict"],
-                EXPLANATION_COLUMN: row["explanation"],
-                CONFIDENCE_COLUMN: row["confidence"],
-                "human_code_correct": radio("code_correct"),
-                "human_verdict_correct": radio("verdict_correct"),
-                "human_suggested_code": suggested_code or None,
-                "reviewed_at": datetime.now(timezone.utc).isoformat(),
-            },
-        )
-        write_review_parquet(output_path, load_judgments(output_path))
+        with _write_lock:
+            append_judgment(
+                output_path,
+                {
+                    "row_id": row_id,
+                    "reviewer": reviewer,
+                    TEXT_COLUMN: row["libelle"],
+                    CODE_COLUMN: row["current_code"],
+                    VERDICT_COLUMN: row["verdict"],
+                    EXPLANATION_COLUMN: row["explanation"],
+                    CONFIDENCE_COLUMN: row["confidence"],
+                    "human_code_correct": radio("code_correct"),
+                    "human_verdict_correct": radio("verdict_correct"),
+                    "human_suggested_code": suggested_code or None,
+                    "reviewed_at": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            write_review_parquet(output_path, load_judgments(output_path))
 
         order = order_for(reviewer)
         idx = order.index(row_id)

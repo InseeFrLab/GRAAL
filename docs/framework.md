@@ -174,6 +174,8 @@ GENERATION_MODEL=autre-modele uv run -m src.evaluation.match_verifier_eval --n-s
 
 `apps/multi_method_review_app.py` reste l'app de revue du jeu d'évaluation multi-méthode (5 candidats, arbitrage `CodeChooser`, un verdict *MatchVerifier* par source) ; celle-ci est sa version resserrée sur le seul vérificateur face aux labels d'entraînement.
 
+Pour une campagne à plusieurs annotateurs, l'app est déployée plutôt que lancée en local : le `Dockerfile` à la racine construit l'image (dépendances installées depuis `uv.lock`), `.github/workflows/docker.yml` la pousse sur Docker Hub à chaque push sur `main`, et `deploy/argocd/` contient les manifests Kubernetes à déposer dans le dépôt GitOps [`codif-ape-cd`](https://github.com/InseeFrLab/codif-ape-cd) (cf. son README pour les secrets à créer et le run à épingler). Le run revu y est passé explicitement en `--commit`/`--model` : l'image n'embarque pas `.git`, donc la valeur par défaut — le tag de HEAD — n'a pas de sens en conteneur. Le déploiement tient à un seul réplica (`strategy: Recreate`) parce que l'ajout d'une ligne au JSONL est, sur S3, une réécriture complète de l'objet : deux processus concurrents perdraient des jugements. À l'intérieur d'un processus, Flask servant les requêtes sur des threads, l'app sérialise elle-même l'append et la réécriture du parquet derrière un verrou.
+
 #### 5.1.1 Résultats épinglés au commit et au modèle (`src/utils/run_provenance.py`)
 
 Cette évaluation mesure un prompt **passé dans un modèle**, et les deux bougent sous un script figé : à plat, deux runs s'écrasent l'un l'autre sans que rien dans le résultat ne dise lequel a produit quel chiffre. `match_verifier_eval.py` écrit donc sous `<output>/<commit>/<modèle>/` :

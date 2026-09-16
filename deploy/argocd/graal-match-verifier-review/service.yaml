@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: graal-match-verifier-review
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5052
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: graal-match-verifier-review

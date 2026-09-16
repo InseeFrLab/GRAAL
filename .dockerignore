@@ -1,0 +1,17 @@
+# Le contexte de build se limite à pyproject.toml, uv.lock et src/ (cf. Dockerfile).
+.git
+.github
+.venv
+.env
+.pytest_cache
+.ruff_cache
+__pycache__
+**/__pycache__
+*.pyc
+data
+docs
+deploy
+presentation
+tests
+notebooks
+*.ipynb
