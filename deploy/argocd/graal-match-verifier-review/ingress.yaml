@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: graal-match-verifier-review
+  annotations:
+    # L'app n'a aucune authentification : le nom de l'annotateur est un simple
+    # paramètre d'URL, donc quiconque a l'adresse peut écrire des jugements sous
+    # n'importe quel nom. Sur un ingress lab.sspcloud.fr, l'adresse est publique.
+    # Décommenter ces trois lignes après avoir créé le secret htpasswd (cf.
+    # README.md) pour mettre la revue derrière un basic auth.
+    # nginx.ingress.kubernetes.io/auth-type: basic
+    # nginx.ingress.kubernetes.io/auth-secret: graal-match-verifier-review-basic-auth
+    # nginx.ingress.kubernetes.io/auth-realm: "Revue MatchVerifier"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "360"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "360"
+spec:
+  tls:
+    - hosts:
+        - graal-match-verifier-review.lab.sspcloud.fr
+  rules:
+    - host: graal-match-verifier-review.lab.sspcloud.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: graal-match-verifier-review
+                port:
+                  number: 5052

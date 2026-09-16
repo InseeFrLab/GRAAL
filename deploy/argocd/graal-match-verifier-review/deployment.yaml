@@ -1,0 +1,112 @@
+# App de revue humaine du MatchVerifier (InseeFrLab/GRAAL,
+# src/evaluation/apps/match_verifier_eval_app.py), image poussée par
+# .github/workflows/docker.yml de ce même dépôt.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graal-match-verifier-review
+spec:
+  # Un seul réplica, volontairement : les jugements sont ajoutés à un unique JSONL
+  # sur S3, et un append S3 est un read-modify-write (s3fs réécrit l'objet entier
+  # en dessous de 5 Mo). Deux pods qui écrivent en même temps perdraient
+  # silencieusement un jugement sur deux. Le verrou côté app ne protège que d'un
+  # processus à l'autre : passer à 2 réplicas demanderait d'abord un autre backend.
+  replicas: 1
+  strategy:
+    # Recreate plutôt que RollingUpdate, pour la même raison : pas deux pods vivants
+    # en même temps, même le temps d'un déploiement.
+    type: Recreate
+  selector:
+    matchLabels:
+      app: graal-match-verifier-review
+  template:
+    metadata:
+      labels:
+        app: graal-match-verifier-review
+    spec:
+      containers:
+        - name: app
+          # Épingler `sha-xxxxxxx` (tag produit par la CI) plutôt que `latest` pour
+          # figer la version pendant une campagne de revue.
+          image: inseefrlab/graal-match-verifier-review:latest
+          imagePullPolicy: Always
+          # Le run revu est épinglé ici : l'image n'embarque pas .git, donc --commit
+          # ne peut pas être déduit du tag de HEAD. --input/--reviewers/--shared-n/
+          # --unique-n/--seed définissent la répartition des lignes entre
+          # annotateurs — les changer en cours de campagne rebat les paquets sous
+          # les pieds des annotateurs (cf. docstring de l'app).
+          args:
+            - --input
+            - s3://projet-ape/graal/data/eval/match_verifier_eval
+            - --commit
+            - 1cace07
+            - --model
+            - qwen3-6-35b-moe
+            # Sortie sur S3 et non dans le conteneur : le pod est éphémère, les
+            # jugements ne le sont pas.
+            - --output-dir
+            - s3://projet-ape/graal/data/eval/human_review
+            - --reviewers
+            - meilame,theo,nathan
+            - --shared-n
+            - "50"
+            - --unique-n
+            - "50"
+            - --seed
+            - "42"
+            - --host
+            - 0.0.0.0
+            - --port
+            - "5052"
+          ports:
+            - name: http
+              containerPort: 5052
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-s3-creds
+                  key: accessKey
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-s3-creds
+                  key: secretKey
+            - name: AWS_S3_ENDPOINT
+              value: minio.lab.sspcloud.fr
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+          # NEO4J_URL / NEO4J_USERNAME / NEO4J_PWD, plus EMBEDDING_MODEL /
+          # URL_EMBEDDING_API / OPENAI_API_KEY que src.neo4j_graph.graph lit à la
+          # construction du Graph. Secret à créer une fois dans le namespace (cf.
+          # README.md). Sans lui l'app démarre quand même : la connexion Neo4j
+          # échoue, est loguée, et la revue se fait sans les notices de code.
+          envFrom:
+            - secretRef:
+                name: graal-match-verifier-review
+                optional: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            # Au démarrage l'app lit le parquet d'eval (20 000 lignes) depuis S3.
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false

@@ -46,7 +46,7 @@ Usage :
     uv run -m src.evaluation.apps.multi_method_review_app \
         --input data/eval/multi_method/eval_multi_method.parquet \
         --output data/eval/human_review/multi_method_review.jsonl \
-        --reviewers alice,bob,carol \
+        --reviewers meilame,theo,nathan \
         --port 5051
 """
 
@@ -822,7 +822,7 @@ def main() -> int:
     parser.add_argument(
         "--reviewers",
         required=True,
-        help="Comma-separated reviewer names (e.g. alice,bob,carol). Keep this, "
+        help="Comma-separated reviewer names (e.g. meilame,theo,nathan). Keep this, "
         "--shared-n, --unique-n and --input unchanged for the whole review period: "
         "the row split is deterministically derived from all four, so changing any "
         "of them reshuffles it out from under in-progress work.",

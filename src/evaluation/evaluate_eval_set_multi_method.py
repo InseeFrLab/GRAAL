@@ -1,7 +1,7 @@
 """Multi-méthode + arbitrage sur un échantillon du jeu d'évaluation, chronométré.
 
 Applique à un échantillon du jeu d'évaluation (cf. build_eval_set.py) le même
-principe d'audit que src.evaluation.verify_train_labels applique au jeu
+principe d'audit que src.evaluation.match_verifier_eval applique au jeu
 d'entraînement — juger la vérité terrain, reclassifier, arbitrer — mais sur
 les 4 méthodes de classification à la fois plutôt qu'une seule, et avec le
 temps de chaque appel (Navigator, Agentic-RAG, Summary, Supervisé,
@@ -15,7 +15,7 @@ tous types et toutes lignes confondus (pas un plafond par étape).
 Sur un même échantillon (taille et graine fixées pour la reproductibilité) :
   1. MatchVerifier juge si le label de vérité terrain (apet2025) semble correct
      (le jeu d'évaluation n'est pas plus digne de confiance a priori que le
-     jeu d'entraînement — cf. verify_train_labels.py)
+     jeu d'entraînement — cf. match_verifier_eval.py)
   2. Les 4 méthodes de classification (Navigator, Agentic-RAG, Summary,
      modèle supervisé de production) proposent chacune un code
   3. MatchVerifier juge, de la même façon qu'à l'étape 1, chacune des 4
@@ -28,7 +28,7 @@ Sur un même échantillon (taille et graine fixées pour la reproductibilité) :
 Chaque ligne, dès que son propre pipeline termine, est journalisée au fil de
 l'eau dans <output-dir>/eval_multi_method.checkpoint.jsonl (flush immédiat) :
 un run interrompu ne perd que les lignes encore en vol, pas tout le batch —
-même rationale que run_eval.py/verify_train_labels.py.
+même rationale que run_eval.py/match_verifier_eval.py.
 
 Nécessite à l'exécution : la base Neo4j et l'API LLM configurées dans
 l'environnement (mêmes prérequis que src.main), ainsi que le résumé NACE
@@ -77,7 +77,7 @@ async def timed_call(name: str, thunk, idx: int, total: int):
     """Await the zero-arg async `thunk()`, returning `(result, duration_seconds)`.
 
     Retried once on failure (cf. call_with_retries — same harmonized policy as
-    run_eval.py and verify_train_labels.py); `result` is None if every attempt
+    run_eval.py and match_verifier_eval.py); `result` is None if every attempt
     failed, rather than raising, so one bad label/row doesn't abort the whole run.
     """
     start = time.perf_counter()

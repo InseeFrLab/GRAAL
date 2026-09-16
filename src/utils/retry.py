@@ -5,7 +5,7 @@ Not every classifier catches its own transient failures: BaseClassifier
 navigator loop, but SummaryAgenticClassifier, SupervisedClassifier, MatchVerifier
 and CodeChooser have none of their own — an exception (e.g. an LLM timeout) just
 propagates to the caller. Before this module existed, only
-src.evaluation.verify_train_labels retried such failures (its own local
+src.evaluation.match_verifier_eval retried such failures (its own local
 `_call_with_retries`); run_eval.py and evaluate_eval_set_multi_method.py each
 caught the exception once and gave up. This gives every caller the same
 retry-then-give-up behavior instead of each eval script inventing its own.
