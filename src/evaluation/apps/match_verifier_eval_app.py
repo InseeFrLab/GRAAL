@@ -4,10 +4,12 @@ For each row of the MatchVerifier eval parquet (cf. src.evaluation.match_verifie
 — columns libelle, current_code, match_verifier_verdict, match_verifier_explanation,
 match_verifier_confidence), shows the activity text, the code currently attached to it
 with its official notice, and MatchVerifier's own verdict on that pair. The reviewer
-answers two independent questions: is the code actually correct, and is MatchVerifier's
-verdict on it correct. Those two are deliberately asked separately — the second is what
-scores the verifier, the first is what lets /metrics recompute precision/recall for it
-without trusting either the training label or the verdict.
+answers one question — is MatchVerifier's verdict on that pair correct — plus a free
+field for the code they would have assigned. An earlier version also asked, separately,
+whether the code itself was correct (which let /metrics recompute precision/recall
+without trusting the verdict); that question was retired as not worth its annotation
+cost, but `human_code_correct` stays in the log and schema so the judgments already
+collected under it remain readable.
 
 Companion of multi_method_review_app.py, narrowed to one candidate per row: that app
 reviews 5 candidates (ground truth + 4 classifiers), CodeChooser's arbitration and
@@ -23,20 +25,29 @@ input file and those four arguments don't change mid-review.
 Judgments are logged append-only to JSONL (keyed by (reviewer, row_id), so re-running
 is idempotent and safe to interrupt) and, after each submission, materialized as a
 parquet next to it — one row per (reviewer, judged row), carrying the reviewer's name
-in the `reviewer` column alongside the original parquet's five columns and the two
-human answers. The /metrics page derives, from reviewed rows only: MatchVerifier's
-accuracy/precision/recall against the human correctness judgments, how often the human
-called the verdict itself right, how often the training label is wrong, and inter-rater
-agreement on the shared pool.
+in the `reviewer` column alongside the original parquet's five columns and the human
+answers. The /metrics page derives, from reviewed rows only: how often the human called
+the verdict right, inter-rater agreement on the shared pool, and — over the judgments
+made back when the code question was still asked — MatchVerifier's accuracy, precision
+and recall against it.
+
+Une revue porte sur un run, et un run porte sur un prompt et un modèle :
+`match_verifier_eval.py` écrit ses résultats sous <output>/<commit>/<modèle>/, et
+cette app lit donc <input>/<commit>/<modèle>/match_verifier_eval.parquet et
+journalise les jugements sous <output-dir>/<commit>/<modèle>/. `--commit` et
+`--model` valent par défaut le tag git de HEAD et GENERATION_MODEL ; si aucun run
+n'existe pour ce couple, l'app refuse de démarrer en listant les runs disponibles,
+plutôt que de mélanger dans un même JSONL des jugements portant sur deux révisions
+du prompt ou deux modèles (ce qui fausserait silencieusement /metrics).
 
 Nécessite Neo4j configuré dans l'environnement pour afficher la notice du code ;
 sans connexion, la revue reste possible mais sans notice.
 
 Usage :
     uv run -m src.evaluation.apps.match_verifier_eval_app \
-        --input s3://projet-ape/graal/data/eval/match_verifier_eval/match_verifier_eval.parquet \
-        --output data/eval/human_review/match_verifier_review.jsonl \
-        --reviewers alice,bob,carol \
+        --input s3://projet-ape/graal/data/eval/match_verifier_eval \
+        --commit ec8bf27 --model qwen3-6-35b-moe \
+        --reviewers meilame,theo,nathan \
         --port 5052
 """
 
@@ -55,19 +66,73 @@ from src.evaluation.row_id import row_id_for
 from src.neo4j_graph.graph import Graph
 from src.utils import storage
 from src.utils.logging import configure_logging
+from src.utils.run_provenance import model_slug, revision_tag
 
 configure_logging()
 logger = logging.getLogger(__name__)
 
-DEFAULT_INPUT = "s3://projet-ape/graal/data/eval/match_verifier_eval/match_verifier_eval.parquet"
-DEFAULT_OUTPUT = "data/eval/human_review/match_verifier_review.jsonl"
+DEFAULT_INPUT = "s3://projet-ape/graal/data/eval/match_verifier_eval"
+DEFAULT_OUTPUT_DIR = "data/eval/human_review"
+REVIEW_FILENAME = "match_verifier_review.jsonl"
 
-# Input columns, as written by match_verifier_eval.py.
+# Input file and columns, as written by match_verifier_eval.py (duplicated rather
+# than imported: that module pulls in the whole agent stack at import time).
+DETAILS_FILENAME = "match_verifier_eval.parquet"
 TEXT_COLUMN = "libelle"
 CODE_COLUMN = "current_code"
 VERDICT_COLUMN = "match_verifier_verdict"
 EXPLANATION_COLUMN = "match_verifier_explanation"
 CONFIDENCE_COLUMN = "match_verifier_confidence"
+
+
+def available_runs(input_path: str) -> list[str]:
+    """`<commit>/<model>` of every run found under the `input_path` root.
+
+    Two levels deep, so the listing shown when a run is missing names something
+    that can be pasted straight back as --commit/--model. Only directories holding
+    the eval parquet count — a half-written run isn't one to offer.
+    """
+    runs = []
+    for commit in storage.list_dir(input_path):
+        for model in storage.list_dir(os.path.join(input_path, commit)):
+            if storage.path_exists(os.path.join(input_path, commit, model, DETAILS_FILENAME)):
+                runs.append(f"{commit}/{model}")
+    return runs
+
+
+def resolve_input(input_path: str, commit: str, model: str) -> str:
+    """Path of the eval parquet for `commit`/`model` under the `input_path` root.
+
+    A path already ending in .parquet is taken as-is — the escape hatch for a run
+    that predates this layout, or one copied somewhere by hand. Otherwise the
+    run's subdirectory is required to exist: silently falling back to "the latest
+    run" would reshuffle the reviewer split (which is derived from the input rows)
+    under in-progress review work, and pool judgments on two different prompts, or
+    two different models, into one set of metrics.
+    """
+    if input_path.endswith(".parquet"):
+        return input_path
+    path = os.path.join(input_path, commit, model, DETAILS_FILENAME)
+    if not storage.path_exists(path):
+        runs = available_runs(input_path)
+        raise SystemExit(
+            f"No eval run for {commit}/{model}: {path} does not exist.\n"
+            f"Runs available under {input_path}: {', '.join(runs) or '(none)'}.\n"
+            "Pass --commit/--model from that list to review an earlier run, or produce "
+            "one for the current commit and model with "
+            "`uv run -m src.evaluation.match_verifier_eval`."
+        )
+    return path
+
+
+def resolve_output(output_dir: str, commit: str, model: str) -> str:
+    """JSONL log path for `commit`/`model` under the `output_dir` root.
+
+    Namespaced the same way as the input: judgments of a verdict produced by one
+    prompt revision and model say nothing about the next, and /metrics pools every
+    judgment in the file it reads.
+    """
+    return os.path.join(output_dir, commit, model, REVIEW_FILENAME)
 
 
 def load_rows(input_path: str) -> list[dict]:
@@ -193,17 +258,18 @@ def compute_metrics(
 ) -> dict:
     """Metrics derived from every (reviewer, row) judgment pooled together.
 
-    Two independent readings of the same reviews: `verdict_agreement` is how often the
-    human explicitly said "that verdict is right"; precision/recall/accuracy instead
-    compare MatchVerifier's is_match against the human's own judgment of whether the
-    code is correct, which doesn't depend on the reviewer having thought about the
-    verdict at all. They can diverge — a reviewer can accept a right-for-the-wrong-
-    reason verdict — and that divergence is the point of asking both.
+    `verdict_agreement` is how often the human explicitly said "that verdict is right",
+    and is the live metric: it is the only question the form still asks. The confusion
+    matrix and label_accuracy instead read `human_code_correct`, the retired question,
+    so they only cover judgments recorded while it was still asked — every rate here is
+    therefore computed over its own denominator (`verdict_n`, `label_n`, `verifier.n`)
+    rather than over the judgment count, which would otherwise drift as new judgments
+    answer only one of the two.
     """
     known_ids = {r["row_id"] for r in rows}
 
     n_judgments = 0
-    label_correct = 0
+    code_total = label_correct = 0
     verdict_total = verdict_agree = 0
     tp = fp = tn = fn = 0
 
@@ -214,8 +280,10 @@ def compute_metrics(
             n_judgments += 1
             code_correct = judgment.get("human_code_correct")
             verdict = judgment.get(VERDICT_COLUMN)
-            if code_correct:
-                label_correct += 1
+            if code_correct is not None:
+                code_total += 1
+                if code_correct:
+                    label_correct += 1
 
             verdict_correct = judgment.get("human_verdict_correct")
             if verdict_correct is not None:
@@ -240,7 +308,8 @@ def compute_metrics(
     return {
         "n_total": len(rows),
         "n_judgments": n_judgments,
-        "label_accuracy": rate(label_correct, n_judgments),
+        "label_accuracy": rate(label_correct, code_total),
+        "label_n": code_total,
         "verdict_agreement": rate(verdict_agree, verdict_total),
         "verdict_n": verdict_total,
         "verifier": {
@@ -261,7 +330,11 @@ def compute_inter_rater_agreement(
     all_judgments: dict[str, dict[str, dict]], shared_ids: set[str]
 ) -> dict:
     """Percent agreement between every pair of reviewers on the shared pool, on each
-    of the two questions ("code correct?" and "verdict correct?") separately.
+    question ("verdict correct?", and the retired "code correct?") separately.
+
+    A question counts for a pair only when both reviewers actually answered it —
+    without that guard two unanswered questions would compare equal and report
+    perfect agreement on something nobody was asked.
     """
     reviewers = sorted(all_judgments)
     pairs = []
@@ -271,27 +344,40 @@ def compute_inter_rater_agreement(
     for i in range(len(reviewers)):
         for j in range(i + 1, len(reviewers)):
             a, b = reviewers[i], reviewers[j]
-            pair_match = pair_total = 0
+            pair_code_match = pair_code_total = 0
+            pair_verdict_match = pair_verdict_total = 0
             for row_id in shared_ids:
                 ja = all_judgments[a].get(row_id)
                 jb = all_judgments[b].get(row_id)
                 if ja is None or jb is None:
                     continue
-                pair_total += 1
-                code_total += 1
-                if ja.get("human_code_correct") == jb.get("human_code_correct"):
-                    pair_match += 1
-                    code_match += 1
-                if (
-                    ja.get("human_verdict_correct") is not None
-                    and jb.get("human_verdict_correct") is not None
-                ):
+                ca, cb = ja.get("human_code_correct"), jb.get("human_code_correct")
+                if ca is not None and cb is not None:
+                    pair_code_total += 1
+                    code_total += 1
+                    if ca == cb:
+                        pair_code_match += 1
+                        code_match += 1
+                va, vb = ja.get("human_verdict_correct"), jb.get("human_verdict_correct")
+                if va is not None and vb is not None:
+                    pair_verdict_total += 1
                     verdict_total += 1
-                    if ja["human_verdict_correct"] == jb["human_verdict_correct"]:
+                    if va == vb:
+                        pair_verdict_match += 1
                         verdict_match += 1
-            if pair_total:
+            if pair_code_total or pair_verdict_total:
                 pairs.append(
-                    {"reviewers": (a, b), "n": pair_total, "agreement": pair_match / pair_total}
+                    {
+                        "reviewers": (a, b),
+                        "n_code": pair_code_total,
+                        "code_agreement": (
+                            pair_code_match / pair_code_total if pair_code_total else None
+                        ),
+                        "n_verdict": pair_verdict_total,
+                        "verdict_agreement": (
+                            pair_verdict_match / pair_verdict_total if pair_verdict_total else None
+                        ),
+                    }
                 )
 
     return {
@@ -301,6 +387,60 @@ def compute_inter_rater_agreement(
         "n_code": code_total,
         "n_verdict": verdict_total,
     }
+
+
+NAV_VERDICT_GROUPS = [
+    (False, "MatchVerifier : pas de correspondance"),
+    (True, "MatchVerifier : correspondance"),
+    (None, "MatchVerifier : sans verdict"),
+]
+
+
+def nav_entry_label(position: int, libelle: str, judgment: dict | None) -> str:
+    """One line of the jump-to dropdown: rank in the reviewer's order, review status,
+    and the beginning of the activity text (truncated — an <option> can't wrap)."""
+    if judgment is None:
+        status = "à juger    "
+    else:
+        status = {True: "verdict OK ", False: "verdict KO ", None: "jugé       "}[
+            judgment.get("human_verdict_correct")
+        ]
+    text = libelle if len(libelle) <= 70 else libelle[:69] + "\u2026"
+    return f"{position:>3}. [{status}] {text}"
+
+
+def build_nav_groups(
+    order: list[str], rows_by_id: dict[str, dict], judgments: dict[str, dict]
+) -> list[tuple[str, list[dict]]]:
+    """The reviewer's assigned rows, grouped by MatchVerifier's verdict.
+
+    Grouped by verdict rather than kept in review order because the point of the
+    dropdown is to reach a *class* of rows directly — typically the ones the verifier
+    rejected — while the position prefix keeps the review order readable inside each
+    group. Each group's header carries how many of its rows are still unjudged.
+    """
+    by_verdict: dict[bool | None, list[dict]] = {}
+    for i, row_id in enumerate(order):
+        row = rows_by_id[row_id]
+        verdict = None if row["verdict"] is None else bool(row["verdict"])
+        judgment = judgments.get(row_id)
+        by_verdict.setdefault(verdict, []).append(
+            {
+                "row_id": row_id,
+                "label": nav_entry_label(i + 1, row["libelle"], judgment),
+                "judged": judgment is not None,
+            }
+        )
+
+    groups = []
+    for verdict, title in NAV_VERDICT_GROUPS:
+        entries = by_verdict.get(verdict)
+        if not entries:
+            continue
+        todo = sum(1 for e in entries if not e["judged"])
+        plural = "s" if len(entries) > 1 else ""
+        groups.append((f"{title} — {len(entries)} ligne{plural}, {todo} à juger", entries))
+    return groups
 
 
 _code_notice_cache: dict[str, dict | None] = {}
@@ -403,13 +543,22 @@ STYLE = """
   .stat { border: 1px solid #ddd; border-radius: 10px; padding: 0.8rem; text-align: center; background: #fafafa; }
   .stat .n { font-size: 1.4rem; font-weight: 700; display: block; }
   .stat .l { font-size: 0.72rem; color: #777; text-transform: uppercase; letter-spacing: 0.03em; }
+  .row-picker { margin: -0.7rem 0 1.25rem; }
+  .row-picker select {
+    width: 100%; padding: 0.5rem 0.6rem; border-radius: 8px; border: 1px solid #ddd;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;
+    background: #fafafa; color: inherit;
+  }
+  @media (prefers-color-scheme: dark) {
+    .row-picker select { background: #262626; border-color: #3a3a3a; color: #e8e8e8; }
+  }
 </style>
 """
 
 NAV = """
 <nav>
   <a href="{{ url_for('index', reviewer=reviewer) }}">&larr; Revue ({{ reviewer }})</a>
-  <span class="progress">{{ n_reviewed }} / {{ n_total }} jugés</span>
+  <span class="progress">{{ n_reviewed }} / {{ n_total }} jugés &middot; run {{ run }}</span>
   <a href="{{ url_for('metrics') }}">Métriques &rarr;</a>
 </nav>
 """
@@ -418,6 +567,7 @@ PICKER_TEMPLATE = (
     STYLE
     + """
 <h2>Qui êtes-vous ?</h2>
+<p class="progress">Revue du run <code>{{ run }}</code></p>
 <div class="picker">
   {% for r in reviewers %}
   <a href="{{ url_for('index', reviewer=r) }}">{{ r }}</a>
@@ -430,6 +580,19 @@ REVIEW_TEMPLATE = (
     STYLE
     + NAV
     + """
+<div class="row-picker">
+  <select onchange="if (this.value) location.href = this.value;">
+    {% for title, entries in nav_groups %}
+    <optgroup label="{{ title }}">
+      {% for e in entries %}
+      <option value="{{ url_for('review', row_id=e.row_id, reviewer=reviewer) }}"
+        {{ "selected" if e.row_id == row.row_id }}>{{ e.label }}</option>
+      {% endfor %}
+    </optgroup>
+    {% endfor %}
+  </select>
+</div>
+
 {% if existing %}
   <div class="existing-banner">Déjà jugé par {{ reviewer }} le {{ existing.reviewed_at }}</div>
 {% endif %}
@@ -458,13 +621,6 @@ REVIEW_TEMPLATE = (
     <div class="notice">{{ row.explanation }}</div>
   </div>
   <div class="judgments">
-    <div class="judgment-group">
-      <span class="jg-label">Le code est-il correct ?</span>
-      <label><input type="radio" name="code_correct" value="yes" required
-        {{ "checked" if existing and existing.human_code_correct }}> Oui</label>
-      <label><input type="radio" name="code_correct" value="no"
-        {{ "checked" if existing and existing.human_code_correct == false }}> Non</label>
-    </div>
     <div class="judgment-group">
       <span class="jg-label">Le verdict MatchVerifier est-il correct ?</span>
       <label><input type="radio" name="verdict_correct" value="yes" required
@@ -500,11 +656,11 @@ METRICS_TEMPLATE = (
   <a href="{{ url_for('index') }}">&larr; Revue</a>
 </nav>
 
-<h2>Métriques MatchVerifier</h2>
+<h2>Métriques MatchVerifier <span class="progress">(run {{ run }})</span></h2>
 
 <div class="stat-grid">
   <div class="stat"><span class="n">{{ m.n_judgments }}/{{ m.n_assigned_total }}</span><span class="l">Jugements</span></div>
-  <div class="stat"><span class="n">{{ "%.0f%%"|format(m.label_accuracy * 100) if m.label_accuracy is not none else "—" }}</span><span class="l">Labels corrects</span></div>
+  <div class="stat"><span class="n">{{ "%.0f%%"|format(m.label_accuracy * 100) if m.label_accuracy is not none else "—" }}</span><span class="l">Labels corrects ({{ m.label_n }})</span></div>
   <div class="stat"><span class="n">{{ "%.0f%%"|format(m.verdict_agreement * 100) if m.verdict_agreement is not none else "—" }}</span><span class="l">Verdicts jugés corrects ({{ m.verdict_n }})</span></div>
 </div>
 
@@ -521,9 +677,10 @@ METRICS_TEMPLATE = (
 </table>
 <p class="muted">
   « Verdicts jugés corrects » : part des verdicts que l'annotateur a explicitement
-  validés. Exactitude/précision/rappel : verdict MatchVerifier comparé, indépendamment,
-  au jugement humain de correction du code — les deux lectures peuvent diverger (verdict
-  juste pour une mauvaise raison).
+  validés — c'est la seule question posée aujourd'hui. Exactitude/précision/rappel
+  reposent sur l'ancienne question « le code est-il correct ? », retirée du formulaire :
+  elles ne portent donc que sur les {{ m.label_n }} jugements qui y avaient répondu et
+  ne bougeront plus.
 </p>
 
 <h3>Accord inter-annotateurs (pool partagé)</h3>
@@ -533,12 +690,14 @@ METRICS_TEMPLATE = (
 </div>
 {% if m.agreement.pairs %}
 <table>
-  <tr><th>Paire</th><th>N</th><th>Accord « code correct »</th></tr>
+  <tr><th>Paire</th><th>N verdict</th><th>Accord « verdict correct »</th><th>N code</th><th>Accord « code correct »</th></tr>
   {% for p in m.agreement.pairs %}
   <tr>
     <td>{{ p.reviewers[0] }} / {{ p.reviewers[1] }}</td>
-    <td>{{ p.n }}</td>
-    <td>{{ "%.0f%%"|format(p.agreement * 100) }}</td>
+    <td>{{ p.n_verdict }}</td>
+    <td>{{ "%.0f%%"|format(p.verdict_agreement * 100) if p.verdict_agreement is not none else "—" }}</td>
+    <td>{{ p.n_code }}</td>
+    <td>{{ "%.0f%%"|format(p.code_agreement * 100) if p.code_agreement is not none else "—" }}</td>
   </tr>
   {% endfor %}
 </table>
@@ -567,6 +726,7 @@ def create_app(
     input_path: str,
     output_path: str,
     reviewers: list[str],
+    run: str,
     shared_n: int,
     unique_n: int,
     seed: int,
@@ -581,8 +741,8 @@ def create_app(
     row_ids = [r["row_id"] for r in rows]
     assignment, shared_ids = build_assignment(row_ids, reviewers, shared_n, unique_n, seed)
     logger.info(
-        f"Loaded {len(rows)} rows; {shared_n} shared + {unique_n} unique per reviewer "
-        f"({', '.join(reviewers)})"
+        f"Loaded {len(rows)} rows for run {run}; {shared_n} shared + {unique_n} unique "
+        f"per reviewer ({', '.join(reviewers)})"
     )
 
     def order_for(reviewer: str) -> list[str]:
@@ -599,7 +759,7 @@ def create_app(
     def index():
         reviewer = request.args.get("reviewer")
         if reviewer not in reviewers:
-            return render_template_string(PICKER_TEMPLATE, reviewers=reviewers)
+            return render_template_string(PICKER_TEMPLATE, reviewers=reviewers, run=run)
         next_id = first_unreviewed(reviewer)
         if next_id is None:
             return redirect(url_for("metrics"))
@@ -618,6 +778,7 @@ def create_app(
             REVIEW_TEMPLATE,
             row=row,
             reviewer=reviewer,
+            run=run,
             notice=get_code_notice(row["current_code"]),
             idx=idx + 1,
             total=len(order),
@@ -626,6 +787,7 @@ def create_app(
             prev_id=order[idx - 1] if idx > 0 else None,
             next_id=order[idx + 1] if idx + 1 < len(order) else None,
             existing=judgments.get(row_id),
+            nav_groups=build_nav_groups(order, rows_by_id, judgments),
         )
 
     @app.route("/judge/<row_id>", methods=["POST"])
@@ -669,7 +831,7 @@ def create_app(
         all_judgments = load_judgments(output_path)
         m = compute_metrics(rows, all_judgments, shared_ids)
         m["n_assigned_total"] = sum(len(order_for(r)) for r in reviewers)
-        return render_template_string(METRICS_TEMPLATE, m=m)
+        return render_template_string(METRICS_TEMPLATE, m=m, run=run)
 
     return app
 
@@ -681,18 +843,33 @@ def main() -> int:
     parser.add_argument(
         "--input",
         default=DEFAULT_INPUT,
-        help="Parquet produced by src.evaluation.match_verifier_eval",
+        help="Root directory written by src.evaluation.match_verifier_eval; the run "
+        f"actually reviewed is <input>/<commit>/<model>/{DETAILS_FILENAME}. A path "
+        "ending in .parquet is used as-is",
     )
     parser.add_argument(
-        "--output",
-        default=DEFAULT_OUTPUT,
-        help="JSONL log of human judgments; the review parquet (with the `reviewer` "
-        "column) is written next to it under the same basename",
+        "--commit",
+        default=None,
+        help="Which eval run to review, by the commit tag its output directory is "
+        "named after (default: the current HEAD's tag)",
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Which eval run to review, by the model its output directory is named "
+        "after (default: GENERATION_MODEL, i.e. the model this checkout would use)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=DEFAULT_OUTPUT_DIR,
+        help="Root directory for the judgments; they are logged to "
+        f"<output-dir>/<commit>/<model>/{REVIEW_FILENAME}, with the review parquet "
+        "(carrying the `reviewer` column) written next to it under the same basename",
     )
     parser.add_argument(
         "--reviewers",
         required=True,
-        help="Comma-separated reviewer names (e.g. alice,bob,carol). Keep this, "
+        help="Comma-separated reviewer names (e.g. meilame,theo,nathan). Keep this, "
         "--shared-n, --unique-n and --input unchanged for the whole review period: "
         "the row split is deterministically derived from all four, so changing any "
         "of them reshuffles it out from under in-progress work.",
@@ -719,6 +896,13 @@ def main() -> int:
     if not reviewers:
         parser.error("--reviewers needs at least one name")
 
+    commit = args.commit or revision_tag()
+    model = model_slug(args.model)
+    run = f"{commit}/{model}"
+    input_path = resolve_input(args.input, commit, model)
+    output_path = resolve_output(args.output_dir, commit, model)
+    logger.info(f"Reviewing run {run}: {input_path} -> {output_path}")
+
     if args.url_prefix is not None:
         url_prefix = args.url_prefix
     elif os.environ.get("VSCODE_PROXY_URI"):
@@ -727,9 +911,10 @@ def main() -> int:
         url_prefix = ""
 
     app = create_app(
-        args.input,
-        args.output,
+        input_path,
+        output_path,
         reviewers,
+        run,
         args.shared_n,
         args.unique_n,
         args.seed,

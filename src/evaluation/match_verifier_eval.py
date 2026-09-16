@@ -8,10 +8,14 @@ surtout la matière première de l'évaluation du MatchVerifier lui-même — le
 parquet produit ici est relu par src.evaluation.apps.match_verifier_eval_app,
 où des annotateurs humains jugent chaque verdict.
 
-Le parquet de sortie tient en six colonnes, volontairement : libelle,
+Le parquet de sortie tient en sept colonnes, volontairement : libelle,
 current_code, match_verifier_verdict, match_verifier_explanation,
-match_verifier_confidence, match_verifier_duration_s (le temps d'inférence de
-l'appel, cf. verify_rows). C'est ce dont l'app de revue a besoin, rien de plus
+match_verifier_confidence, match_verifier_p_match (la probabilité du verdict lue
+dans les logprobs, cf. MatchVerifier) et match_verifier_duration_s (le temps
+d'inférence de l'appel, cf. verify_rows). C'est ce dont l'app de revue a besoin —
+plus `p_match`, qui n'a de sens qu'une fois les annotations humaines disponibles :
+c'est en le seuillant a posteriori qu'on choisit un point de fonctionnement pour
+le vérificateur au lieu de subir celui de son prompt, rien de plus
 (les versions précédentes de ce script demandaient en plus au
 SummaryAgenticClassifier un second avis sur les lignes en désaccord ; ce second
 avis relève de l'évaluation des classifieurs — cf.
@@ -24,6 +28,18 @@ concurremment, `--concurrency` bornant le nombre d'appels LLM en vol ; chaque
 ligne terminée est journalisée au fil de l'eau dans
 <output>/match_verifier_eval.checkpoint.jsonl, pour ne perdre que le travail non
 flush si le run est interrompu.
+
+Ce que le script mesure, c'est le prompt du MatchVerifier, et ce prompt vit
+dans le dépôt : les résultats sont donc écrits sous <output>/<commit>/<modèle>/
+(le tag git de HEAD au moment du run et GENERATION_MODEL, cf.
+src.utils.run_provenance) plutôt qu'à plat, et
+le script refuse de démarrer si src/agents/closers/match_verifier.py a des
+modifications non commitées — sans quoi le nom du dossier désignerait un commit
+qui ne contient pas le prompt effectivement évalué. `--allow-dirty` lève le
+refus au prix d'un dossier suffixé `-dirty`, pour itérer sur un prompt avant de
+le commiter sans polluer les résultats de référence. Le modèle n'a pas de flag :
+il est lu dans l'environnement que lisent les agents eux-mêmes, donc pour
+comparer deux modèles, `GENERATION_MODEL=... uv run -m ...`.
 
 Nécessite à l'exécution : la base Neo4j et l'API LLM configurées dans
 l'environnement (mêmes prérequis que src.main).
@@ -54,12 +70,36 @@ from src.neo4j_graph.graph import Graph
 from src.utils import storage
 from src.utils.logging import configure_logging
 from src.utils.retry import call_with_retries
+from src.utils.run_provenance import (
+    DirtyWorkingTreeError,
+    assert_clean,
+    revision_sha,
+    revision_tag,
+    run_subpath,
+)
 
 configure_logging()
 logger = logging.getLogger(__name__)
 
-TRAIN_SET_PATH = "projet-ape/data/08112022_27102024/naf2025/split/df_train.parquet"
+TRAIN_SET_PATH = "projet-ape/data/25062026/naf2025/split/df_train.parquet"
 DEFAULT_OUTPUT = "s3://projet-ape/graal/data/eval/match_verifier_eval"
+
+# Output file names, fixed: match_verifier_eval_app resolves exactly these under
+# <output>/<commit>/<model>/.
+DETAILS_FILENAME = "match_verifier_eval.parquet"
+SUMMARY_FILENAME = "match_verifier_eval_summary.json"
+
+# Files whose content *is* what this eval measures: a run made while these carry
+# uncommitted edits cannot honestly be filed under the current commit (cf.
+# src.utils.run_provenance). Extend this list if the prompt grows new inputs — the
+# notice that makes up most of the prompt is composed by Graph.get_notice, and the
+# toolset and turn budget the verifier runs under are decided in BaseAgent, so all
+# three files define what a run measures.
+PROMPT_FILES = [
+    "src/agents/closers/match_verifier.py",
+    "src/agents/base_agent.py",
+    "src/neo4j_graph/graph.py",
+]
 
 # Output column names, fixed: match_verifier_eval_app reads exactly these.
 TEXT_COLUMN_OUT = "libelle"
@@ -67,7 +107,13 @@ CODE_COLUMN_OUT = "current_code"
 VERDICT_COLUMN = "match_verifier_verdict"
 EXPLANATION_COLUMN = "match_verifier_explanation"
 CONFIDENCE_COLUMN = "match_verifier_confidence"
+P_MATCH_COLUMN = "match_verifier_p_match"
 DURATION_COLUMN = "match_verifier_duration_s"
+
+# Seuils auxquels le taux de rejet est reporté dans le résumé : `is_match` est un
+# point de fonctionnement parmi d'autres, et p_match permet de les parcourir sans
+# relancer le run. Un rejet au seuil t, c'est p_match < t.
+P_MATCH_THRESHOLDS = (0.1, 0.25, 0.5, 0.75, 0.9)
 
 # MatchVerifier is a single-shot call, so far less exposed to the multi-turn failure
 # mode that hits the agentic classifiers, but a transient timeout can still hit it —
@@ -86,9 +132,10 @@ async def verify_rows(
 ) -> list[dict]:
     """Verify each row's existing (text, code) label with MatchVerifier.
 
-    No `proposed_explanation`/`proposed_confidence` is passed, so the verifier
-    treats each code as a raw ground-truth label rather than a model's guess
-    (cf. the "no explanation provided" prompt branch in MatchVerifier). Retries once
+    No `proposed_explanation`/`proposed_confidence` is passed: there is no model
+    rationale to show, and the verifier's prompt says nothing about where a code comes
+    from anyway — a training label and a classifier's guess are judged by the same
+    words, on the pair alone (cf. MatchVerifier.build_prompt). Retries once
     on failure (cf. _VERIFIER_MAX_ATTEMPTS); a row where both attempts fail is
     skipped entirely (logged, not included in the returned results) rather than
     crashing the whole batch.
@@ -153,6 +200,7 @@ async def verify_rows(
             VERDICT_COLUMN: verification.is_match,
             EXPLANATION_COLUMN: verification.explanation,
             CONFIDENCE_COLUMN: verification.confidence,
+            P_MATCH_COLUMN: verification.p_match,
             DURATION_COLUMN: duration,
         }
         results[i] = entry
@@ -175,6 +223,14 @@ async def verify_rows(
 
 
 async def run(args) -> int:
+    # Before anything expensive: refuse a run whose results couldn't be attributed
+    # to a commit, rather than discovering it after 500 LLM calls.
+    assert_clean(PROMPT_FILES, allow_dirty=args.allow_dirty)
+    commit = revision_tag(allow_dirty=args.allow_dirty)
+    subpath = run_subpath(allow_dirty=args.allow_dirty)
+    output_dir = os.path.join(args.output, subpath)
+    logger.info(f"Pinning this run to {subpath}; writing to {output_dir}")
+
     df = load_dataframe(args.train_set)
     sample = df.sample(n=min(args.n_samples, len(df)), seed=args.seed)
     logger.info(f"Verifying {len(sample)} train labels with MatchVerifier")
@@ -183,7 +239,12 @@ async def run(args) -> int:
     verifier = MatchVerifier(graph)
 
     session_id = f"match_verifier_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    checkpoint_dir = args.checkpoint_dir or args.output
+    # The checkpoint gets the same subpath, so a local --checkpoint-dir shared
+    # across runs doesn't mix rows from two prompt revisions (or two models) into
+    # one file.
+    checkpoint_dir = (
+        os.path.join(args.checkpoint_dir, subpath) if args.checkpoint_dir else output_dir
+    )
     checkpoint_path = os.path.join(checkpoint_dir, "match_verifier_eval.checkpoint.jsonl")
     results = await verify_rows(
         verifier,
@@ -203,29 +264,45 @@ async def run(args) -> int:
             (VERDICT_COLUMN, pl.Boolean),
             (EXPLANATION_COLUMN, pl.Utf8),
             (CONFIDENCE_COLUMN, pl.Float64),
+            (P_MATCH_COLUMN, pl.Float64),
             (DURATION_COLUMN, pl.Float64),
         ],
     )
     n = len(details)
     n_skipped = len(sample) - n
     n_flagged = int((~details[VERDICT_COLUMN]).sum()) if n else 0
+    p_match = details[P_MATCH_COLUMN].drop_nulls()
     summary = {
         "n": n,
         "n_skipped": n_skipped,
         "n_flagged": n_flagged,
         "agreement_rate": (1 - n_flagged / n) if n else None,
+        # Ce que le taux de rejet deviendrait si le verdict était pris en seuillant
+        # p_match plutôt qu'en lisant is_match : de quoi voir, avant même d'annoter,
+        # si le prompt tranche net (taux stables d'un seuil à l'autre) ou si beaucoup
+        # de lignes sont des quasi-égalités.
+        "flag_rate_by_p_match_threshold": {
+            str(t): float((p_match < t).mean()) for t in P_MATCH_THRESHOLDS
+        }
+        if len(p_match)
+        else None,
+        "mean_p_match": float(p_match.mean()) if len(p_match) else None,
+        "n_missing_p_match": n - len(p_match),
         "mean_confidence": float(details[CONFIDENCE_COLUMN].mean()) if n else None,
         "mean_duration_s": float(details[DURATION_COLUMN].mean()) if n else None,
         "total_duration_s": float(details[DURATION_COLUMN].sum()) if n else None,
         "session_id": session_id,
         "seed": args.seed,
+        "commit": commit,
+        "commit_sha": revision_sha(),
+        "model": os.environ["GENERATION_MODEL"],
     }
 
-    storage.makedirs(args.output)
-    details_path = os.path.join(args.output, "match_verifier_eval.parquet")
+    storage.makedirs(output_dir)
+    details_path = os.path.join(output_dir, DETAILS_FILENAME)
     with storage.open_path(details_path, "wb") as f:
         details.write_parquet(f)
-    summary_path = os.path.join(args.output, "match_verifier_eval_summary.json")
+    summary_path = os.path.join(output_dir, SUMMARY_FILENAME)
     with storage.open_path(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
 
@@ -265,17 +342,36 @@ def main() -> int:
         help="Max MatchVerifier calls in flight at once (default: 5)",
     )
     parser.add_argument(
-        "--output", default=DEFAULT_OUTPUT, help=f"Output directory (default: {DEFAULT_OUTPUT})"
+        "--output",
+        default=DEFAULT_OUTPUT,
+        help=f"Root output directory (default: {DEFAULT_OUTPUT}). Results go to "
+        "<output>/<commit>/<model>/, so runs of successive prompt revisions — or of two "
+        "models on the same prompt — never overwrite each other",
     )
     parser.add_argument(
         "--checkpoint-dir",
         default=None,
-        help="Directory for the per-row checkpoint (default: --output). Worth pointing at a "
-        "local directory when --output is on S3: s3fs only uploads on close, so a checkpoint "
-        "written there survives nothing that the final parquet wouldn't have survived anyway",
+        help="Root directory for the per-row checkpoint, also suffixed with /<commit>/<model> "
+        "(default: --output). Worth pointing at a local directory when --output is on S3: "
+        "s3fs only uploads on close, so a checkpoint written there survives nothing that "
+        "the final parquet wouldn't have survived anyway",
+    )
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Run even though the prompt files have uncommitted changes "
+        f"({', '.join(PROMPT_FILES)}), writing to a scratch <commit>-dirty/<model> directory. "
+        "For iterating on a prompt before committing it; the results are not "
+        "reproducible from any commit",
     )
     args = parser.parse_args()
-    return asyncio.run(run(args))
+    try:
+        return asyncio.run(run(args))
+    except DirtyWorkingTreeError as exc:
+        # A refusal by design, not a crash: print the (actionable) message alone
+        # rather than a traceback that buries it.
+        logger.error(str(exc))
+        return 1
 
 
 if __name__ == "__main__":

@@ -61,3 +61,21 @@ def remove(path: str) -> None:
         get_file_system().rm(path)
     else:
         os.remove(path)
+
+
+def list_dir(path: str) -> list[str]:
+    """Names (not full paths) of the entries directly under `path`; [] if absent.
+
+    s3fs.ls returns full keys and os.listdir bare names, so both are normalized to
+    bare names here — callers list a directory to show the user what's in it (e.g.
+    which eval runs exist), not to rebuild paths.
+    """
+    if is_s3_path(path):
+        fs = get_file_system()
+        stripped = path[len(S3_PREFIX) :].rstrip("/")
+        if not fs.exists(stripped):
+            return []
+        return sorted(entry.rstrip("/").rsplit("/", 1)[-1] for entry in fs.ls(stripped))
+    if not os.path.isdir(path):
+        return []
+    return sorted(os.listdir(path))
