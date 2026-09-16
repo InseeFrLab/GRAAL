@@ -108,7 +108,7 @@ async def run(args) -> int:
                 # reaching the LLM endpoint (e.g. openai.APITimeoutError) can still
                 # propagate here — retried once (cf. call_with_retries, same
                 # harmonized policy as evaluate_eval_set_multi_method.py and
-                # verify_train_labels.py) before being recorded as a failed
+                # match_verifier_eval.py) before being recorded as a failed
                 # prediction instead of losing the rest of the batch: code=""
                 # reads as a missing prediction in evaluate() (cf. normalize_code),
                 # the same convention classifiers' own fallbacks use for "no final
