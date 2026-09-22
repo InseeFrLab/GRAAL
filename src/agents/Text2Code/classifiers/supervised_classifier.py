@@ -46,13 +46,49 @@ class SupervisedClassifier:
             proposed_confidence=confidence,
         )
 
-    async def _predict(self, activity: str) -> tuple[str, float, str]:
-        payload = {"forms": [{"description_activity": activity}]}
-        # nb_echos_max=1 makes the API crash with a 500 (server-side bug); ask
-        # for 2 and keep only the top prediction.
-        response = await self.client.post("/predict/", params={"nb_echos_max": 2}, json=payload)
-        response.raise_for_status()
-        result = response.json()[0]
+    async def _call(self, activity: str, nb_echos_max: int) -> dict:
+        """Réponse brute de l'API pour une activité : `{"1": {...}, "2": {...}, "IC": ...}`.
 
+        Les prédictions sont numérotées de 1 à N par probabilité décroissante, N pouvant
+        être *inférieur* à `nb_echos_max` — l'API s'arrête d'elle-même quand la queue de
+        distribution devient négligeable (un libellé sans ambiguïté ne renvoie qu'un seul
+        écho, même si on en demande cinq).
+        """
+        payload = {"forms": [{"description_activity": activity}]}
+        # nb_echos_max=1 makes the API crash with a 500 (server-side bug); ask for 2 at
+        # the very least and trim on our side.
+        response = await self.client.post(
+            "/predict/", params={"nb_echos_max": max(nb_echos_max, 2)}, json=payload
+        )
+        response.raise_for_status()
+        return response.json()[0]
+
+    async def _predict(self, activity: str) -> tuple[str, float, str]:
+        result = await self._call(activity, 1)
         top_prediction = result["1"]
         return top_prediction["code"], result["IC"], top_prediction["libelle"]
+
+    async def top_k(self, activity: str, k: int = 5) -> list[dict]:
+        """Les `k` codes les plus probables, du plus probable au moins probable.
+
+        Le classement du modèle de production, là où `__call__` n'en garde que la tête :
+        c'est ce qui en fait une source de candidats pour l'annotateur (cf.
+        src.evaluation.match_verifier_suggestions), et la seule des trois dont le score
+        soit une probabilité calibrée plutôt qu'un rang.
+
+        Renvoie au plus `k` entrées `{code, libelle, proba}`, potentiellement moins (cf.
+        `_call`).
+        """
+        result = await self._call(activity, k)
+        ranked = [
+            {
+                "code": result[key]["code"],
+                "libelle": result[key]["libelle"],
+                "proba": result[key]["probabilite"],
+            }
+            # Les clés de rang sont des chaînes ("1", "2", ...) mêlées aux métadonnées
+            # ("IC", "MLversion") : on ne garde que les premières, triées numériquement
+            # — "10" se glisserait avant "2" dans un tri lexicographique.
+            for key in sorted((key for key in result if key.isdigit()), key=int)
+        ]
+        return ranked[:k]
