@@ -10,12 +10,28 @@ code it found closest, and how that one scored, so the reviewer sees what the ve
 was weighed against rather than just its conclusion. Runs produced before the verifier
 scored in percentages are still readable: their `match_verifier_confidence` is read in
 fallback and the score columns simply stay empty. The reviewer
-answers one question — is MatchVerifier's verdict on that pair correct — plus a free
-field for the code they would have assigned. An earlier version also asked, separately,
-whether the code itself was correct (which let /metrics recompute precision/recall
-without trusting the verdict); that question was retired as not worth its annotation
-cost, but `human_code_correct` stays in the log and schema so the judgments already
-collected under it remain readable.
+answers one question — is MatchVerifier's verdict on that pair correct — plus the code
+they would have assigned. An earlier version also asked, separately, whether the code
+itself was correct (which let /metrics recompute precision/recall without trusting the
+verdict); that question was retired as not worth its annotation cost, but
+`human_code_correct` stays in the log and schema so the judgments already collected under
+it remain readable.
+
+Ce second champ n'est plus un champ libre seul : quand le run a un
+`match_verifier_suggestions.parquet` à côté du sien (cf.
+src.evaluation.match_verifier_suggestions), les cinq codes les plus plausibles sont
+proposés en regard, avec leur intitulé, leur notice dépliable et la mention des méthodes
+qui les ont proposés — cliquer plutôt que connaître 1 059 positions de tête. Le fichier
+est facultatif : sans lui, l'app se comporte comme avant, avec le seul champ libre, ce
+qui permet de relire aussi les runs qui n'en ont pas.
+
+Montrer une liste déplace les réponses vers elle, et ces candidats viennent de modèles
+qui partagent des composants avec celui qu'on évalue. Deux garde-fous, donc : la liste
+n'apparaît que sous la question du code, jamais sous « le verdict est-il correct ? » qui
+est la seule dont /metrics tire une métrique vivante ; et chaque jugement enregistre ce
+qui était affiché (`suggested_codes_shown`) et si le code retenu en vient
+(`human_suggested_code_source`), de quoi mesurer ce déplacement après coup plutôt que
+d'en débattre.
 
 Companion of multi_method_review_app.py, narrowed to one candidate per row: that app
 reviews 5 candidates (ground truth + 4 classifiers), CodeChooser's arbitration and
@@ -41,9 +57,10 @@ is idempotent and safe to interrupt) and, after each submission, materialized as
 parquet next to it — one row per (reviewer, judged row), carrying the reviewer's name
 in the `reviewer` column alongside the original parquet's five columns and the human
 answers. The /metrics page derives, from reviewed rows only: how often the human called
-the verdict right, inter-rater agreement on the shared pool, and — over the judgments
-made back when the code question was still asked — MatchVerifier's accuracy, precision
-and recall against it.
+the verdict right, inter-rater agreement on the shared pool, how often a proposed code
+was taken from the suggestion list rather than typed, and — over the judgments made back
+when the code question was still asked — MatchVerifier's accuracy, precision and recall
+against it.
 
 Une revue porte sur un run, et un run porte sur un prompt et un modèle :
 `match_verifier_eval.py` écrit ses résultats sous <output>/<commit>/<modèle>/, et
@@ -77,6 +94,7 @@ import polars as pl
 from flask import Flask, redirect, render_template_string, request, url_for
 
 from src.config import neo4j_config
+from src.evaluation.metrics import normalize_code
 from src.evaluation.row_id import row_id_for
 from src.neo4j_graph.graph import Graph
 from src.utils import storage
@@ -107,6 +125,30 @@ IS_MATCH_SCORE_COLUMN = "match_verifier_is_match_score"
 # (cf. MatchVerifier) : lu en repli, pour que les runs antérieurs restent relisibles
 # dans cette app plutôt que de perdre leur colonne de confiance en silence.
 LEGACY_CONFIDENCE_COLUMN = "match_verifier_confidence"
+
+# Le parquet facultatif écrit par src.evaluation.match_verifier_suggestions à côté de
+# celui du run : les codes candidats proposés à l'annotateur. Constantes dupliquées pour
+# la même raison que ci-dessus — ce module-là tire toute la pile agent à l'import.
+SUGGESTIONS_FILENAME = "match_verifier_suggestions.parquet"
+SUGGESTION_RANK_COLUMN = "rank"
+SUGGESTION_CODE_COLUMN = "code"
+SUGGESTION_NAME_COLUMN = "name"
+SUGGESTION_SOURCES_COLUMN = "sources"
+SUGGESTION_PROBA_COLUMN = "supervised_proba"
+
+# Comment nommer, à l'écran, la méthode qui a proposé un candidat. L'annotateur n'a pas à
+# connaître l'architecture, mais il a besoin de savoir d'où vient une suggestion pour
+# décider du poids à lui donner — en particulier que « MatchVerifier » est l'avis dont il
+# relit justement le verdict, et non un deuxième avis indépendant.
+SOURCE_LABELS = {
+    "supervised": "modèle de production",
+    "embedding": "similarité notice",
+    "alternative": "MatchVerifier",
+}
+
+# Valeur réservée du choix de code, distincte de tout code de la nomenclature ; « je ne
+# propose pas de code » est la chaîne vide, soit l'absence de choix elle-même.
+CHOICE_OTHER = "__other__"
 
 
 def available_runs(input_path: str) -> list[str]:
@@ -198,6 +240,53 @@ def load_rows(input_path: str) -> list[dict]:
     return rows
 
 
+def suggestions_path_for(input_path: str) -> str:
+    """Le parquet de suggestions du run, à côté de son parquet de résultats."""
+    return os.path.join(os.path.dirname(input_path) or ".", SUGGESTIONS_FILENAME)
+
+
+def load_suggestions(input_path: str) -> dict[str, list[dict]]:
+    """{row_id: [candidat, ...]} par rang croissant, ou {} si le run n'en a pas.
+
+    Facultatif de bout en bout : un run d'avant ce fichier — ou dont on n'a pas voulu
+    précalculer les candidats — s'annote exactement comme avant, avec le seul champ
+    libre. C'est ce qui permet de déployer cette app sur n'importe quel run sans devoir
+    d'abord lui produire des suggestions.
+
+    Les candidats ne sont pas rattachés aux lignes ici mais gardés dans leur propre
+    index : `load_rows` décrit ce que le MatchVerifier a produit, et mélanger les deux
+    ferait passer pour une sortie du vérificateur ce qui vient de trois autres modèles.
+    """
+    path = suggestions_path_for(input_path)
+    if not storage.path_exists(path):
+        logger.info(f"No {SUGGESTIONS_FILENAME} next to {input_path}: reviewing without candidates")
+        return {}
+    with storage.open_path(path, "rb") as f:
+        df = pl.read_parquet(f)
+    by_row: dict[str, list[dict]] = {}
+    for r in df.sort(SUGGESTION_RANK_COLUMN).to_dicts():
+        candidates = by_row.setdefault(r["row_id"], [])
+        # Un même code deux fois dans la liste d'une ligne n'est pas une suggestion plus
+        # forte, c'est un bouton radio en double. Écarté ici plutôt que supposé absent :
+        # le fichier vient d'à côté, pas de cette app.
+        if any(c["code"] == r[SUGGESTION_CODE_COLUMN] for c in candidates):
+            continue
+        candidates.append(
+            {
+                "code": r[SUGGESTION_CODE_COLUMN],
+                "name": r.get(SUGGESTION_NAME_COLUMN),
+                "sources": [
+                    SOURCE_LABELS.get(s, s)
+                    for s in (r.get(SUGGESTION_SOURCES_COLUMN) or "").split(",")
+                    if s
+                ],
+                "proba": r.get(SUGGESTION_PROBA_COLUMN),
+            }
+        )
+    logger.info(f"Loaded candidate codes for {len(by_row)} rows from {path}")
+    return by_row
+
+
 def build_assignment(
     row_ids: list[str], reviewers: list[str], shared_n: int, unique_n: int, seed: int
 ) -> tuple[dict[str, list[str]], set[str]]:
@@ -286,6 +375,23 @@ def build_extra_assignment(
     return chosen, [r for r in chosen if r in assigned_ids]
 
 
+def resolve_suggested_code(choice: str | None, typed: str) -> tuple[str | None, str | None]:
+    """`(code proposé, d'où il vient)` à partir du formulaire : « picked », « typed », ou
+    `(None, None)` si l'annotateur n'a rien proposé.
+
+    Un code saisi dans le champ libre est retenu même si le bouton « Autre code » n'a pas
+    été coché : l'oubli est la faute d'inattention évidente de ce formulaire, et perdre
+    en silence ce que quelqu'un vient de taper est le pire des comportements possibles.
+    L'inverse ne vaut pas — « Autre code » coché avec un champ vide ne propose rien.
+    """
+    typed = typed.strip()
+    if choice == CHOICE_OTHER or (not choice and typed):
+        return (typed, "typed") if typed else (None, None)
+    if choice:
+        return choice, "picked"
+    return None, None
+
+
 def load_judgments(output_path: str) -> dict[str, dict[str, dict]]:
     """{reviewer: {row_id: judgment_entry}} — last line wins per (reviewer, row)."""
     judgments: dict[str, dict[str, dict]] = {}
@@ -336,6 +442,13 @@ REVIEW_SCHEMA = [
     ("human_code_correct", pl.Boolean),
     ("human_verdict_correct", pl.Boolean),
     ("human_suggested_code", pl.Utf8),
+    # Ce que l'annotateur avait sous les yeux, et s'il y a puisé. Les suggestions viennent
+    # de modèles qui partagent des composants avec celui qu'on évalue, donc les montrer
+    # déplace les réponses vers elles ; journaliser la liste affichée et l'origine du code
+    # retenu est ce qui permet de mesurer ce déplacement après coup au lieu d'en débattre.
+    # Vide pour les jugements rendus avant que les candidats n'existent.
+    ("suggested_codes_shown", pl.Utf8),
+    ("human_suggested_code_source", pl.Utf8),
     ("reviewed_at", pl.Utf8),
 ]
 
@@ -381,6 +494,7 @@ def compute_metrics(
     n_judgments = 0
     code_total = label_correct = 0
     verdict_total = verdict_agree = 0
+    suggested_total = suggested_picked = 0
     tp = fp = tn = fn = 0
 
     for by_row in all_judgments.values():
@@ -400,6 +514,16 @@ def compute_metrics(
                 verdict_total += 1
                 if verdict_correct:
                     verdict_agree += 1
+
+            # Dénominateur : les jugements où un code a effectivement été proposé, et
+            # non tous les jugements — la question est facultative, et la compter sur
+            # l'ensemble ferait baisser le taux à mesure que les annotateurs passent
+            # leur chemin, ce qui ne dit rien du suggesteur.
+            suggested_source = judgment.get("human_suggested_code_source")
+            if suggested_source is not None:
+                suggested_total += 1
+                if suggested_source == "picked":
+                    suggested_picked += 1
 
             if verdict is not None and code_correct is not None:
                 if verdict and code_correct:
@@ -422,6 +546,8 @@ def compute_metrics(
         "label_n": code_total,
         "verdict_agreement": rate(verdict_agree, verdict_total),
         "verdict_n": verdict_total,
+        "suggestion_uptake": rate(suggested_picked, suggested_total),
+        "suggestion_n": suggested_total,
         "verifier": {
             "n": n_confusion,
             "tp": tp,
@@ -604,7 +730,7 @@ STYLE = """
   }
   @media (prefers-color-scheme: dark) {
     body { color: #e8e8e8; background: #1b1b1b; }
-    .card, .candidate { background: #262626 !important; border-color: #3a3a3a !important; }
+    .card, .candidate, .suggestion { background: #262626 !important; border-color: #3a3a3a !important; }
     .muted { color: #999 !important; }
     a { color: #7db8ff; }
   }
@@ -682,6 +808,21 @@ STYLE = """
     .join-form input { background: #1f1f1f; border-color: #3a3a3a; color: #e8e8e8; }
   }
   .join-form button { justify-self: start; }
+  .suggestions { display: grid; gap: 0.5rem; margin: 0.4rem 0 0.5rem; }
+  .suggestion {
+    border: 1px solid #ddd; border-radius: 8px; padding: 0.55rem 0.8rem; background: #fafafa;
+  }
+  .suggestion label { display: flex; gap: 0.55rem; align-items: baseline; cursor: pointer; }
+  .suggestion .sug-name { font-size: 0.92rem; }
+  .src-badge {
+    display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; background: #eef2ff; color: #3949ab; border-radius: 999px;
+    padding: 0.05rem 0.45rem; margin-left: 0.25rem; white-space: nowrap;
+  }
+  @media (prefers-color-scheme: dark) { .src-badge { background: #2a3350; color: #cfd9ff; } }
+  .suggestion details { margin-top: 0.35rem; }
+  .suggestion summary { font-size: 0.8rem; color: #777; cursor: pointer; }
+  .suggestion .other-row { margin: 0.5rem 0 0; }
   .error { color: #991b1b; font-weight: 600; }
   @media (prefers-color-scheme: dark) { .error { color: #ffb4b4; } }
 </style>
@@ -803,9 +944,51 @@ REVIEW_TEMPLATE = (
 </div>
 
 <div class="label" style="margin-bottom: 0.3rem;">Si le code est faux, quel serait le bon ?</div>
-<div class="other-row">
-  <input type="text" name="suggested_code" placeholder="Code correct (optionnel)"
-    value="{{ existing.human_suggested_code if existing and existing.human_suggested_code else '' }}">
+{% if suggestions %}
+<p class="muted" style="margin-top: 0;">
+  Codes proposés par trois méthodes, indiquées sous chacun &mdash; des suggestions, pas
+  des réponses. « MatchVerifier » n'est d'ailleurs pas un second avis : c'est celui dont
+  vous relisez justement le verdict, ci-dessus.
+</p>
+<div class="suggestions">
+  {% for s in suggestions %}
+  <div class="suggestion">
+    <label>
+      <input type="radio" name="suggested_choice" value="{{ s.code }}"
+        {{ "checked" if s.code == picked_code }}>
+      <span>
+        <span class="code-badge">{{ s.code }}</span>
+        {% if s.name %}<span class="sug-name">{{ s.name }}</span>{% endif %}
+        {% for source in s.sources %}<span class="src-badge">{{ source }}</span>{% endfor %}
+        {% if s.proba is not none %}
+          <span class="src-badge">p = {{ "%.0f%%"|format(s.proba * 100) }}</span>
+        {% endif %}
+      </span>
+    </label>
+    {% if s.notice %}
+    <details><summary>Notice</summary><div class="notice">{{ s.notice }}</div></details>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="suggestion">
+  <label>
+    <input type="radio" name="suggested_choice" value="{{ choice_other }}"
+      {{ "checked" if picked_other }}>
+    <span>Autre code</span>
+  </label>
+  <div class="other-row">
+    <input type="text" name="suggested_code_other" placeholder="Code correct"
+      value="{{ other_code }}">
+  </div>
+</div>
+<div class="suggestion">
+  <label>
+    <input type="radio" name="suggested_choice" value=""
+      {{ "checked" if not picked_code and not picked_other }}>
+    <span>Je ne propose pas de code</span>
+  </label>
 </div>
 
 <button type="submit" class="submit-all">Valider cette activité</button>
@@ -833,7 +1016,14 @@ METRICS_TEMPLATE = (
   <div class="stat"><span class="n">{{ m.n_judgments }}/{{ m.n_assigned_total }}</span><span class="l">Jugements</span></div>
   <div class="stat"><span class="n">{{ "%.0f%%"|format(m.label_accuracy * 100) if m.label_accuracy is not none else "—" }}</span><span class="l">Labels corrects ({{ m.label_n }})</span></div>
   <div class="stat"><span class="n">{{ "%.0f%%"|format(m.verdict_agreement * 100) if m.verdict_agreement is not none else "—" }}</span><span class="l">Verdicts jugés corrects ({{ m.verdict_n }})</span></div>
+  <div class="stat"><span class="n">{{ "%.0f%%"|format(m.suggestion_uptake * 100) if m.suggestion_uptake is not none else "—" }}</span><span class="l">Codes pris dans les suggestions ({{ m.suggestion_n }})</span></div>
 </div>
+<p class="muted">
+  « Codes pris dans les suggestions » : parmi les codes que les annotateurs ont proposés,
+  la part choisie dans la liste précalculée plutôt que saisie à la main. Mesure ce que
+  vaut le suggesteur &mdash; et, lue à l'envers, à quel point la liste oriente les
+  réponses.
+</p>
 
 <h3>Verdict (is_match) vs jugement humain du code</h3>
 <div class="stat-grid">
@@ -909,6 +1099,7 @@ def create_app(
         app.wsgi_app = PrefixMiddleware(app.wsgi_app, url_prefix)
 
     rows = load_rows(input_path)
+    suggestions_by_row = load_suggestions(input_path)
     rows_by_id = {r["row_id"]: r for r in rows}
     row_ids = [r["row_id"] for r in rows]
     assignment, shared_ids = build_assignment(row_ids, reviewers, shared_n, unique_n, seed)
@@ -1040,19 +1231,42 @@ def create_app(
         row = rows_by_id[row_id]
         judgments = load_judgments(output_path).get(reviewer, {})
         idx = order.index(row_id)
+        existing = judgments.get(row_id)
+        # La notice de chaque candidat est résolue au rendu plutôt que stockée dans le
+        # parquet de suggestions : elle vient de Neo4j comme celle du code en place,
+        # avec le même cache, et la dupliquer dans un fichier la ferait vieillir à part
+        # de la base dont l'app la tire déjà.
+        suggestions = [
+            dict(s, notice=(get_code_notice(s["code"]) or {}).get("text"))
+            for s in suggestions_by_row.get(row_id, [])
+        ]
+        # Un code déjà proposé est re-coché sur le bon bouton, quelle que soit la forme
+        # sous laquelle il a été enregistré ; s'il ne correspond à aucun candidat, c'est
+        # qu'il a été saisi à la main, et c'est « Autre code » qui reprend la main.
+        previous_code = (existing or {}).get("human_suggested_code")
+        previous = normalize_code(previous_code)
+        picked_code = next(
+            (s["code"] for s in suggestions if normalize_code(s["code"]) == previous), None
+        )
+        picked_other = bool(previous_code) and picked_code is None
         return render_template_string(
             REVIEW_TEMPLATE,
             row=row,
             reviewer=reviewer,
             run=run,
             notice=get_code_notice(row["current_code"]),
+            suggestions=suggestions,
+            picked_code=picked_code,
+            picked_other=picked_other,
+            other_code=previous_code if picked_other else "",
+            choice_other=CHOICE_OTHER,
             idx=idx + 1,
             total=len(order),
             n_reviewed=len(judgments),
             n_total=len(order),
             prev_id=order[idx - 1] if idx > 0 else None,
             next_id=order[idx + 1] if idx + 1 < len(order) else None,
-            existing=judgments.get(row_id),
+            existing=existing,
             nav_groups=build_nav_groups(order, rows_by_id, judgments),
         )
 
@@ -1067,7 +1281,11 @@ def create_app(
             raw = request.form.get(name)
             return (raw == "yes") if raw in ("yes", "no") else None
 
-        suggested_code = request.form.get("suggested_code", "").strip()
+        suggested_code, suggested_source = resolve_suggested_code(
+            request.form.get("suggested_choice"),
+            request.form.get("suggested_code_other", ""),
+        )
+        shown = [s["code"] for s in suggestions_by_row.get(row_id, [])]
         with _write_lock:
             append_judgment(
                 output_path,
@@ -1084,7 +1302,9 @@ def create_app(
                     IS_MATCH_SCORE_COLUMN: row["is_match_score"],
                     "human_code_correct": radio("code_correct"),
                     "human_verdict_correct": radio("verdict_correct"),
-                    "human_suggested_code": suggested_code or None,
+                    "human_suggested_code": suggested_code,
+                    "suggested_codes_shown": ",".join(shown) or None,
+                    "human_suggested_code_source": suggested_source,
                     "reviewed_at": datetime.now(timezone.utc).isoformat(),
                 },
             )

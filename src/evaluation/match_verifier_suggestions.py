@@ -328,10 +328,24 @@ async def run(args) -> int:
 
     with storage.open_path(details_path, "rb") as f:
         details = pl.read_parquet(f)
-    logger.info(f"Suggesting up to {args.top_k} codes for {len(details)} rows of {commit}/{model}")
+
+    # Le parquet d'un run contient des paires (libellé, code) répétées — il est tiré d'un
+    # jeu d'entraînement où le même libellé revient —, et l'app de revue indexe ses lignes
+    # par `row_id`, donc deux lignes identiques n'en font qu'une à l'écran. Calculer par
+    # ligne plutôt que par `row_id` empilerait leurs candidats dans une seule liste
+    # (cinq codes affichés deux, trois, treize fois), en plus de payer autant de fois les
+    # mêmes appels.
+    unique_rows: dict[str, dict] = {}
+    for row in details.to_dicts():
+        unique_rows.setdefault(row_id_for(row[TEXT_COLUMN], str(row[CODE_COLUMN])), row)
+    duplicates = len(details) - len(unique_rows)
+    logger.info(
+        f"Suggesting up to {args.top_k} codes for {len(unique_rows)} distinct rows of "
+        f"{commit}/{model}" + (f" ({duplicates} duplicate rows collapsed)" if duplicates else "")
+    )
 
     sources = CandidateSources(args.sources, args.top_k)
-    entries = await suggest_rows(details.to_dicts(), sources, args.top_k, args.concurrency)
+    entries = await suggest_rows(list(unique_rows.values()), sources, args.top_k, args.concurrency)
 
     suggestions = pl.DataFrame(entries, schema=SUGGESTIONS_SCHEMA)
     storage.makedirs(run_dir)
@@ -343,8 +357,8 @@ async def run(args) -> int:
         source: int(suggestions["sources"].str.contains(source).sum()) for source in ALL_SOURCES
     }
     logger.info(
-        f"Wrote {len(suggestions)} suggestions for {n_rows_covered}/{len(details)} rows to "
-        f"{output_path}; candidates per source: {by_source}"
+        f"Wrote {len(suggestions)} suggestions for {n_rows_covered}/{len(unique_rows)} distinct "
+        f"rows to {output_path}; candidates per source: {by_source}"
     )
     return 0
 
