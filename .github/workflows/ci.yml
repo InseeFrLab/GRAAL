@@ -22,7 +22,13 @@ jobs:
         # python-dotenv is for tests/test_connections.py: it calls load_dotenv() at
         # module level (before any skipif runs), so collection fails without it even
         # though every actual connection test skips cleanly without secrets.
-        run: pip install ruff==0.14.9 pytest python-dotenv
+        # polars and s3fs are for tests/test_suggestions.py: it imports
+        # src.evaluation.match_verifier_suggestions, which imports `polars` and
+        # `src.utils.storage` at module level (the latter imports `s3fs`), even
+        # though the tested function (fuse_candidates) touches neither a dataframe
+        # nor S3. Verified against a clean venv with only this line's packages that
+        # the full suite (25 passed, 6 skipped) needs nothing further.
+        run: pip install ruff==0.14.9 pytest python-dotenv polars s3fs
 
       - name: Lint
         run: ruff check .
