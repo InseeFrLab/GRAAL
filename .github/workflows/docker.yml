@@ -39,7 +39,7 @@ jobs:
       # qu'on épingle dans le Deployment quand on veut figer la version que les
       # annotateurs utilisent pendant une campagne de revue.
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE }}
           tags: |
