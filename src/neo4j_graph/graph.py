@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -357,7 +358,14 @@ class Graph:
         if not result:
             logger.info("No result in _cached_get_code_information")
             return ()
-        result = _freeze_dict(result[0])
+        # Une section absente du parquet de notices arrive en NaN (float), pas en None,
+        # selon la façon dont le graphe a été construit : c'est le cas de
+        # `Implementation_rule` sur presque toute la COICOP. On la ramène à None ici, une
+        # fois, plutôt que de faire porter le test à chaque lecteur (`get_notice` faisait
+        # `.strip()` dessus).
+        result = _freeze_dict(
+            {k: None if isinstance(v, float) and math.isnan(v) else v for k, v in result[0].items()}
+        )
         logger.info(f"_cached_get_code_information with code {code}: Return: {result}")
         return result
 
