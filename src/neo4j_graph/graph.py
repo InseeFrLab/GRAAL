@@ -10,6 +10,7 @@ from langchain_openai import OpenAIEmbeddings
 from pydantic import BaseModel
 
 from agents import function_tool
+from src.nomenclature import NOMENCLATURE
 
 logger = logging.getLogger(__name__)
 load_dotenv(override=True)
@@ -124,26 +125,29 @@ def make_notice_tools(graph):
     codes examinés.
     """
 
-    @function_tool
     def get_notices(codes: List[str]) -> Dict[str, str]:
-        """
-        Retourne la notice officielle (nom, inclusions, exclusions, règle d'affectation)
-        de plusieurs codes NACE d'un coup.
-
-        Args:
-            codes: Codes NACE à consulter, pointés ou non (ex: ["47.91A", "4799A"]).
-                   Demande-les tous dans un seul appel plutôt qu'un par appel.
-
-        Returns:
-            Dictionnaire {code demandé: notice}, avec un message explicite pour un code
-            inconnu de la base
-        """
         return {
             code: graph.get_notice(code) or f"Aucune notice : code {code} inconnu de la base."
             for code in codes
         }
 
-    return [get_notices]
+    # La docstring est la description de l'outil envoyée au modèle : elle nomme la
+    # nomenclature du profil courant (cf. src.nomenclature), d'où son assemblage ici
+    # plutôt qu'en littéral, avant que function_tool ne la lise.
+    get_notices.__doc__ = f"""
+        Retourne la notice officielle (nom, inclusions, exclusions, règle d'affectation)
+        de plusieurs codes {NOMENCLATURE.summary_name} d'un coup.
+
+        Args:
+            codes: Codes {NOMENCLATURE.summary_name} à consulter, pointés ou non (ex: {NOMENCLATURE.example_tool_codes}).
+                   Demande-les tous dans un seul appel plutôt qu'un par appel.
+
+        Returns:
+            Dictionnaire {{code demandé: notice}}, avec un message explicite pour un code
+            inconnu de la base
+        """
+
+    return [function_tool(get_notices)]
 
 
 class Neo4JConfig(BaseModel):
