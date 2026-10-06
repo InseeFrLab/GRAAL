@@ -61,6 +61,26 @@ Usage :
 Le millésime du jeu d'entraînement décide du nom de la colonne de label : `apet2025`
 pour celui de TRAIN_SET_PATH (défaut), `nace2025` pour le millésime
 08112022_27102024, d'où `--code-column`.
+
+Avec `--expected-code-column`, le code jugé n'est plus présumé bon : c'est la
+proposition d'un classifieur, et la colonne désignée porte le code qu'un humain a
+retenu. Le verdict attendu est alors connu d'avance (code jugé == code attendu), et
+le résumé mesure le vérificateur lui-même — rappel des erreurs, taux de rejet à tort,
+AUC de `p_match` — au lieu d'un simple taux d'accord. Un vérificateur qui accepte
+tout aurait 100 % d'accord sur des codes tous bons ; l'échantillon est donc tiré
+**équilibré** entre bons et mauvais codes, et la précision du rejet est reportée en
+plus à la prévalence d'erreurs de la population. Les paires dont le code jugé est
+absent du graphe sont écartées (le vérificateur n'aurait aucune notice à lire), et
+celles dont le code *attendu* en est absent sont gardées mais mesurées à part. Les
+paires identiques (libellé, code jugé, code attendu) ne sont jugées qu'une fois.
+
+    NOMENCLATURE=coicop2018 uv run -m src.evaluation.match_verifier_eval \
+        --train-set predictions.parquet --text-column raw_product \
+        --code-column sirus_code --expected-code-column code_lvl4 \
+        --n-samples 500 --output data/eval/match_verifier_eval_coicop
+
+La nomenclature (et donc le prompt) est celle du profil `NOMENCLATURE`, qui doit
+aller avec le graphe désigné par `NEO4J_URL` (cf. src.nomenclature).
 """
 
 import argparse
@@ -77,8 +97,10 @@ from langfuse import propagate_attributes
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.config import neo4j_config
 from src.evaluation.build_eval_set import load_dataframe
+from src.evaluation.metrics import normalize_code, verifier_metrics
 from src.evaluation.row_id import row_id_for
 from src.neo4j_graph.graph import Graph
+from src.nomenclature import NOMENCLATURE
 from src.utils import storage
 from src.utils.logging import configure_logging
 from src.utils.retry import call_with_retries
@@ -113,6 +135,7 @@ PROMPT_FILES = [
     "src/agents/base_agent.py",
     "src/neo4j_graph/graph.py",
     "src/neo4j_graph/build_nace_summary.py",
+    "src/nomenclature.py",
 ]
 
 # Output column names, fixed: match_verifier_eval_app reads exactly these.
@@ -126,6 +149,17 @@ EXPLANATION_COLUMN = "match_verifier_explanation"
 IS_MATCH_SCORE_COLUMN = "match_verifier_is_match_score"
 P_MATCH_COLUMN = "match_verifier_p_match"
 DURATION_COLUMN = "match_verifier_duration_s"
+# Colonnes ajoutées avec --expected-code-column (cf. prepare_expected_pairs).
+EXPECTED_CODE_COLUMN = "expected_code"
+EXPECTED_MATCH_COLUMN = "expected_match"
+EXPECTED_IN_GRAPH_COLUMN = "expected_in_graph"
+N_ROWS_COLUMN = "n_rows"
+EXPECTED_SCHEMA = [
+    (EXPECTED_CODE_COLUMN, pl.Utf8),
+    (EXPECTED_MATCH_COLUMN, pl.Boolean),
+    (EXPECTED_IN_GRAPH_COLUMN, pl.Boolean),
+    (N_ROWS_COLUMN, pl.Int64),
+]
 
 # Écart (alternative_score - match_score) à partir duquel on considère que le
 # vérificateur a vraiment trouvé mieux. Reporté dans le résumé parce que c'est le
@@ -145,6 +179,114 @@ P_MATCH_THRESHOLDS = (0.1, 0.25, 0.5, 0.75, 0.9)
 _VERIFIER_MAX_ATTEMPTS = 2
 
 
+def prepare_expected_pairs(
+    df: pl.DataFrame,
+    graph: Graph,
+    text_column: str,
+    code_column: str,
+    expected_code_column: str,
+) -> tuple[pl.DataFrame, dict]:
+    """Paires (libellé, code jugé) à vérifier, avec le verdict qu'on en attend.
+
+    Le verdict attendu est l'égalité du code jugé et du code attendu, à la
+    normalisation près (cf. metrics.normalize_code) : les deux colonnes doivent donc
+    être à la même granularité, ce que le choix de la colonne attendue garantit (pour
+    la COICOP, `code_lvl4`, forme canonique au niveau 4 comme les prédictions).
+
+    Les lignes dont le code jugé est inconnu du graphe sont écartées, et comptées :
+    sans notice, le vérificateur jugerait sur sa seule mémoire de la nomenclature.
+    Les lignes restantes sont dédoublonnées sur (libellé, code jugé, code attendu),
+    `n_rows` gardant le nombre de lignes d'origine de chaque paire.
+
+    Returns:
+        Les paires, et les comptes de la population dont elles sont tirées (dont
+        `error_prevalence`, la part de lignes où le code jugé est faux).
+    """
+    df = df.select(
+        pl.col(text_column).alias(TEXT_COLUMN_OUT),
+        pl.col(code_column).cast(pl.Utf8).alias(CODE_COLUMN_OUT),
+        pl.col(expected_code_column).cast(pl.Utf8).alias(EXPECTED_CODE_COLUMN),
+    ).drop_nulls()
+    codes = set(df[CODE_COLUMN_OUT]) | set(df[EXPECTED_CODE_COLUMN])
+    in_graph = {code: bool(graph.get_code_information(code)) for code in codes}
+    df = df.with_columns(
+        pl.col(CODE_COLUMN_OUT)
+        .replace_strict(in_graph, return_dtype=pl.Boolean)
+        .alias("_in_graph"),
+        pl.col(EXPECTED_CODE_COLUMN)
+        .replace_strict(in_graph, return_dtype=pl.Boolean)
+        .alias(EXPECTED_IN_GRAPH_COLUMN),
+        (
+            pl.col(CODE_COLUMN_OUT).map_elements(normalize_code, return_dtype=pl.Utf8)
+            == pl.col(EXPECTED_CODE_COLUMN).map_elements(normalize_code, return_dtype=pl.Utf8)
+        ).alias(EXPECTED_MATCH_COLUMN),
+    )
+    kept = df.filter(pl.col("_in_graph"))
+    population = {
+        "n_rows": len(df),
+        "n_rows_unknown_code": len(df) - len(kept),
+        "n_rows_kept": len(kept),
+        "n_rows_expected_unknown": int((~kept[EXPECTED_IN_GRAPH_COLUMN]).sum()),
+        "error_prevalence": float((~kept[EXPECTED_MATCH_COLUMN]).mean()) if len(kept) else None,
+    }
+    pairs = kept.group_by(
+        TEXT_COLUMN_OUT, CODE_COLUMN_OUT, EXPECTED_CODE_COLUMN, maintain_order=True
+    ).agg(
+        pl.col(EXPECTED_MATCH_COLUMN).first(),
+        pl.col(EXPECTED_IN_GRAPH_COLUMN).first(),
+        pl.len().cast(pl.Int64).alias(N_ROWS_COLUMN),
+    )
+    population["n_pairs"] = len(pairs)
+    population["n_pairs_error"] = int((~pairs[EXPECTED_MATCH_COLUMN]).sum())
+    return pairs, population
+
+
+def balanced_sample(pairs: pl.DataFrame, n_samples: int, seed: int) -> pl.DataFrame:
+    """Autant de paires à code faux que de paires à code juste (au plus n_samples/2
+    de chaque), mélangées pour que l'ordre de passage ne trahisse pas la classe."""
+    per_class = n_samples // 2
+    parts = [
+        group.sample(n=min(per_class, len(group)), seed=seed)
+        for _, group in pairs.group_by(EXPECTED_MATCH_COLUMN, maintain_order=True)
+    ]
+    return pl.concat(parts).sample(fraction=1.0, shuffle=True, seed=seed)
+
+
+def expected_summary(details: pl.DataFrame, population: dict) -> dict:
+    """Le vérificateur face au code attendu : ensemble, puis selon que le code attendu
+    est dans le graphe ou non (cf. prepare_expected_pairs)."""
+
+    def report(frame: pl.DataFrame) -> dict:
+        metrics = verifier_metrics(
+            frame[EXPECTED_MATCH_COLUMN].to_list(),
+            frame[VERDICT_COLUMN].to_list(),
+            p_match=frame[P_MATCH_COLUMN].to_list(),
+            error_prevalence=population["error_prevalence"],
+        )
+        # Quand le code jugé est faux et rejeté, l'alternative proposée retombe-t-elle
+        # sur le code attendu ? Comparée par préfixe : l'alternative est demandée
+        # terminale, le code attendu peut être plus haut dans la hiérarchie.
+        caught = frame.filter(~pl.col(EXPECTED_MATCH_COLUMN) & ~pl.col(VERDICT_COLUMN))
+        recovered = [
+            (normalize_code(alt) or "").startswith(normalize_code(expected) or "\0")
+            for alt, expected in zip(caught[ALTERNATIVE_CODE_COLUMN], caught[EXPECTED_CODE_COLUMN])
+        ]
+        metrics["n_caught"] = len(caught)
+        metrics["alternative_recovers_expected_rate"] = (
+            sum(recovered) / len(recovered) if recovered else float("nan")
+        )
+        return metrics
+
+    in_graph = details.filter(pl.col(EXPECTED_IN_GRAPH_COLUMN))
+    out_graph = details.filter(~pl.col(EXPECTED_IN_GRAPH_COLUMN))
+    return {
+        "population": population,
+        "all": report(details),
+        "expected_in_graph": report(in_graph) if len(in_graph) else None,
+        "expected_not_in_graph": report(out_graph) if len(out_graph) else None,
+    }
+
+
 async def verify_rows(
     verifier: MatchVerifier,
     rows: list[dict],
@@ -153,6 +295,7 @@ async def verify_rows(
     concurrency: int = 5,
     checkpoint_path: str | None = None,
     session_id: str | None = None,
+    extra_columns: tuple[str, ...] = (),
 ) -> list[dict]:
     """Verify each row's existing (text, code) label with MatchVerifier.
 
@@ -180,6 +323,9 @@ async def verify_rows(
     tagged with the row_id it belongs to — the same hash the review app uses, so a
     trace, a parquet row and a human judgment for one activity all correlate by that
     single value (same wrapper rationale as run_eval.py).
+
+    `extra_columns` are copied as-is from each row into its entry (e.g. the expected
+    code and verdict, cf. prepare_expected_pairs).
     """
     checkpoint = None
     if checkpoint_path is not None:
@@ -229,6 +375,7 @@ async def verify_rows(
             IS_MATCH_SCORE_COLUMN: verification.is_match_score,
             P_MATCH_COLUMN: verification.p_match,
             DURATION_COLUMN: duration,
+            **{column: row[column] for column in extra_columns},
         }
         results[i] = entry
         logger.info(
@@ -266,10 +413,22 @@ async def run(args) -> int:
     logger.info(f"Pinning this run to {subpath}; writing to {output_dir}")
 
     df = load_dataframe(args.train_set)
-    sample = df.sample(n=min(args.n_samples, len(df)), seed=args.seed)
-    logger.info(f"Verifying {len(sample)} train labels with MatchVerifier")
-
     graph = Graph(neo4j_config)
+    population = None
+    if args.expected_code_column:
+        pairs, population = prepare_expected_pairs(
+            df, graph, args.text_column, args.code_column, args.expected_code_column
+        )
+        logger.info(f"Population: {population}")
+        sample = balanced_sample(pairs, args.n_samples, args.seed)
+        text_column, code_column = TEXT_COLUMN_OUT, CODE_COLUMN_OUT
+        extra_schema = EXPECTED_SCHEMA
+    else:
+        sample = df.sample(n=min(args.n_samples, len(df)), seed=args.seed)
+        text_column, code_column = args.text_column, args.code_column
+        extra_schema = []
+    logger.info(f"Verifying {len(sample)} labels with MatchVerifier ({NOMENCLATURE.key})")
+
     verifier = MatchVerifier(graph)
 
     session_id = f"match_verifier_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -283,11 +442,12 @@ async def run(args) -> int:
     results = await verify_rows(
         verifier,
         sample.to_dicts(),
-        args.text_column,
-        args.code_column,
+        text_column,
+        code_column,
         concurrency=args.concurrency,
         checkpoint_path=checkpoint_path,
         session_id=session_id,
+        extra_columns=tuple(name for name, _ in extra_schema),
     )
 
     details = pl.DataFrame(
@@ -303,6 +463,7 @@ async def run(args) -> int:
             (IS_MATCH_SCORE_COLUMN, pl.Int64),
             (P_MATCH_COLUMN, pl.Float64),
             (DURATION_COLUMN, pl.Float64),
+            *extra_schema,
         ],
     )
     n = len(details)
@@ -359,7 +520,11 @@ async def run(args) -> int:
         "commit": commit,
         "commit_sha": commit_sha,
         "model": os.environ["GENERATION_MODEL"],
+        "nomenclature": NOMENCLATURE.key,
     }
+    if population is not None:
+        summary["expected_code_column"] = args.expected_code_column
+        summary["expected"] = expected_summary(details, population)
 
     storage.makedirs(output_dir)
     details_path = os.path.join(output_dir, DETAILS_FILENAME)
@@ -400,6 +565,14 @@ def main() -> int:
         default="apet2025",
         help="Input label column (default: apet2025, the label column of --train-set's "
         "default; the 08112022_27102024 vintage names the same column nace2025)",
+    )
+    parser.add_argument(
+        "--expected-code-column",
+        default=None,
+        help="Column holding the code a human retained. When given, --code-column is "
+        "a classifier's proposal judged against it: the sample is balanced between "
+        "right and wrong proposals and the summary measures the verifier (recall of "
+        "errors, false rejections, AUC of p_match) instead of mere agreement",
     )
     parser.add_argument(
         "--n-samples", type=int, default=500, help="Number of rows to sample (default: 500)"

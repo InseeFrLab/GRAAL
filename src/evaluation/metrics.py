@@ -213,3 +213,98 @@ def evaluate(
         report["retry_rate"] = retry_rate(attempt_counts)
 
     return report
+
+
+def roc_auc(labels: list, scores: list) -> float:
+    """Aire sous la courbe ROC : P(score d'un positif > score d'un négatif).
+
+    Calculée par les rangs (statistique de Mann-Whitney), les ex-aequo comptant pour
+    moitié. Les paires dont le score est None sont ignorées.
+
+    Returns:
+        AUC entre 0 et 1 ; NaN s'il manque des positifs ou des négatifs.
+    """
+    pairs = [(s, bool(y)) for y, s in zip(labels, scores) if s is not None]
+    n_pos = sum(1 for _, y in pairs if y)
+    n_neg = len(pairs) - n_pos
+    if not n_pos or not n_neg:
+        return float("nan")
+    pairs.sort(key=lambda p: p[0])
+    rank_sum_pos = 0.0
+    i = 0
+    while i < len(pairs):
+        j = i
+        while j < len(pairs) and pairs[j][0] == pairs[i][0]:
+            j += 1
+        mean_rank = (i + 1 + j) / 2  # rangs 1-indexés i+1..j
+        rank_sum_pos += mean_rank * sum(1 for _, y in pairs[i:j] if y)
+        i = j
+    return (rank_sum_pos - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)
+
+
+def verifier_metrics(
+    expected_match: list,
+    verdicts: list,
+    p_match: list | None = None,
+    error_prevalence: float | None = None,
+) -> dict:
+    """Qualité d'un vérificateur de paires (libellé, code) face à une vérité terrain.
+
+    La classe d'intérêt est l'**erreur** : un vérificateur sert à attraper les codes
+    faux, donc « positif » veut dire ici « le code jugé n'est pas le bon »
+    (`expected_match` faux) et « détecté » veut dire « rejeté » (`verdict` faux).
+
+    Args:
+        expected_match: Par paire, le code jugé est-il le bon (vérité terrain) ?
+        verdicts: Par paire, `is_match` rendu par le vérificateur.
+        p_match: Par paire, P(is_match) lue dans les logprobs (None = absente), pour
+            l'AUC — qui ne dépend pas du seuil, contrairement au verdict.
+        error_prevalence: Part d'erreurs dans la population d'où vient l'échantillon.
+            Un échantillon équilibré entre bons et mauvais codes surestime la
+            précision du rejet ; elle est reportée en plus à cette prévalence.
+
+    Returns:
+        Dictionnaire {n, n_errors, n_correct, error_recall, false_rejection_rate,
+        rejection_precision, balanced_accuracy, accuracy, roc_auc}, plus
+        {rejection_precision_at_prevalence} si `error_prevalence` est fourni.
+        Les taux sans dénominateur valent NaN.
+    """
+    if len(expected_match) != len(verdicts):
+        raise ValueError(
+            f"expected_match ({len(expected_match)}) et verdicts ({len(verdicts)}) "
+            "doivent avoir la même taille"
+        )
+    is_error = [not bool(e) for e in expected_match]
+    rejected = [not bool(v) for v in verdicts]
+    n_errors = sum(is_error)
+    n_correct = len(is_error) - n_errors
+    caught = sum(1 for e, r in zip(is_error, rejected) if e and r)
+    false_rejections = sum(1 for e, r in zip(is_error, rejected) if not e and r)
+    nan = float("nan")
+    error_recall = caught / n_errors if n_errors else nan
+    false_rejection_rate = false_rejections / n_correct if n_correct else nan
+    n_rejected = caught + false_rejections
+    report = {
+        "n": len(is_error),
+        "n_errors": n_errors,
+        "n_correct": n_correct,
+        "error_recall": error_recall,
+        "false_rejection_rate": false_rejection_rate,
+        "rejection_precision": caught / n_rejected if n_rejected else nan,
+        "balanced_accuracy": (error_recall + 1 - false_rejection_rate) / 2,
+        "accuracy": sum(1 for e, r in zip(is_error, rejected) if e == r) / len(is_error)
+        if is_error
+        else nan,
+        "roc_auc": roc_auc(is_error, [None if p is None else 1 - p for p in p_match])
+        if p_match is not None
+        else nan,
+    }
+    if error_prevalence is not None:
+        flagged_errors = error_prevalence * error_recall
+        flagged_correct = (1 - error_prevalence) * false_rejection_rate
+        report["rejection_precision_at_prevalence"] = (
+            flagged_errors / (flagged_errors + flagged_correct)
+            if flagged_errors + flagged_correct
+            else nan
+        )
+    return report
