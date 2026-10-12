@@ -2,6 +2,10 @@
 title: "Évaluation multi-méthode et arbitrage"
 subtitle: "Navigator, Agentic-RAG, Summary, Supervisé et CodeChooser sur un même échantillon, chronométrés"
 author:
+  - name: Meilame Tayebjee
+    email: meilame.tayebjee@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
   - name: Théo Ferry
     email: theo.ferry@insee.fr
     affiliations:
