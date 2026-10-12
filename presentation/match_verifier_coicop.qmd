@@ -1,0 +1,224 @@
+---
+title: "MatchVerifier sur la COICOP"
+subtitle: "Le vérificateur détecte-t-il les erreurs de Sirus ? Évaluation contre l'annotation humaine (Budget de famille, vague 1)"
+author:
+  - name: Théo Ferry
+    email: theo.ferry@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+date: today
+date-format: "D MMMM YYYY"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+---
+
+```{ojs}
+//| echo: false
+data = FileAttachment("data/match_verifier_coicop.json").json()
+fmtPct = (x) => x == null ? "—" : (100 * x).toLocaleString("fr-FR", {maximumFractionDigits: 1}) + " %"
+fmtNum = (x, d = 3) => x == null ? "—" : x.toLocaleString("fr-FR", {maximumFractionDigits: d})
+branch = data.truths.find((t) => t.key === "branch")
+COLORS = ({error: "#2a78d6", ok: "#eb6834"})
+```
+
+```{ojs}
+//| echo: false
+html`<div class="mv-status ${data.state === "terminé" ? "done" : ""}">
+  <strong>${data.state === "terminé" ? "Run terminé" : data.state === "interrompu" ? "Run interrompu" : "Run en cours"}</strong>
+  — ${data.n_done.toLocaleString("fr-FR")} / ${data.n_total.toLocaleString("fr-FR")} paires évaluées
+  (${fmtPct(data.n_done / data.n_total)}), mis à jour le ${data.updated}.
+  ${data.state === "en cours" ? html`<br><span class="mv-muted">Les chiffres ci-dessous sont provisoires et évoluent jusqu'à la fin du run.</span>` : ""}
+</div>`
+```
+
+## Contexte
+
+Le **MatchVerifier** reçoit un libellé et un code, lit la notice du code dans le graphe Neo4j et rend un verdict : le code tient-il ? Il propose aussi, à chaque fois, le meilleur code concurrent. Utilisé derrière un classifieur, il sert à repérer les codes à renvoyer en reprise manuelle.
+
+Cette page mesure s'il remplit ce rôle sur la COICOP 2018 : on lui soumet les codes prédits par **Sirus** sur les dépenses de la vague 1 de l'enquête Budget de famille, et on compare son verdict à l'**annotation humaine** de ces mêmes dépenses.
+
+## Protocole
+
+- **Données** : sortie `reconcile-sirus` du workflow de codification du 8 septembre 2026, soit 14 695 lignes, chacune avec la prédiction Sirus et le code retenu par l'annotateur.
+- **Code jugé** : `sirus_code`, au plus au niveau 4. **Référence** : le code humain ramené au niveau 4 (`code_lvl4`).
+- **Paires** : les lignes dont le code Sirus est absent du graphe sont écartées (le vérificateur n'aurait aucune notice à lire), et les doublons (libellé, code Sirus, code humain) ne sont jugés qu'une fois. Toutes les paires restantes sont évaluées, sans échantillonnage.
+- **Erreur** : Sirus ≠ humain. Le vérificateur **détecte** une erreur quand il rejette le code.
+- **Deux vérités** :
+  - **exacte** : Sirus = humain au niveau 4 ;
+  - **de branche** : idem, ou Sirus est une sous-catégorie d'un code humain plus court (humain `03.1.2` Vêtements, Sirus `03.1.2.1` Vêtements pour hommes). L'humain a validé la catégorie, Sirus n'a fait que préciser.
+- Les **codes techniques 98/99** (regroupements comme « Courses alimentaires », remises, impôts) n'ont pas d'équivalent que Sirus puisse prédire : ils sont aussi isolés dans une vérité « hors 98/99 ».
+- **Modèle** : `qwen3-6-35b-moe`, prompt du commit `c3e01a2`, profil de nomenclature `coicop2018`.
+
+```{ojs}
+//| echo: false
+md`Population : **${data.population.n_rows.toLocaleString("fr-FR")}** lignes, dont ${data.population.n_rows_unknown_code} écartées, soit **${data.population.n_pairs.toLocaleString("fr-FR")}** paires distinctes. Sirus se trompe sur **${fmtPct(data.population.error_prevalence)}** des lignes en vérité exacte et **${fmtPct(data.population.error_prevalence_branch)}** en vérité de branche.`
+```
+
+## Résultats
+
+### En bref (vérité de branche)
+
+```{ojs}
+//| echo: false
+html`<div class="mv-tiles">
+  ${[
+    ["Erreurs détectées", fmtPct(branch.error_recall), "part des erreurs de Sirus que le vérificateur rejette"],
+    ["Rejets à tort", fmtPct(branch.false_rejection_rate), "part des codes justes qu'il rejette"],
+    ["Précision du rejet", fmtPct(branch.rejection_precision_at_prevalence), "part des rejets qui sont de vraies erreurs, au taux d'erreur réel"],
+    ["AUC de p_match", fmtNum(branch.roc_auc, 2), "0,5 = hasard, 1 = séparation parfaite"],
+  ].map(([label, value, help]) => html`<div class="mv-tile">
+      <div class="mv-tile-label">${label}</div>
+      <div class="mv-tile-value">${value}</div>
+      <div class="mv-tile-help">${help}</div>
+    </div>`)}
+</div>`
+```
+
+### Selon la vérité retenue
+
+```{ojs}
+//| echo: false
+html`<div class="mv-table-wrap"><table class="table mv-table">
+  <thead><tr>
+    <th>Vérité</th><th>Paires</th><th>dont erreurs</th><th>Erreurs détectées</th><th>Rejets à tort</th>
+    <th>Précision du rejet<br><span class="mv-muted">dans l'éval</span></th>
+    <th>Précision du rejet<br><span class="mv-muted">au taux réel</span></th>
+    <th>AUC p_match</th><th>Alternative = humain</th>
+  </tr></thead>
+  <tbody>${data.truths.map((t) => html`<tr>
+    <td>${t.name}</td><td>${t.n.toLocaleString("fr-FR")}</td><td>${t.n_errors.toLocaleString("fr-FR")}</td>
+    <td>${fmtPct(t.error_recall)}</td><td>${fmtPct(t.false_rejection_rate)}</td>
+    <td>${fmtPct(t.rejection_precision)}</td><td>${fmtPct(t.rejection_precision_at_prevalence)}</td>
+    <td>${fmtNum(t.roc_auc, 2)}</td><td>${fmtPct(t.alt_recovers)}</td>
+  </tr>`)}</tbody>
+</table></div>`
+```
+
+*Alternative = humain* : quand le vérificateur rejette à raison, part des cas où le code qu'il propose à la place tombe dans la branche du code humain. C'est ce qui dirait s'il peut corriger, et pas seulement signaler.
+
+### Par type d'écart entre Sirus et l'humain
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  marginLeft: width < 600 ? 150 : 290,
+  marginRight: 30,
+  height: 40 + (width < 600 ? 48 : 34) * data.by_type.length,
+  x: {label: "Part des paires rejetées par le vérificateur →", percent: true, domain: [0, 100], grid: true},
+  y: {label: null, domain: data.by_type.map((d) => d.type)},
+  color: {
+    legend: true,
+    domain: ["Écart Sirus / humain (rejet souhaité)", "Accord exact (rejet = rejet à tort)"],
+    range: [COLORS.error, COLORS.ok],
+  },
+  marks: [
+    Plot.barX(data.by_type, {
+      y: "type",
+      x: "rejection_rate",
+      fill: (d) => d.is_error ? "Écart Sirus / humain (rejet souhaité)" : "Accord exact (rejet = rejet à tort)",
+      rx2: 4,
+      insetTop: 4,
+      insetBottom: 4,
+      channels: {Paires: "n"},
+      tip: {format: {x: (v) => fmtPct(v), fill: false, y: true, Paires: (v) => v.toLocaleString("fr-FR")}},
+    }),
+    Plot.text(data.by_type, {
+      y: "type",
+      x: "rejection_rate",
+      text: (d) => width < 600 ? fmtPct(d.rejection_rate) : `${fmtPct(d.rejection_rate)} · n = ${d.n.toLocaleString("fr-FR")}`,
+      dx: 6,
+      textAnchor: "start",
+      fill: "currentColor",
+      fillOpacity: 0.75,
+    }),
+    Plot.axisY({lineWidth: width < 600 ? 13 : 40, tickSize: 0, label: null}),
+    Plot.ruleX([0]),
+  ],
+})
+```
+
+Les écarts de profondeur (« Humain moins précis », « Sirus moins précis ») ne sont pas de vraies fautes : un taux de rejet bas y est attendu. Le vérificateur doit surtout rejeter les « Division différente », « groupe différent » et « classe différente ».
+
+### Choisir un seuil sur `p_match`
+
+Le verdict `is_match` n'est qu'un point de fonctionnement. `p_match`, la probabilité du verdict lue dans le modèle, permet d'en choisir un autre sans relancer : rejeter dès que `p_match < t`. La courbe montre, pour chaque seuil, la part d'erreurs détectées contre la part de codes justes rejetés (vérité de branche).
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  height: 380,
+  x: {label: "Codes justes rejetés à tort →", percent: true, domain: [0, 100], grid: true},
+  y: {label: "↑ Erreurs détectées", percent: true, domain: [0, 100], grid: true},
+  marks: [
+    Plot.line([[0, 0], [1, 1]], {stroke: "currentColor", strokeOpacity: 0.25, strokeDasharray: "4,4"}),
+    Plot.line(data.curve, {x: "false_rejection", y: "recall", stroke: COLORS.error, strokeWidth: 2}),
+    Plot.dot(data.curve, Plot.pointer({
+      x: "false_rejection", y: "recall", r: 5, fill: COLORS.error, stroke: "white", strokeWidth: 2,
+    })),
+    Plot.tip(data.curve, Plot.pointer({
+      x: "false_rejection", y: "recall",
+      title: (d) => `Rejet si p_match < ${fmtNum(d.threshold, 3)}\nErreurs détectées : ${fmtPct(d.recall)}\nRejets à tort : ${fmtPct(d.false_rejection)}`,
+    })),
+    Plot.dot([data.verdict_point], {
+      x: "false_rejection", y: "recall", r: 6, fill: COLORS.ok, stroke: "white", strokeWidth: 2,
+    }),
+    Plot.text([data.verdict_point], {
+      x: "false_rejection", y: "recall", text: () => "verdict is_match actuel",
+      dx: 10, textAnchor: "start", fill: "currentColor",
+    }),
+  ],
+})
+```
+
+### Distribution de `p_match`
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  height: 360,
+  marginRight: 110,
+  x: {label: "p_match (probabilité que le code tienne) →", domain: [0, 1]},
+  y: {label: "↑ Part des paires de la classe", percent: true, grid: true},
+  fy: {label: null, domain: ["Erreur de Sirus", "Code juste"]},
+  color: {legend: true, domain: ["Erreur de Sirus", "Code juste"], range: [COLORS.error, COLORS.ok]},
+  marks: [
+    Plot.rectY(data.p_match_hist, {
+      x1: "lo", x2: "hi", y: "share", fy: "class", fill: "class", inset: 1, ry1: 4,
+      channels: {Paires: "count"},
+      tip: {format: {y: (v) => fmtPct(v), fy: false, x1: true, x2: true, Paires: (v) => v.toLocaleString("fr-FR")}},
+    }),
+    Plot.ruleY([0]),
+  ],
+})
+```
+
+Un vérificateur qui sépare bien les deux classes concentre les erreurs de Sirus à gauche et les codes justes à droite. Les erreurs restées à droite sont celles qu'il valide avec assurance.
+
+## Reproduire
+
+```bash
+NOMENCLATURE=coicop2018 uv run -m src.evaluation.match_verifier_eval \
+  --train-set <predictions.parquet> --text-column raw_product \
+  --code-column sirus_code --expected-code-column code_lvl4 \
+  --n-samples 20000 --output data/eval/match_verifier_eval_coicop
+```
+
+Script : [`src/evaluation/match_verifier_eval.py`](https://github.com/InseeFrLab/GRAAL/blob/main/src/evaluation/match_verifier_eval.py). Les données sources relèvent du secret statistique : cette page ne publie que des agrégats, aucun libellé.
+
+<style>
+.mv-status { padding: .75rem 1rem; border-left: 4px solid #eda100; background: rgba(237,161,0,.08); border-radius: 4px; margin: 1rem 0; }
+.mv-status.done { border-left-color: #1baf7a; background: rgba(27,175,122,.08); }
+.mv-muted { color: #6c757d; font-size: .9em; }
+.mv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; margin: 1rem 0; }
+.mv-tile { border: 1px solid rgba(0,0,0,.12); border-radius: 8px; padding: .8rem 1rem; }
+.mv-tile-label { font-size: .85rem; color: #52514e; }
+.mv-tile-value { font-size: 1.9rem; font-weight: 600; line-height: 1.2; margin: .2rem 0; }
+.mv-tile-help { font-size: .78rem; color: #6c757d; }
+.mv-table-wrap { overflow-x: auto; }
+.mv-table td, .mv-table th { white-space: nowrap; }
+</style>

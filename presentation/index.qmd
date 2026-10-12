@@ -34,4 +34,12 @@ Navigator, Agentic-RAG, Summary et Supervisé sur un même échantillon, chronom
 [Voir les résultats →](multi_method_eval.html){.btn .btn-outline-primary .btn-lg role="button"}
 :::
 
+::: {.g-col-12 .g-col-md-4}
+### ✅ MatchVerifier COICOP
+
+Le vérificateur détecte-t-il les erreurs de Sirus ? Évaluation sur la vague 1 de Budget de famille, contre l'annotation humaine.
+
+[Voir les métriques →](match_verifier_coicop.html){.btn .btn-outline-primary .btn-lg role="button"}
+:::
+
 :::
