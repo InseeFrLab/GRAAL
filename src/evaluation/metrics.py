@@ -71,6 +71,25 @@ def accuracy_at_depth(
     return correct / total if total else float("nan")
 
 
+def is_within_branch(code, reference) -> bool:
+    """Le code est-il `reference` ou l'une de ses sous-catégories ?
+
+    Sert de vérité « de branche » quand l'humain a codé moins finement que le
+    classifieur : un code humain `11.1.1` et un code prédit `11.1.1.1` sont d'accord,
+    l'humain ayant validé la catégorie dont la prédiction n'est qu'une précision.
+    L'inverse (prédiction plus courte que le code humain) n'est pas un accord. Repose
+    sur la même propriété que `accuracy_at_depth` : les préfixes du code normalisé
+    sont ses ancêtres.
+
+    Returns:
+        False si l'un des deux codes manque (cf. normalize_code).
+    """
+    code_norm, reference_norm = normalize_code(code), normalize_code(reference)
+    if code_norm is None or reference_norm is None:
+        return False
+    return code_norm.startswith(reference_norm)
+
+
 def failure_rate(y_pred: list) -> float:
     """Part des prédictions manquantes (le classifieur n'a pas atteint de code final)."""
     if not y_pred:

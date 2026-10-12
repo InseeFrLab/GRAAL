@@ -74,6 +74,13 @@ absent du graphe sont écartées (le vérificateur n'aurait aucune notice à lir
 celles dont le code *attendu* en est absent sont gardées mais mesurées à part. Les
 paires identiques (libellé, code jugé, code attendu) ne sont jugées qu'une fois.
 
+Le verdict attendu est calculé selon deux vérités, reportées côte à côte :
+`expected_match`, l'accord exact (code jugé == code attendu), et
+`expected_match_branch`, qui compte aussi comme accord un code jugé sous-catégorie
+d'un code humain plus court (humain `11.1.1`, jugé `11.1.1.1`) : l'humain a validé la
+catégorie, la prédiction n'en est qu'une précision (cf. metrics.is_within_branch).
+Le tirage équilibré se fait sur l'accord exact.
+
     NOMENCLATURE=coicop2018 uv run -m src.evaluation.match_verifier_eval \
         --train-set predictions.parquet --text-column raw_product \
         --code-column sirus_code --expected-code-column code_lvl4 \
@@ -97,7 +104,7 @@ from langfuse import propagate_attributes
 from src.agents.closers.match_verifier import MatchVerificationInput, MatchVerifier
 from src.config import neo4j_config
 from src.evaluation.build_eval_set import load_dataframe
-from src.evaluation.metrics import normalize_code, verifier_metrics
+from src.evaluation.metrics import is_within_branch, normalize_code, verifier_metrics
 from src.evaluation.row_id import row_id_for
 from src.neo4j_graph.graph import Graph
 from src.nomenclature import NOMENCLATURE
@@ -152,11 +159,13 @@ DURATION_COLUMN = "match_verifier_duration_s"
 # Colonnes ajoutées avec --expected-code-column (cf. prepare_expected_pairs).
 EXPECTED_CODE_COLUMN = "expected_code"
 EXPECTED_MATCH_COLUMN = "expected_match"
+EXPECTED_MATCH_BRANCH_COLUMN = "expected_match_branch"
 EXPECTED_IN_GRAPH_COLUMN = "expected_in_graph"
 N_ROWS_COLUMN = "n_rows"
 EXPECTED_SCHEMA = [
     (EXPECTED_CODE_COLUMN, pl.Utf8),
     (EXPECTED_MATCH_COLUMN, pl.Boolean),
+    (EXPECTED_MATCH_BRANCH_COLUMN, pl.Boolean),
     (EXPECTED_IN_GRAPH_COLUMN, pl.Boolean),
     (N_ROWS_COLUMN, pl.Int64),
 ]
@@ -191,7 +200,9 @@ def prepare_expected_pairs(
     Le verdict attendu est l'égalité du code jugé et du code attendu, à la
     normalisation près (cf. metrics.normalize_code) : les deux colonnes doivent donc
     être à la même granularité, ce que le choix de la colonne attendue garantit (pour
-    la COICOP, `code_lvl4`, forme canonique au niveau 4 comme les prédictions).
+    la COICOP, `code_lvl4`, forme canonique au niveau 4 comme les prédictions). Sa
+    variante de branche (`expected_match_branch`) accepte en plus un code jugé
+    sous-catégorie d'un code attendu plus court (cf. metrics.is_within_branch).
 
     Les lignes dont le code jugé est inconnu du graphe sont écartées, et comptées :
     sans notice, le vérificateur jugerait sur sa seule mémoire de la nomenclature.
@@ -220,6 +231,12 @@ def prepare_expected_pairs(
             pl.col(CODE_COLUMN_OUT).map_elements(normalize_code, return_dtype=pl.Utf8)
             == pl.col(EXPECTED_CODE_COLUMN).map_elements(normalize_code, return_dtype=pl.Utf8)
         ).alias(EXPECTED_MATCH_COLUMN),
+        pl.struct(CODE_COLUMN_OUT, EXPECTED_CODE_COLUMN)
+        .map_elements(
+            lambda r: is_within_branch(r[CODE_COLUMN_OUT], r[EXPECTED_CODE_COLUMN]),
+            return_dtype=pl.Boolean,
+        )
+        .alias(EXPECTED_MATCH_BRANCH_COLUMN),
     )
     kept = df.filter(pl.col("_in_graph"))
     population = {
@@ -228,16 +245,21 @@ def prepare_expected_pairs(
         "n_rows_kept": len(kept),
         "n_rows_expected_unknown": int((~kept[EXPECTED_IN_GRAPH_COLUMN]).sum()),
         "error_prevalence": float((~kept[EXPECTED_MATCH_COLUMN]).mean()) if len(kept) else None,
+        "error_prevalence_branch": float((~kept[EXPECTED_MATCH_BRANCH_COLUMN]).mean())
+        if len(kept)
+        else None,
     }
     pairs = kept.group_by(
         TEXT_COLUMN_OUT, CODE_COLUMN_OUT, EXPECTED_CODE_COLUMN, maintain_order=True
     ).agg(
         pl.col(EXPECTED_MATCH_COLUMN).first(),
+        pl.col(EXPECTED_MATCH_BRANCH_COLUMN).first(),
         pl.col(EXPECTED_IN_GRAPH_COLUMN).first(),
         pl.len().cast(pl.Int64).alias(N_ROWS_COLUMN),
     )
     population["n_pairs"] = len(pairs)
     population["n_pairs_error"] = int((~pairs[EXPECTED_MATCH_COLUMN]).sum())
+    population["n_pairs_error_branch"] = int((~pairs[EXPECTED_MATCH_BRANCH_COLUMN]).sum())
     return pairs, population
 
 
@@ -253,22 +275,23 @@ def balanced_sample(pairs: pl.DataFrame, n_samples: int, seed: int) -> pl.DataFr
 
 
 def expected_summary(details: pl.DataFrame, population: dict) -> dict:
-    """Le vérificateur face au code attendu : ensemble, puis selon que le code attendu
-    est dans le graphe ou non (cf. prepare_expected_pairs)."""
+    """Le vérificateur face au code attendu, selon chacune des deux vérités (accord
+    exact, accord de branche) : ensemble, puis selon que le code attendu est dans le
+    graphe ou non (cf. prepare_expected_pairs)."""
 
-    def report(frame: pl.DataFrame) -> dict:
+    def report(frame: pl.DataFrame, truth_column: str, prevalence_key: str) -> dict:
         metrics = verifier_metrics(
-            frame[EXPECTED_MATCH_COLUMN].to_list(),
+            frame[truth_column].to_list(),
             frame[VERDICT_COLUMN].to_list(),
             p_match=frame[P_MATCH_COLUMN].to_list(),
-            error_prevalence=population["error_prevalence"],
+            error_prevalence=population[prevalence_key],
         )
         # Quand le code jugé est faux et rejeté, l'alternative proposée retombe-t-elle
         # sur le code attendu ? Comparée par préfixe : l'alternative est demandée
         # terminale, le code attendu peut être plus haut dans la hiérarchie.
-        caught = frame.filter(~pl.col(EXPECTED_MATCH_COLUMN) & ~pl.col(VERDICT_COLUMN))
+        caught = frame.filter(~pl.col(truth_column) & ~pl.col(VERDICT_COLUMN))
         recovered = [
-            (normalize_code(alt) or "").startswith(normalize_code(expected) or "\0")
+            is_within_branch(alt, expected)
             for alt, expected in zip(caught[ALTERNATIVE_CODE_COLUMN], caught[EXPECTED_CODE_COLUMN])
         ]
         metrics["n_caught"] = len(caught)
@@ -279,11 +302,22 @@ def expected_summary(details: pl.DataFrame, population: dict) -> dict:
 
     in_graph = details.filter(pl.col(EXPECTED_IN_GRAPH_COLUMN))
     out_graph = details.filter(~pl.col(EXPECTED_IN_GRAPH_COLUMN))
+
+    def reports(truth_column: str, prevalence_key: str) -> dict:
+        return {
+            "all": report(details, truth_column, prevalence_key),
+            "expected_in_graph": report(in_graph, truth_column, prevalence_key)
+            if len(in_graph)
+            else None,
+            "expected_not_in_graph": report(out_graph, truth_column, prevalence_key)
+            if len(out_graph)
+            else None,
+        }
+
     return {
         "population": population,
-        "all": report(details),
-        "expected_in_graph": report(in_graph) if len(in_graph) else None,
-        "expected_not_in_graph": report(out_graph) if len(out_graph) else None,
+        "exact": reports(EXPECTED_MATCH_COLUMN, "error_prevalence"),
+        "branch": reports(EXPECTED_MATCH_BRANCH_COLUMN, "error_prevalence_branch"),
     }
 
 
