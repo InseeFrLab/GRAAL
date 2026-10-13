@@ -1,8 +1,8 @@
 # Évaluation du MatchVerifier sur la COICOP (Sirus vs annotation humaine)
 
-**État : en cours** — 6311 / 8981 paires (70.3 %), mis à jour le 2026-10-13 02:51.
+**État : en cours** — 7235 / 8981 paires (80.6 %), mis à jour le 2026-10-13 03:56.
 
-Rythme ≈ 14.5 paires/min, fin estimée dans ≈ 3.1 h.
+Rythme ≈ 14.4 paires/min, fin estimée dans ≈ 2.0 h.
 
 ## Protocole
 
@@ -17,9 +17,9 @@ Rythme ≈ 14.5 paires/min, fin estimée dans ≈ 3.1 h.
 
 | Vérité | Paires | dont erreurs | Rappel des erreurs | Rejets à tort | Précision du rejet | Précision à la prévalence réelle | AUC p_match | Alternative = humain (erreurs détectées) |
 |---|---|---|---|---|---|---|---|---|
-| Exacte | 6311 | 1522 | 49.1 % | 7.4 % | 67.7 % | 61.7 % | 0.723 | 43.4 % |
-| Branche | 6311 | 1411 | 50.4 % | 8.0 % | 64.5 % | 56.8 % | 0.729 | 41.4 % |
-| Branche, hors codes 98/99 | 6078 | 1178 | 50.1 % | 8.0 % | 60.1 % | 56.7 % | 0.725 | 49.8 % |
+| Exacte | 7235 | 1740 | 49.2 % | 7.1 % | 68.6 % | 62.8 % | 0.727 | 44.5 % |
+| Branche | 7235 | 1613 | 50.6 % | 7.7 % | 65.4 % | 58.0 % | 0.733 | 42.6 % |
+| Branche, hors codes 98/99 | 6971 | 1349 | 50.4 % | 7.7 % | 61.2 % | 57.9 % | 0.729 | 51.2 % |
 
 - **Rappel des erreurs** : part des erreurs de Sirus que le vérificateur rejette.
 - **Rejets à tort** : part des codes justes qu'il rejette.
@@ -30,13 +30,13 @@ Rythme ≈ 14.5 paires/min, fin estimée dans ≈ 3.1 h.
 
 | Type | Paires | Rejetées par le vérificateur |
 |---|---|---|
-| Accord exact | 4789 | 7.4 % |
-| Même groupe, classe/sous-classe différente | 553 | 47.9 % |
-| Division différente | 478 | 56.1 % |
-| Code humain technique (98/99) | 233 | 51.9 % |
-| Humain moins précis (Sirus = sous-catégorie) | 111 | 32.4 % |
-| Même division, groupe différent | 85 | 63.5 % |
-| Sirus moins précis que l'humain | 62 | 4.8 % |
+| Accord exact | 5495 | 7.1 % |
+| Même groupe, classe/sous-classe différente | 627 | 48.6 % |
+| Division différente | 558 | 56.3 % |
+| Code humain technique (98/99) | 264 | 51.5 % |
+| Humain moins précis (Sirus = sous-catégorie) | 127 | 31.5 % |
+| Même division, groupe différent | 90 | 64.4 % |
+| Sirus moins précis que l'humain | 74 | 4.1 % |
 
 Pour « Accord exact », le taux de rejet est un taux de rejet à tort ; pour les autres lignes, plus il est haut, mieux le vérificateur détecte ce type d'écart.
 
@@ -46,14 +46,14 @@ Le verdict `is_match` est un seuil parmi d'autres ; en seuillant `p_match` :
 
 | Seuil (rejet si p_match < t) | Rappel des erreurs | Rejets à tort |
 |---|---|---|
-| 0.1 | 49.9 % | 7.9 % |
-| 0.25 | 50.0 % | 7.9 % |
-| 0.5 | 50.4 % | 8.0 % |
-| 0.75 | 50.4 % | 8.1 % |
-| 0.9 | 50.5 % | 8.2 % |
+| 0.1 | 50.1 % | 7.6 % |
+| 0.25 | 50.3 % | 7.6 % |
+| 0.5 | 50.6 % | 7.7 % |
+| 0.75 | 50.7 % | 7.8 % |
+| 0.9 | 50.7 % | 7.8 % |
 
 _Version agrégée, sans aucun libellé (données d'enquête soumises au secret statistique) : les exemples sont dans le rapport local, non versionné._
 
 ## Coût
 
-Durée moyenne par paire : 19.9 s ; temps d'inférence cumulé : 34.9 h.
+Durée moyenne par paire : 19.9 s ; temps d'inférence cumulé : 40.1 h.
