@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la COICOP (Sirus vs annotation humaine)
 
-**État : terminé** — 8909 / 8981 paires (99.2 %), mis à jour le 2026-10-13 05:57.
+**État : terminé** — 8909 / 8981 paires (99.2 %), mis à jour le 2026-10-13 10:20.
 
 ## Protocole
 
@@ -51,6 +51,35 @@ Le verdict `is_match` est un seuil parmi d'autres ; en seuillant `p_match` :
 | 0.9 | 51.5 % | 7.8 % |
 
 _Version agrégée, sans aucun libellé (données d'enquête soumises au secret statistique) : les exemples sont dans le rapport local, non versionné._
+
+## Second classifieur : SummaryAgenticClassifier
+
+**État : en cours** — 54 / 8717 libellés classés (0.6 %), 56 paires couvertes.
+
+Le Summary classifier reçoit le libellé seul et le résumé complet de la COICOP, et choisit un code terminal. Son code est ramené au niveau 4 pour être comparé au code humain, comme Sirus.
+
+### Exactitude face à l'humain
+
+| Paires | n | Sirus exact | Summary exact | Sirus branche | Summary branche | Sirus division | Summary division | Sirus groupe | Summary groupe |
+|---|---|---|---|---|---|---|---|---|---|
+| Toutes les paires | 56 | 75.0 % | 57.1 % | 75.0 % | 67.9 % | 87.5 % | 83.9 % | 85.7 % | 82.1 % |
+| Hors codes 98/99 | 52 | 80.8 % | 61.5 % | 80.8 % | 73.1 % | 94.2 % | 90.4 % | 92.3 % | 88.5 % |
+
+### Détecter les erreurs de Sirus (vérité de branche, hors 98/99)
+
+| Signal | Lignes signalées | Erreurs détectées | Codes justes signalés | Précision au taux réel |
+|---|---|---|---|---|
+| MatchVerifier (rejet) | 11.5 % | 50.0 % | 2.4 % | 83.3 % |
+| Summary ≠ Sirus | 19.2 % | 50.0 % | 11.9 % | 50.0 % |
+| Les deux signalent | 5.8 % | 30.0 % | 0.0 % | 100.0 % |
+| L'un ou l'autre signale | 25.0 % | 70.0 % | 14.3 % | 53.8 % |
+
+### Corriger
+
+- Sur les erreurs de Sirus, le Summary retrouve le code humain dans 10.0 % des cas (10 paires).
+- Sur les erreurs que le vérificateur détecte (5 paires) : son alternative retrouve le code humain dans 40.0 % des cas, le Summary dans 20.0 %.
+
+Repli sur une feuille (code non terminal renvoyé) : 29.6 % des libellés. Durée moyenne : 23.0 s par libellé.
 
 ## Coût
 

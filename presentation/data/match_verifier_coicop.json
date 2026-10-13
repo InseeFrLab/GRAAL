@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-13 05:57",
+ "updated": "2026-10-13 10:20",
  "state": "terminé",
  "n_done": 8909,
  "n_total": 8981,
@@ -1262,5 +1262,76 @@
    "count": 6382
   }
  ],
- "mean_duration_s": 19.894307679570822
+ "mean_duration_s": 19.894307679570822,
+ "summary": {
+  "state": "en cours",
+  "n_labels_done": 54,
+  "n_labels_total": 8717,
+  "n_pairs": 56,
+  "accuracy": [
+   {
+    "name": "Toutes les paires",
+    "n": 56,
+    "sirus_exact": 0.75,
+    "summary_exact": 0.5714285714285714,
+    "sirus_branch": 0.75,
+    "summary_branch": 0.6785714285714286,
+    "sirus_division": 0.875,
+    "summary_division": 0.8392857142857143,
+    "sirus_groupe": 0.8571428571428571,
+    "summary_groupe": 0.8214285714285714
+   },
+   {
+    "name": "Hors codes 98/99",
+    "n": 52,
+    "sirus_exact": 0.8076923076923077,
+    "summary_exact": 0.6153846153846154,
+    "sirus_branch": 0.8076923076923077,
+    "summary_branch": 0.7307692307692307,
+    "sirus_division": 0.9423076923076923,
+    "summary_division": 0.9038461538461539,
+    "sirus_groupe": 0.9230769230769231,
+    "summary_groupe": 0.8846153846153846
+   }
+  ],
+  "detectors": [
+   {
+    "name": "MatchVerifier (rejet)",
+    "flag_rate": 0.11538461538461539,
+    "error_recall": 0.5,
+    "false_rejection_rate": 0.023809523809523808,
+    "rejection_precision_at_prevalence": 0.8333333333333334
+   },
+   {
+    "name": "Summary ≠ Sirus",
+    "flag_rate": 0.19230769230769232,
+    "error_recall": 0.5,
+    "false_rejection_rate": 0.11904761904761904,
+    "rejection_precision_at_prevalence": 0.5000000000000001
+   },
+   {
+    "name": "Les deux signalent",
+    "flag_rate": 0.057692307692307696,
+    "error_recall": 0.3,
+    "false_rejection_rate": 0.0,
+    "rejection_precision_at_prevalence": 1.0
+   },
+   {
+    "name": "L'un ou l'autre signale",
+    "flag_rate": 0.25,
+    "error_recall": 0.7,
+    "false_rejection_rate": 0.14285714285714285,
+    "rejection_precision_at_prevalence": 0.5384615384615384
+   }
+  ],
+  "correction": {
+   "n_caught": 5,
+   "verifier_alt_right": 0.4,
+   "summary_right_when_caught": 0.2,
+   "n_errors": 10,
+   "summary_right_on_errors": 0.1
+  },
+  "fallback_rate": 0.2962962962962963,
+  "mean_duration_s": 23.042213525657576
+ }
 }
