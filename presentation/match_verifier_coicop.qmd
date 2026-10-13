@@ -203,6 +203,107 @@ Plot.plot({
 
 Un vérificateur qui sépare bien les deux classes concentre les erreurs de Sirus à gauche et les codes justes à droite. Les erreurs restées à droite sont celles qu'il valide avec assurance.
 
+## Second classifieur : le Summary classifier
+
+Pour situer le vérificateur, chaque libellé est aussi classé par **SummaryAgenticClassifier** : il reçoit le libellé seul et le résumé complet de la COICOP, et choisit un code terminal, ramené au niveau 4 pour la comparaison. Deux questions : classe-t-il mieux que Sirus, et un désaccord Summary / Sirus détecte-t-il les erreurs de Sirus aussi bien que le vérificateur ?
+
+```{ojs}
+//| echo: false
+sa = data.summary
+summaryReady = sa != null && sa.n_pairs > 0
+html`<div class="mv-status ${sa && sa.state === "terminé" ? "done" : ""}">
+  ${sa == null ? "Classification par le Summary pas encore lancée." : html`<strong>${sa.state === "terminé" ? "Classification terminée" : sa.state === "interrompu" ? "Classification interrompue" : "Classification en cours"}</strong>
+  — ${sa.n_labels_done.toLocaleString("fr-FR")} / ${sa.n_labels_total.toLocaleString("fr-FR")} libellés
+  (${fmtPct(sa.n_labels_done / sa.n_labels_total)}), ${sa.n_pairs.toLocaleString("fr-FR")} paires couvertes.
+  ${sa.state === "en cours" ? html`<br><span class="mv-muted">Chiffres provisoires.</span>` : ""}`}
+</div>`
+```
+
+### Exactitude face à l'humain (hors codes 98/99)
+
+```{ojs}
+//| echo: false
+accRows = {
+  if (!summaryReady) return [];
+  const a = sa.accuracy.find((d) => d.name === "Hors codes 98/99");
+  return [
+    ["Division", "sirus_division", "summary_division"],
+    ["Groupe", "sirus_groupe", "summary_groupe"],
+    ["Niveau 4, exact", "sirus_exact", "summary_exact"],
+    ["Niveau 4, branche", "sirus_branch", "summary_branch"],
+  ].flatMap(([level, s, m]) => [
+    {level, classifier: "Sirus", value: a[s]},
+    {level, classifier: "Summary", value: a[m]},
+  ]);
+}
+summaryReady ? Plot.plot({
+  width,
+  height: 300,
+  marginBottom: 40,
+  fx: {label: null, domain: ["Division", "Groupe", "Niveau 4, exact", "Niveau 4, branche"], tickFormat: (d) => width < 600 ? d.replace(", ", "\n") : d},
+  x: {axis: null, domain: ["Sirus", "Summary"], paddingInner: 0.15},
+  y: {label: "↑ Part des paires au bon code", percent: true, domain: [0, 100], grid: true},
+  color: {legend: true, domain: ["Sirus", "Summary"], range: [COLORS.error, COLORS.ok]},
+  marks: [
+    Plot.barY(accRows, {
+      fx: "level", x: "classifier", y: "value", fill: "classifier", ry1: 4,
+      tip: {format: {y: (v) => fmtPct(v), fx: true, x: true, fill: false}},
+    }),
+    Plot.text(accRows, {
+      fx: "level", x: "classifier", y: "value", text: (d) => fmtPct(d.value), dy: -8,
+      fill: "currentColor", fontSize: width < 600 ? 9 : 11,
+    }),
+    Plot.ruleY([0]),
+  ],
+}) : html`<p class="mv-muted">En attente des premières classifications.</p>`
+```
+
+### Détecter les erreurs de Sirus
+
+Un désaccord entre le Summary et Sirus est un signal d'erreur, au même titre qu'un rejet du vérificateur. Les deux signaux peuvent aussi se combiner : n'alerter que s'ils s'accordent, ou dès que l'un des deux alerte. Vérité de branche, hors codes 98/99.
+
+```{ojs}
+//| echo: false
+summaryReady ? html`<div class="mv-table-wrap"><table class="table mv-table">
+  <thead><tr><th>Signal</th><th>Lignes signalées</th><th>Erreurs détectées</th><th>Codes justes signalés</th><th>Précision au taux réel</th></tr></thead>
+  <tbody>${sa.detectors.map((d) => html`<tr>
+    <td>${d.name}</td><td>${fmtPct(d.flag_rate)}</td><td>${fmtPct(d.error_recall)}</td>
+    <td>${fmtPct(d.false_rejection_rate)}</td><td>${fmtPct(d.rejection_precision_at_prevalence)}</td>
+  </tr>`)}</tbody>
+</table></div>` : ""
+```
+
+```{ojs}
+//| echo: false
+summaryReady ? Plot.plot({
+  width,
+  height: 340,
+  marginRight: width < 600 ? 20 : 40,
+  x: {label: "Codes justes signalés à tort →", percent: true, domain: [0, Math.max(0.3, ...sa.detectors.map((d) => d.false_rejection_rate + 0.05))], grid: true},
+  y: {label: "↑ Erreurs de Sirus détectées", percent: true, domain: [0, 100], grid: true},
+  marks: [
+    Plot.dot(sa.detectors, {
+      x: "false_rejection_rate", y: "error_recall", r: 6, fill: COLORS.error, stroke: "white", strokeWidth: 2,
+      channels: {Signal: "name", "Lignes signalées": (d) => fmtPct(d.flag_rate)},
+      tip: {format: {x: (v) => fmtPct(v), y: (v) => fmtPct(v), Signal: true}},
+    }),
+    Plot.text(sa.detectors, {
+      x: "false_rejection_rate", y: "error_recall", text: "name", dx: 10, textAnchor: "start",
+      fill: "currentColor", fontSize: width < 600 ? 9 : 11,
+    }),
+  ],
+}) : ""
+```
+
+En haut à gauche, le signal idéal : beaucoup d'erreurs détectées, peu de codes justes signalés.
+
+```{ojs}
+//| echo: false
+summaryReady ? md`**Corriger.** Sur les erreurs de Sirus, le Summary retrouve le code humain dans **${fmtPct(sa.correction.summary_right_on_errors)}** des cas. Sur les erreurs que le vérificateur détecte, son alternative retrouve le code humain dans **${fmtPct(sa.correction.verifier_alt_right)}** des cas, le Summary dans **${fmtPct(sa.correction.summary_right_when_caught)}**.
+
+Le Summary renvoie un code non terminal, rabattu sur une feuille, pour ${fmtPct(sa.fallback_rate)} des libellés (sans effet sur la comparaison au niveau 4). Durée moyenne : ${fmtNum(sa.mean_duration_s, 1)} s par libellé.` : ""
+```
+
 ## Analyse
 
 Run terminé le 13 octobre 2026 : 8 909 paires jugées, 72 abandonnées après deux échecs de l'appel LLM (0,8 %). Environ 20 s par paire, soit 49 h de calcul cumulé, 10 h en temps réel avec 5 appels en parallèle.
