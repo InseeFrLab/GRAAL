@@ -203,6 +203,44 @@ Plot.plot({
 
 Un vérificateur qui sépare bien les deux classes concentre les erreurs de Sirus à gauche et les codes justes à droite. Les erreurs restées à droite sont celles qu'il valide avec assurance.
 
+## Analyse
+
+Run terminé le 13 octobre 2026 : 8 909 paires jugées, 72 abandonnées après deux échecs de l'appel LLM (0,8 %). Environ 20 s par paire, soit 49 h de calcul cumulé, 10 h en temps réel avec 5 appels en parallèle.
+
+### Ce que disent les chiffres
+
+- **Le vérificateur détecte une erreur de Sirus sur deux** (51 % en vérité de branche) et **rejette 7,6 % des codes justes**. Pondéré par le nombre de lignes plutôt que par paire distincte, le rappel reste à 49 % et les rejets à tort tombent à 5,4 % : les libellés fréquents sont plus faciles.
+- **4 rejets sur 10 portent sur un code juste** au taux d'erreur réel de Sirus (précision du rejet : 58 %). Envoyer en reprise tout ce qu'il rejette ferait revoir 17 % des lignes pour y trouver la moitié des erreurs.
+- **Quand il rejette à raison, il corrige une fois sur deux** : son alternative tombe dans la branche du code humain dans 52 % des cas (codes humains présents dans le graphe).
+- **Il voit mieux les erreurs grossières** (environ 60 % de rejet quand la division ou le groupe diffèrent) **que les confusions entre classes voisines** (49 %).
+- **Les écarts de profondeur sont bien traités** : il accepte Sirus quand Sirus est moins précis que l'humain (6 % de rejet), ce qui est le comportement voulu.
+- **Deux divisions se démarquent négativement** : la restauration (11), avec 38 % d'erreurs détectées et 13 % de rejets à tort, bute sur l'ambiguïté consommé sur place / acheté en magasin (« café », « thé ») ; la santé (06) rejette 18 % des codes justes.
+
+### `p_match` ne sert pas à choisir un seuil
+
+`p_match` est quasi binaire : 17 % des paires sous 0,1, 82 % au-dessus de 0,9, presque rien entre les deux. Passer le seuil de 0,1 à 0,9 ne change le taux de rejet que de 17,2 % à 17,5 %. Le seul point de fonctionnement réel est le verdict actuel. Les scores `match_score` / `alternative_score` discriminent un peu mieux : ne garder que les rejets où l'alternative dépasse le code jugé d'au moins 60 points fait passer leur précision de 61 % à 66 %, pour 29 % de rejets en moins.
+
+### La référence humaine est elle-même bruitée
+
+Une lecture à la main d'une quarantaine de désaccords (erreurs ratées et rejets à tort tirés au hasard) montre qu'environ la moitié ne sont pas des fautes du vérificateur :
+
+- **Erreurs « ratées »** : dans à peu près un cas sur deux, le code Sirus est défendable, voire cité explicitement par la notice, ou l'annotation humaine est manifestement fausse (code d'une autre division sans rapport avec le produit). Le vérificateur a alors raison d'accepter.
+- **Rejets « à tort »** : à peu près la moitié sont des rejets défendables (notice qui exclut explicitement le produit, libellé sans aucune désignation de produit). Les autres sont de vraies fautes, surtout **des marques ou abréviations qu'il ne reconnaît pas** et qu'il interprète de travers.
+
+Le rappel de 51 % et les 7,6 % de rejets à tort sont donc des **bornes pessimistes** : une partie de l'écart mesuré vient de l'annotation. Seule une revue humaine des désaccords, verdict par verdict, donnerait les vrais chiffres.
+
+### Défauts du vérificateur repérés
+
+- **L'alternative n'est pas toujours un concurrent** : dans 7,5 % des paires elle reprend le code jugé lui-même, et dans 21 % c'est un sous-code du code jugé, ce qui ne teste rien. La consigne demande pourtant un code terminal différent.
+- **Verdict incohérent avec ses scores** dans 88 paires (1 %) : il accepte alors que son alternative dépasse le code jugé de 20 points ou plus, ce que sa propre règle interdit.
+
+### Recommandations
+
+1. **Ne pas utiliser le verdict seul pour router vers la reprise manuelle** : avec une précision de 58 %, il ferait revoir beaucoup de codes justes. Il peut servir à **prioriser** la reprise, ou à proposer une correction quand il rejette avec un écart de scores important.
+2. **Faire arbitrer un échantillon des désaccords par un annotateur** (app `match_verifier_eval_app`), pour séparer les fautes du vérificateur de celles de l'annotation, et corriger au passage les annotations fausses.
+3. **Corriger le prompt** : interdire explicitement une alternative égale au code jugé ou à l'un de ses sous-codes, et rappeler que `is_match` doit suivre les scores.
+4. **Traiter la restauration et la santé à part** : règle explicite sur l'ambiguïté sur place / à emporter, et exemples dans les règles de lecture du profil `coicop2018`.
+
 ## Reproduire
 
 ```bash
