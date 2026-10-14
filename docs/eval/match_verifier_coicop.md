@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la COICOP (Sirus vs annotation humaine)
 
-**État : terminé** — 8909 / 8981 paires (99.2 %), mis à jour le 2026-10-14 06:01.
+**État : terminé** — 8909 / 8981 paires (99.2 %), mis à jour le 2026-10-14 07:41.
 
 ## Protocole
 
@@ -54,7 +54,7 @@ _Version agrégée, sans aucun libellé (données d'enquête soumises au secret 
 
 ## Second classifieur : SummaryAgenticClassifier
 
-**État : en cours** — 7867 / 8717 libellés classés (90.2 %), 8054 paires couvertes.
+**État : terminé** — 8577 / 8717 libellés classés (98.4 %), 8765 paires couvertes.
 
 Le Summary classifier reçoit le libellé seul et le résumé complet de la COICOP, et choisit un code terminal. Son code est ramené au niveau 4 pour être comparé au code humain, comme Sirus.
 
@@ -62,24 +62,24 @@ Le Summary classifier reçoit le libellé seul et le résumé complet de la COIC
 
 | Paires | n | Sirus exact | Summary exact | Sirus branche | Summary branche | Sirus division | Summary division | Sirus groupe | Summary groupe |
 |---|---|---|---|---|---|---|---|---|---|
-| Toutes les paires | 8054 | 76.0 % | 55.0 % | 77.8 % | 68.6 % | 88.7 % | 84.5 % | 87.4 % | 82.2 % |
-| Hors codes 98/99 | 7753 | 79.0 % | 57.1 % | 80.9 % | 71.3 % | 92.1 % | 87.8 % | 90.8 % | 85.4 % |
+| Toutes les paires | 8765 | 76.1 % | 55.0 % | 77.9 % | 68.7 % | 88.7 % | 84.4 % | 87.5 % | 82.1 % |
+| Hors codes 98/99 | 8436 | 79.1 % | 57.2 % | 81.0 % | 71.4 % | 92.2 % | 87.7 % | 90.9 % | 85.3 % |
 
 ### Détecter les erreurs de Sirus (vérité de branche, hors 98/99)
 
 | Signal | Lignes signalées | Erreurs détectées | Codes justes signalés | Précision au taux réel |
 |---|---|---|---|---|
-| MatchVerifier (rejet) | 15.8 % | 51.1 % | 7.5 % | 61.8 % |
-| Summary ≠ Sirus | 31.3 % | 71.4 % | 21.8 % | 43.7 % |
-| Les deux signalent | 13.9 % | 47.6 % | 5.9 % | 65.7 % |
-| L'un ou l'autre signale | 33.3 % | 75.0 % | 23.4 % | 43.1 % |
+| MatchVerifier (rejet) | 15.8 % | 51.3 % | 7.4 % | 61.9 % |
+| Summary ≠ Sirus | 31.2 % | 71.5 % | 21.8 % | 43.6 % |
+| Les deux signalent | 13.9 % | 47.9 % | 5.9 % | 65.8 % |
+| L'un ou l'autre signale | 33.2 % | 74.9 % | 23.3 % | 43.0 % |
 
 ### Corriger
 
-- Sur les erreurs de Sirus, le Summary retrouve le code humain dans 38.2 % des cas (1484 paires).
-- Sur les erreurs que le vérificateur détecte (759 paires) : son alternative retrouve le code humain dans 51.5 % des cas, le Summary dans 48.9 %.
+- Sur les erreurs de Sirus, le Summary retrouve le code humain dans 38.6 % des cas (1607 paires).
+- Sur les erreurs que le vérificateur détecte (824 paires) : son alternative retrouve le code humain dans 51.6 % des cas, le Summary dans 49.0 %.
 
-Repli sur une feuille (code non terminal renvoyé) : 34.2 % des libellés. Durée moyenne : 39.0 s par libellé.
+Repli sur une feuille (code non terminal renvoyé) : 34.4 % des libellés. Durée moyenne : 38.9 s par libellé.
 
 ## Coût
 
