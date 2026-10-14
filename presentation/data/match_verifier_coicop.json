@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-14 01:35",
+ "updated": "2026-10-14 04:15",
  "state": "terminé",
  "n_done": 8909,
  "n_total": 8981,
@@ -1265,73 +1265,73 @@
  "mean_duration_s": 19.894307679570822,
  "summary": {
   "state": "en cours",
-  "n_labels_done": 6130,
+  "n_labels_done": 7004,
   "n_labels_total": 8717,
-  "n_pairs": 6307,
+  "n_pairs": 7188,
   "accuracy": [
    {
     "name": "Toutes les paires",
-    "n": 6307,
-    "sirus_exact": 0.7575709529094656,
-    "summary_exact": 0.547011257333122,
-    "sirus_branch": 0.7756461074996036,
-    "summary_branch": 0.6844775646107499,
-    "sirus_division": 0.8859996828920247,
-    "summary_division": 0.8416045663548438,
-    "sirus_groupe": 0.8725225939432377,
-    "summary_groupe": 0.8184556841604567
+    "n": 7188,
+    "sirus_exact": 0.7597384529771842,
+    "summary_exact": 0.5493878686700056,
+    "sirus_branch": 0.7776850306065665,
+    "summary_branch": 0.6868391764051196,
+    "sirus_division": 0.8860601001669449,
+    "summary_division": 0.8446021146355036,
+    "sirus_groupe": 0.8735392320534223,
+    "summary_groupe": 0.82220367278798
    },
    {
     "name": "Hors codes 98/99",
-    "n": 6075,
-    "sirus_exact": 0.7865020576131687,
-    "summary_exact": 0.5679012345679012,
-    "sirus_branch": 0.8052674897119342,
-    "summary_branch": 0.7106172839506173,
-    "sirus_division": 0.919835390946502,
-    "summary_division": 0.8737448559670782,
-    "sirus_groupe": 0.905843621399177,
-    "summary_groupe": 0.8497119341563786
+    "n": 6930,
+    "sirus_exact": 0.7880230880230881,
+    "summary_exact": 0.5698412698412698,
+    "sirus_branch": 0.8066378066378066,
+    "summary_branch": 0.7124098124098124,
+    "sirus_division": 0.919047619047619,
+    "summary_division": 0.8760461760461761,
+    "sirus_groupe": 0.906060606060606,
+    "summary_groupe": 0.8528138528138528
    }
   ],
   "detectors": [
    {
     "name": "MatchVerifier (rejet)",
-    "flag_rate": 0.16016460905349794,
-    "error_recall": 0.5012679628064244,
-    "false_rejection_rate": 0.0776778413736713,
-    "rejection_precision_at_prevalence": 0.6094552929085304
+    "flag_rate": 0.15714285714285714,
+    "error_recall": 0.503731343283582,
+    "false_rejection_rate": 0.0740608228980322,
+    "rejection_precision_at_prevalence": 0.6198347107438016
    },
    {
     "name": "Summary ≠ Sirus",
-    "flag_rate": 0.3137448559670782,
-    "error_recall": 0.7109044801352493,
-    "false_rejection_rate": 0.21770237121831562,
-    "rejection_precision_at_prevalence": 0.4412381951731374
+    "flag_rate": 0.31341991341991343,
+    "error_recall": 0.7119402985074627,
+    "false_rejection_rate": 0.2178890876565295,
+    "rejection_precision_at_prevalence": 0.4392265193370166
    },
    {
     "name": "Les deux signalent",
-    "flag_rate": 0.1402469135802469,
-    "error_recall": 0.4657650042265427,
-    "false_rejection_rate": 0.06152902698282911,
-    "rejection_precision_at_prevalence": 0.6467136150234742
+    "flag_rate": 0.13766233766233765,
+    "error_recall": 0.46940298507462686,
+    "false_rejection_rate": 0.05813953488372093,
+    "rejection_precision_at_prevalence": 0.659329140461216
    },
    {
     "name": "L'un ou l'autre signale",
-    "flag_rate": 0.3336625514403292,
-    "error_recall": 0.746407438715131,
-    "false_rejection_rate": 0.2338511856091578,
-    "rejection_precision_at_prevalence": 0.4356191415885546
+    "flag_rate": 0.3329004329004329,
+    "error_recall": 0.746268656716418,
+    "false_rejection_rate": 0.2338103756708408,
+    "rejection_precision_at_prevalence": 0.43346337234503685
    }
   ],
   "correction": {
-   "n_caught": 593,
-   "verifier_alt_right": 0.4974704890387858,
-   "summary_right_when_caught": 0.4873524451939292,
-   "n_errors": 1183,
-   "summary_right_on_errors": 0.378698224852071
+   "n_caught": 675,
+   "verifier_alt_right": 0.5096296296296297,
+   "summary_right_when_caught": 0.49333333333333335,
+   "n_errors": 1340,
+   "summary_right_on_errors": 0.38283582089552237
   },
-  "fallback_rate": 0.3429037520391517,
-  "mean_duration_s": 38.63581152771274
+  "fallback_rate": 0.34294688749286123,
+  "mean_duration_s": 39.53651241886105
  }
 }
