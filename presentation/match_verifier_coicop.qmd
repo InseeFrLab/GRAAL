@@ -335,12 +335,23 @@ Le rappel de 51 % et les 7,6 % de rejets à tort sont donc des **bornes pessimis
 - **L'alternative n'est pas toujours un concurrent** : dans 7,5 % des paires elle reprend le code jugé lui-même, et dans 21 % c'est un sous-code du code jugé, ce qui ne teste rien. La consigne demande pourtant un code terminal différent.
 - **Verdict incohérent avec ses scores** dans 88 paires (1 %) : il accepte alors que son alternative dépasse le code jugé de 20 points ou plus, ce que sa propre règle interdit.
 
+### Le Summary classifier en comparaison
+
+Classification terminée le 14 octobre 2026 : 8 621 libellés sur 8 717, 96 abandonnés après trois tentatives (1,1 %, des timeouts de l'endpoint). Environ 39 s par libellé, deux fois le coût du vérificateur. Chiffres hors codes 98/99, vérité de branche.
+
+- **Il classe nettement moins bien que Sirus** : 71 % de bons codes au niveau 4 contre 81 % pour Sirus, et l'écart se creuse dès la division (88 % contre 92 %). Sur les erreurs de Sirus, il ne retrouve le code humain que dans 39 % des cas. Ce n'est pas un remplaçant de Sirus.
+- **Comme détecteur d'erreur, son désaccord avec Sirus attrape plus mais signale trop** : 72 % des erreurs détectées, mais 31 % des lignes signalées dont 22 % des codes justes, pour une précision de 43 %. C'est moins exploitable que le rejet du vérificateur (51 % des erreurs, 7,5 % des codes justes, précision de 62 %).
+- **Combiné au vérificateur, il rend le signal plus fiable** : n'alerter que quand le vérificateur rejette *et* que le Summary contredit Sirus garde 48 % des erreurs (3 points de moins), ne signale plus que 5,9 % des codes justes et porte la précision à 66 %, pour 14 % des lignes envoyées en reprise.
+- **Pour corriger, l'alternative du vérificateur reste meilleure** : sur les erreurs qu'il détecte, elle retrouve le code humain dans 52 % des cas, contre 49 % pour le code du Summary.
+- **Un tiers de ses réponses (34 %) sont des codes non terminaux**, rabattus sur une feuille : sans effet au niveau 4, mais le signe que le résumé seul ne lui suffit pas pour descendre jusqu'aux postes, et il n'appelle jamais les outils du graphe pour s'y aider.
+
 ### Recommandations
 
-1. **Ne pas utiliser le verdict seul pour router vers la reprise manuelle** : avec une précision de 58 %, il ferait revoir beaucoup de codes justes. Il peut servir à **prioriser** la reprise, ou à proposer une correction quand il rejette avec un écart de scores important.
+1. **Ne pas utiliser le verdict seul pour router vers la reprise manuelle** : avec une précision de 58 %, il ferait revoir beaucoup de codes justes. Il peut servir à **prioriser** la reprise, ou à proposer une correction quand il rejette avec un écart de scores important. Si un second avis est disponible, **le croisement vérificateur + Summary** est le signal le plus fiable mesuré ici (66 % de précision).
 2. **Faire arbitrer un échantillon des désaccords par un annotateur** (app `match_verifier_eval_app`), pour séparer les fautes du vérificateur de celles de l'annotation, et corriger au passage les annotations fausses.
 3. **Corriger le prompt** : interdire explicitement une alternative égale au code jugé ou à l'un de ses sous-codes, et rappeler que `is_match` doit suivre les scores.
 4. **Traiter la restauration et la santé à part** : règle explicite sur l'ambiguïté sur place / à emporter, et exemples dans les règles de lecture du profil `coicop2018`.
+5. **Ne pas retenir le Summary classifier comme classifieur COICOP** : moins exact que Sirus et deux fois plus coûteux que le vérificateur. Son seul usage utile ici est le second avis croisé avec le vérificateur, à mettre en balance avec son coût.
 
 ## Reproduire
 
