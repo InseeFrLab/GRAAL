@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la COICOP (Sirus vs annotation humaine)
 
-**État : terminé** — 8909 / 8981 paires (99.2 %), mis à jour le 2026-10-14 09:13.
+**État : terminé** — 8909 / 8981 paires (99.2 %), mis à jour le 2026-10-14 09:29.
 
 ## Protocole
 
@@ -57,6 +57,8 @@ _Version agrégée, sans aucun libellé (données d'enquête soumises au secret 
 **État : terminé** — 8621 / 8717 libellés classés (98.9 %), 8811 paires couvertes.
 
 Le Summary classifier reçoit le libellé seul et le résumé complet de la COICOP, et choisit un code terminal. Son code est ramené au niveau 4 pour être comparé au code humain, comme Sirus.
+
+**96 libellés ne sont pas encore classés** : l'endpoint LLM, saturé, renvoyait des timeouts. Ils seront repris plus tard (`summary_pairs_eval` reprend son checkpoint et ne reclasse que les manquants) ; les paires correspondantes sont absentes des chiffres ci-dessous.
 
 ### Exactitude face à l'humain
 
