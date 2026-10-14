@@ -215,7 +215,8 @@ html`<div class="mv-status ${sa && sa.state === "terminé" ? "done" : ""}">
   ${sa == null ? "Classification par le Summary pas encore lancée." : html`<strong>${sa.state === "terminé" ? "Classification terminée" : sa.state === "interrompu" ? "Classification interrompue" : "Classification en cours"}</strong>
   — ${sa.n_labels_done.toLocaleString("fr-FR")} / ${sa.n_labels_total.toLocaleString("fr-FR")} libellés
   (${fmtPct(sa.n_labels_done / sa.n_labels_total)}), ${sa.n_pairs.toLocaleString("fr-FR")} paires couvertes.
-  ${sa.state === "en cours" ? html`<br><span class="mv-muted">Chiffres provisoires.</span>` : ""}`}
+  ${sa.state === "en cours" ? html`<br><span class="mv-muted">Chiffres provisoires.</span>` : ""}
+  ${sa.state !== "en cours" && sa.n_labels_done < sa.n_labels_total ? html`<br><span class="mv-muted">${(sa.n_labels_total - sa.n_labels_done).toLocaleString("fr-FR")} libellés restent à classer (timeouts de l'endpoint LLM saturé) : ils seront repris plus tard, leurs paires sont absentes des chiffres ci-dessous.</span>` : ""}`}
 </div>`
 ```
 
@@ -279,7 +280,7 @@ summaryReady ? Plot.plot({
   width,
   height: 340,
   marginRight: width < 600 ? 20 : 40,
-  x: {label: "Codes justes signalés à tort →", percent: true, domain: [0, Math.max(0.3, ...sa.detectors.map((d) => d.false_rejection_rate + 0.05))], grid: true},
+  x: {label: "Codes justes signalés à tort →", percent: true, domain: [0, 100 * Math.max(0.3, ...sa.detectors.map((d) => d.false_rejection_rate + 0.05))], grid: true},
   y: {label: "↑ Erreurs de Sirus détectées", percent: true, domain: [0, 100], grid: true},
   marks: [
     Plot.dot(sa.detectors, {
@@ -287,10 +288,13 @@ summaryReady ? Plot.plot({
       channels: {Signal: "name", "Lignes signalées": (d) => fmtPct(d.flag_rate)},
       tip: {format: {x: (v) => fmtPct(v), y: (v) => fmtPct(v), Signal: true}},
     }),
-    Plot.text(sa.detectors, {
-      x: "false_rejection_rate", y: "error_recall", text: "name", dx: 10, textAnchor: "start",
-      fill: "currentColor", fontSize: width < 600 ? 9 : 11,
-    }),
+    // Étiquette à gauche des points de la moitié droite, pour ne pas sortir du cadre.
+    ...[[(d) => d.false_rejection_rate <= 0.15, 10, "start"], [(d) => d.false_rejection_rate > 0.15, -10, "end"]].map(
+      ([keep, dx, textAnchor]) => Plot.text(sa.detectors.filter(keep), {
+        x: "false_rejection_rate", y: "error_recall", text: "name", dx, textAnchor,
+        fill: "currentColor", fontSize: width < 600 ? 9 : 11,
+      })
+    ),
   ],
 }) : ""
 ```
@@ -337,7 +341,7 @@ Le rappel de 51 % et les 7,6 % de rejets à tort sont donc des **bornes pessimis
 
 ### Le Summary classifier en comparaison
 
-Classification terminée le 14 octobre 2026 : 8 621 libellés sur 8 717, 96 abandonnés après trois tentatives (1,1 %, des timeouts de l'endpoint). Environ 39 s par libellé, deux fois le coût du vérificateur. Chiffres hors codes 98/99, vérité de branche.
+Classification arrêtée le 14 octobre 2026 avec 8 621 libellés classés sur 8 717 (98,9 %). Les 96 restants n'ont pas pu l'être : l'endpoint LLM, saturé, renvoyait des timeouts. Ils seront repris plus tard (le script reprend son checkpoint et ne reclasse que les manquants) ; leur absence ne devrait pas déplacer les chiffres de plus d'un dixième de point. Environ 39 s par libellé, deux fois le coût du vérificateur. Chiffres hors codes 98/99, vérité de branche.
 
 - **Il classe nettement moins bien que Sirus** : 71 % de bons codes au niveau 4 contre 81 % pour Sirus, et l'écart se creuse dès la division (88 % contre 92 %). Sur les erreurs de Sirus, il ne retrouve le code humain que dans 39 % des cas. Ce n'est pas un remplaçant de Sirus.
 - **Comme détecteur d'erreur, son désaccord avec Sirus attrape plus mais signale trop** : 72 % des erreurs détectées, mais 31 % des lignes signalées dont 22 % des codes justes, pour une précision de 43 %. C'est moins exploitable que le rejet du vérificateur (51 % des erreurs, 7,5 % des codes justes, précision de 62 %).
