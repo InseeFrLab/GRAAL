@@ -1,0 +1,555 @@
+---
+title: "Vérifier automatiquement la codification COICOP"
+subtitle: "Premiers résultats sur la vague 1 de Budget de famille"
+author:
+  - name: Meilame Tayebjee
+    email: meilame.tayebjee@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+  - name: Théo Ferry
+    email: theo.ferry@insee.fr
+    affiliations:
+      - name: Insee, SSP Lab
+date: "2026-11-04"
+date-format: "D MMMM YYYY"
+lang: fr-FR
+slide-number: true
+controls: true
+format:
+  onyxia-revealjs:
+    css: custom.css
+---
+
+## La question posée
+
+Sirus code automatiquement les dépenses en COICOP. **Il se trompe sur environ 1 ligne sur 6** (17 %).
+
+Aujourd'hui, pour trouver ces erreurs, il faut relire.
+
+[**Un outil automatique peut-il désigner les lignes à relire en priorité ?**]{.orange}
+
+::: {.source}
+Taux d'erreur de Sirus : 17,3 % des lignes (référence « branche », définie plus loin) — [J] `population.error_prevalence_branch`.
+:::
+
+. . .
+
+- On l'a testé sur la **vague 1 de Budget de famille**, où l'on dispose à la fois du code Sirus **et** du code retenu par les annotateurs.
+- Les annotations humaines servent de référence pour juger l'outil.
+
+## D'où viennent les chiffres {.compact .dense}
+
+Chaque chiffre porte en bas de slide un renvoi vers sa source :
+
+| | Fichier | Contenu |
+|---|---|---|
+| **[R]** | `data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe/` | Sortie brute du run (un verdict par paire) |
+| **[J]** | `presentation/data/match_verifier_coicop.json` | Agrégats calculés depuis [R] par `mv_report.py` (site) |
+| **[D]** | `docs/eval/match_verifier_coicop.md` | Rapport chiffré versionné |
+| **[A]** | `presentation/match_verifier_coicop.qmd`, § *Analyse* | Analyse rédigée, dont une relecture manuelle |
+| **[P]** | `src/agents/closers/match_verifier.py`, `src/nomenclature.py` | Consignes du vérificateur, inchangées depuis le run |
+| **[C]** | `slides_coicop/sources/verifier_chiffres.py` | Recalcul de contrôle depuis [R] (3 nov. 2026) |
+
+Dépôt [InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL), branche `feat/coicop-match-verifier-eval`. [R] est hors dépôt (secret statistique) : `s3://projet-budget-famille/archive/`.
+
+# Méthode
+
+## Les données {.compact}
+
+:::: {.columns}
+::: {.column width="55%"}
+- **Source** : sortie `reconcile-sirus` du workflow de codification du **8 septembre 2026** : chaque dépense de la vague 1 avec la prédiction Sirus **et** le code de l'annotateur.
+- **14 695 lignes** au départ.
+- **400 écartées** : Sirus y a prédit un **code technique 98/99**, absent de la nomenclature chargée dans l'outil (il n'aurait aucune notice à lire). Détail slide suivante.
+- **Doublons regroupés** : une même combinaison (libellé, code Sirus, code humain) n'est jugée qu'une fois → **8 981 paires** distinctes.
+- **Aucun échantillonnage** : toutes les paires sont soumises.
+- **72 paires abandonnées** (0,8 %) après deux échecs d'appel au modèle → **8 909 paires jugées**.
+:::
+::: {.column width="45%"}
+```{mermaid}
+flowchart TD
+  A["14 695 lignes"] -->|"− 400 code Sirus 98/99<br/>(hors nomenclature)"| B["14 295 lignes"]
+  B -->|"regroupement<br/>des doublons"| C["8 981 paires"]
+  C -->|"− 72 échecs<br/>d'appel"| D["8 909 paires jugées"]
+```
+:::
+::::
+
+::: {.source}
+[J] `population` (n_rows, n_rows_unknown_code, n_pairs) ; [R] `match_verifier_eval_summary.json` (n = 8 909, n_skipped = 72) ; protocole : [D] § Protocole.
+:::
+
+## Les 400 lignes écartées {.compact}
+
+Toutes ont un **code Sirus technique 98/99**. L'outil ne pouvait pas les juger, faute de notice.
+
+:::: {.columns}
+::: {.column width="58%"}
+| Code Sirus | Lignes | Libellés distincts | Annotateur aussi en 98/99 | Même code (ou sous-code) |
+|---|---|---|---|---|
+| 98.1.1 | 109 | 81 | 79 | 60 |
+| 98.1.2 | 80 | 43 | 76 | 59 |
+| 99.1 | 61 | 47 | 45 | 36 |
+| 98.1.3 | 35 | 3 | 23 | 0 |
+| 99.2 | 31 | 29 | 30 | 29 |
+| 98.1.1.1 | 27 | 24 | 19 | 17 |
+| 99.4 | 22 | 18 | 21 | 21 |
+| 6 autres codes | 35 | 29 | 25 | 5 |
+| **Total** | **400** | **267** | **318 (80 %)** | **227 (57 %)** |
+:::
+::: {.column width="42%"}
+- Dans **8 cas sur 10**, l'annotateur a lui aussi choisi un code technique : ces lignes ne sont pas des erreurs grossières de Sirus.
+- Pour les 82 autres, l'annotateur a mis un code COICOP ordinaire, pour moitié en alimentation (01).
+- Ces lignes **ne sont pas dans les chiffres** de l'évaluation : l'outil ne couvre pas, aujourd'hui, les codes 98/99.
+
+**Liste complète** (libellés, accès restreint au projet) :
+`s3://projet-budget-famille/archive/data/eval/match_verifier_eval_coicop/lignes_ecartees/lignes_ecartees.csv`
+:::
+::::
+
+::: {.source}
+Liste reconstituée depuis le fichier source (`data/coicop/predictions_2026-09-08_codif-c9vjm.parquet`) : codes Sirus absents de `data/coicop_summary.txt` (résumé généré depuis le graphe) ; 400 lignes, identique à [J] `population.n_rows_unknown_code`. Script : `slides_coicop/sources/lignes_ecartees.py`. « Même code » : code annotateur (niveau 4) égal au code Sirus ou sous-code de celui-ci.
+:::
+
+## La référence : le code de l'annotateur {.compact}
+
+- **Niveau de comparaison** : le code humain est ramené au **niveau 4** de la COICOP (`code_lvl4`) ; le code Sirus est pris tel quel, au plus au niveau 4.
+- **Erreur de Sirus** = code Sirus ≠ code humain. Deux définitions :
+
+| | Erreur si… | Exemple jugé **correct** |
+|---|---|---|
+| **Exacte** | les codes diffèrent au niveau 4 | — |
+| **Branche** *(retenue par défaut)* | idem, **sauf** si Sirus est une sous-catégorie du code humain | humain `03.1.2` Vêtements, Sirus `03.1.2.1` Vêtements pour hommes |
+
+- Justification de la « branche » : l'annotateur a validé la catégorie, Sirus n'a fait que **préciser**.
+- **Codes techniques 98/99** (« courses alimentaires », remises, impôts) : absents de la nomenclature de l'outil. Quand **Sirus** les prédit, la ligne est écartée (slide précédente) ; quand seul **l'annotateur** les a mis (341 paires), la paire est gardée et comptée comme erreur de Sirus. Résultats aussi donnés **hors 98/99**.
+
+::: {.source}
+[D] § Protocole ; colonnes `expected_match` / `expected_match_branch` de [R].
+:::
+
+## Ce que voit le vérificateur {.compact}
+
+Pour chaque paire, un modèle de langage (**qwen3-6-35b-moe**, raisonnement activé) reçoit :
+
+:::: {.columns}
+::: {.column width="50%"}
+**En entrée**
+
+- le **libellé** et le **code Sirus** ;
+- la **notice officielle** du code (inclusions, exclusions), lue dans la base de la nomenclature ;
+- le **résumé complet de la COICOP 2018** (niveaux 1 à 5, code + intitulé) ;
+- un outil pour lire la notice d'autres codes s'il le souhaite.
+
+**Il ne sait pas** que le code vient de Sirus ni qu'il existe une annotation humaine.
+:::
+::: {.column width="50%"}
+**En sortie**
+
+- une note du code jugé (`match_score`, 0 à 100) ;
+- le **meilleur code concurrent** et sa note ;
+- une explication ;
+- le **verdict** : le code tient / ne tient pas.
+
+**Règle de décision imposée** : le code garde le bénéfice du doute. Il n'est rejeté que si sa note est **< 40** (incompatible) ou si le concurrent le dépasse d'**au moins 20 points**.
+:::
+::::
+
+::: {.source}
+[P] `match_verifier.py` : `INCOMPATIBLE_BELOW = 40`, `ALTERNATIVE_WINS_MARGIN = 20`, `SUMMARY_MAX_LEVEL = 5`, `enable_thinking=True` ; modèle : [R] `match_verifier_eval_summary.json` (`model`, `commit_sha` c3e01a2).
+:::
+
+## Exemple : ce que reçoit le vérificateur {.compact}
+
+Pour **un** libellé (fictif), la consigne envoyée au modèle ressemble à ceci :
+
+```{.text}
+[Consignes générales, identiques pour toutes les paires]
+Tu es un expert de la nomenclature COICOP 2018. Ton travail est d'auditer des couples
+(libellé de produit, code) ...
+Résumé de la nomenclature COICOP 2018 (niveaux 1 à 5) :
+  01 - Produits alimentaires et boissons non alcoolisées
+  ...
+  03.1.2.1 - Vêtements pour hommes ou garçons
+  03.2.1.1 - Chaussures pour hommes
+  ...          (≈ 950 positions au total)
+[Règles de lecture et règle de décision : slides précédente et suivante]
+
+[Partie propre à la paire]
+Audite ce couple (produit, code).
+Produit : BASKETS RUNNING H T42
+Code jugé : 03.1.2.1
+Notice du code : <inclusions / exclusions officielles de 03.1.2.1, lues dans la base>
+Réponds dans cet ordre : explication, match_score, alternative_code,
+alternative_score, is_match, is_match_score.
+```
+
+::: {.source}
+Gabarit : [P] `match_verifier.py` (`get_instructions`, `build_prompt`), texte abrégé ; intitulés : `data/coicop_summary.txt`. Le libellé est **inventé** (secret statistique) ; la notice n'est pas reproduite (base Neo4j non accessible depuis cet environnement).
+:::
+
+## Trois cas types (exemples construits) {.compact .dense}
+
+| Libellé (fictif) | Code Sirus | Note du code | Meilleur concurrent | Note | Verdict | Règle appliquée |
+|---|---|---|---|---|---|---|
+| CAFE MOULU ARABICA 250G | 01.2.2.0 Café | 95 | 01.2.3.0 Thé, infusions | 10 | ✔ **tient** | Marque et poids ne changent pas le code |
+| BASKETS RUNNING H T42 | 03.1.2.1 Vêtements pour hommes | 25 | 03.2.1.1 Chaussures pour hommes | 90 | ✘ **ne tient pas** → propose 03.2.1.1 | Note < 40 : code incompatible |
+| CAFE | 01.2.2.0 Café | 70 | 11.1.1.2 Cafés, service limité | 65 | ✔ **tient** | Écart < 20 points : bénéfice du doute (lecture plausible) |
+
+- Le 2^e^ cas est celui qu'on veut attraper : une **vraie erreur**, avec la correction à la clé.
+- Le 3^e^ cas montre la limite : sans contexte, « café » au comptoir ou en paquet reste ambigu. L'outil laisse passer, et c'est voulu par les règles actuelles.
+
+::: {.source}
+**Exemples construits pour illustrer les règles, pas des sorties réelles du run** : notes et verdicts fixés à la main selon [P] (`INCOMPATIBLE_BELOW = 40`, `ALTERNATIVE_WINS_MARGIN = 20`, règles de lecture `COICOP2018`). Codes et intitulés réels (`data/coicop_summary.txt`), comparés au niveau 4.
+:::
+
+## Les règles de lecture données à l'outil {.compact}
+
+Extrait des consignes COICOP actuelles :
+
+> Ce sont des dépenses de ménages, recopiées de tickets de caisse ou écrites à la main : tronqués, abrégés, avec des fautes, des marques, des quantités…
+>
+> - Une **marque, un conditionnement, une quantité ou un prix** ne changent pas le code.
+> - Plusieurs articles sur une même ligne : c'est **le premier cité** qui décide.
+> - Un libellé **ambigu** (un « café » peut être servi au comptoir ou acheté en paquet) : un code qui correspond à **une lecture plausible** n'est pas une erreur.
+> - Une **imprécision n'est pas une erreur**.
+
+[Ces règles ont été écrites par l'équipe SSP Lab, sans validation métier. **C'est un des points sur lesquels nous avons besoin de vous.**]{.orange}
+
+::: {.source}
+[P] `src/nomenclature.py`, profil `COICOP2018.reading_rules` (citation abrégée).
+:::
+
+## Comment on mesure {.compact}
+
+On croise le verdict de l'outil avec la référence humaine :
+
+| | Sirus a **faux** | Sirus a **juste** |
+|---|---|---|
+| L'outil **rejette** | ✔ erreur repérée | ✘ rejet à tort |
+| L'outil **accepte** | ✘ erreur ratée | ✔ |
+
+- **Erreurs repérées** = rejets ÷ nombre d'erreurs de Sirus.
+- **Rejets à tort** = rejets ÷ nombre de codes justes.
+- **Précision du signal** = part des lignes rejetées qui sont de vraies erreurs. Comme l'échantillon de paires ne contient pas la même proportion d'erreurs que le flux réel, on la **recalcule au taux d'erreur réel** de Sirus (17,3 %) :
+
+$$\text{précision} = \frac{0{,}173 \times \text{erreurs repérées}}{0{,}173 \times \text{erreurs repérées} + 0{,}827 \times \text{rejets à tort}}$$
+
+- **Unité de compte** : la paire distincte (chaque combinaison libellé / code compte une fois, quel que soit son nombre de lignes).
+
+::: {.source}
+Définitions : `src/evaluation/metrics.py` (`rejection_precision_at_prevalence`) ; taux d'erreur : [J] `population.error_prevalence_branch`.
+:::
+
+# Résultats
+
+## En résumé {.compact}
+
+:::: {.columns}
+::: {.column width="33%"}
+### [1 sur 2]{.orange}
+des erreurs de Sirus sont repérées
+
+[51 % ± 2 pts]{.small}
+:::
+::: {.column width="33%"}
+### [7,6 %]{.orange}
+des codes justes sont rejetés à tort
+
+[± 0,6 pt]{.small}
+:::
+::: {.column width="33%"}
+### [6 sur 10]{.orange}
+des lignes signalées sont de vraies erreurs
+
+[58 %]{.small}
+:::
+::::
+
+::: {.source}
+Référence branche, 8 909 paires dont 1 988 erreurs. [J] `truths[branch]` : error_recall, false_rejection_rate, rejection_precision_at_prevalence ; alternative : [J] `summary.correction.verifier_alt_right` ; par ligne : [A], recalculé [C] ; durée : [R] `mean_duration_s` = 19,9 s. ± = intervalle à 95 % (approximation binomiale, [C]).
+:::
+
+
+- Quand il rejette à raison, son **code alternatif est le bon une fois sur deux** (52 %, hors codes 98/99).
+- Compté **par ligne** plutôt que par paire : 50 % repérées, 5,4 % de rejets à tort.
+- **~20 s par paire** : utilisable sur échantillon ou en différé, pas en temps réel.
+
+## Quelles erreurs repère-t-il ?
+
+```{ojs}
+//| echo: false
+data = FileAttachment("data/match_verifier_coicop.json").json()
+fmtPct = (x) => (100 * x).toLocaleString("fr-FR", {maximumFractionDigits: 0}) + " %"
+COLORS = ({error: "#2a78d6", ok: "#eb6834"})
+```
+
+```{ojs}
+//| echo: false
+LABELS = ({
+  "Accord exact": "Codes identiques",
+  "Même division, groupe différent": "Groupe différent",
+  "Division différente": "Division différente",
+  "Code humain technique (98/99)": "Code humain technique 98/99",
+  "Même groupe, classe/sous-classe différente": "Classe voisine différente",
+  "Humain moins précis (Sirus = sous-catégorie)": "Sirus plus précis",
+  "Sirus moins précis que l'humain": "Sirus moins précis",
+})
+KIND = (d) => d.type === "Accord exact" ? "ok" : /précis/.test(d.type) ? "depth" : "error"
+KINDS = ({error: "Vraie erreur de Sirus (rejet souhaité)", depth: "Écart de précision seulement", ok: "Codes identiques (rejet à tort)"})
+ORDER = ({error: 0, depth: 1, ok: 2})
+types = data.by_type.map((d) => ({...d, label: LABELS[d.type] ?? d.type, kind: KINDS[KIND(d)], k: ORDER[KIND(d)]})).sort((a, b) => a.k - b.k || b.rejection_rate - a.rejection_rate)
+```
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width: 1000,
+  height: 310,
+  marginLeft: 290,
+  marginRight: 90,
+  marginBottom: 20,
+  style: {fontSize: "17px", background: "transparent"},
+  x: {label: null, percent: true, domain: [0, 100], grid: true, tickFormat: (d) => d + " %"},
+  y: {label: null, domain: types.map((d) => d.label)},
+  color: {
+    legend: true,
+    style: {fontSize: "16px"},
+    domain: Object.values(KINDS),
+    range: [COLORS.error, "#9aa0a6", COLORS.ok],
+  },
+  marks: [
+    Plot.barX(types, {
+      y: "label", x: "rejection_rate", rx2: 4, insetTop: 4, insetBottom: 4,
+      fill: "kind",
+    }),
+    Plot.text(types, {
+      y: "label", x: "rejection_rate", dx: 6, textAnchor: "start",
+      text: (d) => `${fmtPct(d.rejection_rate)}  (n = ${d.n.toLocaleString("fr-FR")})`,
+    }),
+    Plot.ruleX([0]),
+  ],
+})
+```
+
+[Part des paires **rejetées par le vérificateur**, selon le type d'écart entre Sirus et l'annotateur. Il repère mieux les **erreurs grossières** (division ou groupe différent, environ 60 %) que les **confusions entre postes voisins** (49 %), et accepte Sirus quand Sirus est seulement moins précis (6 %).]{.small}
+
+::: {.source}
+[J] `by_type` ; types d'écart définis par `error_type()` dans `mv_report.py` (comparaison des préfixes des deux codes, codes 98/99 testés en premier).
+:::
+
+## Où il a le plus de mal {.compact}
+
+| Zone | Paires | Erreurs repérées | Rejets à tort | Cause identifiée |
+|---|---|---|---|---|
+| **Restauration (11)** | 522 | 38 % (± 6 pts) | 13 % (± 4 pts) | ambiguïté **sur place / en magasin** (« café », « thé ») |
+| **Santé (06)** | 209 | 57 % | 18 % (± 7 pts) | — |
+| Ensemble | 8 909 | 51 % | 7,6 % | |
+
+- **Marques et abréviations** qu'il ne reconnaît pas : principale cause de ses vraies fautes à la relecture.
+- **Codes techniques 98/99 côté annotateur** : l'outil ne peut pas les proposer (absents de sa nomenclature) ; isolés dans les résultats.
+
+[Divisions prises sur le **code humain**. Petits effectifs : les écarts par division sont indicatifs, pas des mesures fines.]{.small}
+
+::: {.source}
+Taux par division : [A] § Ce que disent les chiffres, recalculés [C] (filtre sur les 2 premiers chiffres du code humain). Marques/abréviations : [A] § La référence humaine est elle-même bruitée.
+:::
+
+. . .
+
+[Sur ces points, **votre connaissance du terrain** peut directement améliorer l'outil.]{.orange}
+
+## La référence humaine n'est pas parfaite
+
+L'équipe a relu à la main **une quarantaine de désaccords** outil / annotation, tirés au hasard parmi les erreurs ratées et les rejets à tort.
+
+- **Environ la moitié ne sont pas des fautes de l'outil** :
+  - le code Sirus était défendable, parfois cité dans la notice ;
+  - ou l'annotation était manifestement erronée ;
+  - ou la notice exclut explicitement le produit.
+- Les **vraies** fautes de l'outil : surtout des marques et abréviations mal comprises.
+
+::: {.source}
+[A] § La référence humaine est elle-même bruitée. Relecture qualitative : l'échantillon relu et les jugements ne figurent pas dans les fichiers archivés consultés, ce résultat n'est donc **pas reproductible** en l'état.
+:::
+
+. . .
+
+[Les chiffres présentés sont donc des **bornes pessimistes**. Seule une revue des désaccords par vos équipes donnerait les vrais chiffres.]{.orange}
+
+## Même libellé, même code ? {.compact}
+
+Sur les **1 202 libellés** qui reviennent au moins deux fois (6 852 lignes sur 14 695) :
+
+:::: {.columns}
+::: {.column width="52%"}
+| | Sirus constant | Sirus variable | Total |
+|---|---|---|---|
+| **Annotateur constant** | **1 062** | 45 | 1 107 (92 %) |
+| **Annotateur variable** | 52 | 43 | 95 (8 %) |
+| **Total** | 1 114 (93 %) | 88 (7 %) | 1 202 |
+
+[*Constant* : toujours le même code sur toutes les occurrences du libellé. En lignes : 5 308 / 602 / 239 / 703.]{.small}
+:::
+::: {.column width="48%"}
+- **1 libellé répété sur 12** reçoit plusieurs codes de l'annotateur ; autant chez Sirus.
+- Ce ne sont **pas les mêmes** libellés : 43 seulement varient des deux côtés.
+- Quand l'annotateur varie, c'est **une fois sur deux un changement de division**.
+- Quand les deux sont constants, **ils sont d'accord sur 86 %** des libellés.
+:::
+::::
+
+::: {.source}
+Calcul fait pour ces slides : `slides_coicop/sources/coherence_libelles.py`, fichier source complet (avant exclusions) ; résultats : `slides_coicop/data/coherence_libelles.json`. Même libellé = texte brut identique (normalisé : 91,5 % / 92,6 %). À libellé et type de magasin identiques (Sirus voit le magasin) : annotateur 95 %, Sirus 96 % constants. Un seul modèle Sirus (`sirus_model_uri` unique). Une partie des variations est légitime (« café » au comptoir ou en paquet).
+:::
+
+# Et avec un second avis ?
+
+## Un deuxième classifieur pour comparer {.compact}
+
+**Méthode** : chaque libellé est recodé **de zéro** par un second modèle (*Summary classifier*), même modèle de langage (qwen3-6-35b-moe), qui reçoit le libellé seul et le résumé complet de la COICOP, **sans** le code Sirus. Son code est ramené au niveau 4 comme Sirus.
+
+- **8 621 libellés classés sur 8 717** (98,9 %) ; les 96 restants ont échoué (serveur saturé), leurs paires sont exclues.
+- Comparaison sur **8 480 paires** (hors codes 98/99).
+
+| Bon code face à l'annotateur | Division | Groupe | Niveau 4 (branche) |
+|---|---|---|---|
+| Sirus | 92 % | 91 % | **81 %** |
+| Second modèle | 88 % | 85 % | **71 %** |
+
+**Il code moins bien que Sirus** : ce n'est pas un remplaçant. Mais son **désaccord avec Sirus** est un signal d'alerte, qu'on peut croiser avec le vérificateur.
+
+::: {.source}
+[J] `summary` (n_labels_done, n_labels_total) et `summary.accuracy[« Hors codes 98/99 »]` ; [D] § Second classifieur. Script : `src/evaluation/summary_pairs_eval.py`.
+:::
+
+## Combiner les deux signaux {.compact}
+
+[Hors codes 98/99, sur les 8 480 paires classées par les deux modèles (d'où un léger écart avec la slide de résumé). Pour 100 lignes codées par Sirus :]{.small}
+
+| Signal | Lignes à relire | Erreurs repérées | Signalements justes |
+|---|---|---|---|
+| Vérificateur seul | 16 | 51 % | 62 % |
+| Second modèle ≠ Sirus | 31 | 72 % | 43 % |
+| **Les deux d'accord pour signaler** | **14** | **48 %** | **65 %** |
+| L'un ou l'autre signale | 33 | 75 % | 43 % |
+
+::: {.source}
+[J] `summary.detectors` (flag_rate, error_recall, rejection_precision_at_prevalence) ; [D] § Détecter les erreurs de Sirus. Signalements justes = précision recalculée au taux d'erreur réel (slide « Comment on mesure »).
+:::
+
+. . .
+
+- **Le croisement des deux** est le signal le plus fiable : 2 lignes relues sur 3 sont de vraies erreurs (*signalements justes*).
+- Attraper plus d'erreurs (75 %) est possible, mais en relisant **un tiers** des lignes.
+
+# Limites
+
+## Ce que ces résultats ne disent pas {.compact}
+
+- **Une seule exécution**, un seul modèle, un seul jeu de consignes : pas de mesure de la variabilité d'un run à l'autre.
+- **Pas d'intervalle de confiance calculé** dans le rapport ; les « ± » de ces slides sont une approximation binomiale à 95 %, qui ignore le regroupement des lignes en paires.
+- **Référence bruitée** (slide précédente) : rappel et rejets à tort sont des bornes pessimistes.
+- **Un seul flux** : vague 1, codes Sirus du 8 septembre 2026. Rien ne garantit les mêmes chiffres sur d'autres vagues.
+- **Défauts connus de l'outil** :
+  - l'alternative reprend le code jugé lui-même dans **7,5 %** des paires, et n'est qu'un sous-code du code jugé dans **21 %** ;
+  - dans **88 paires** (1 %), il accepte alors que son concurrent dépasse le code de 20 points, contrairement à sa propre règle.
+- **Coût** : 49 h de calcul cumulé (10 h en temps réel, 5 appels en parallèle).
+
+::: {.source}
+Défauts : [A] § Défauts du vérificateur repérés, recalculés [C] ; coût : [R] `total_duration_s` = 177 238 s ; parallélisme : [A] § Analyse.
+:::
+
+# Ce qu'on en retient
+
+## Usage proposé
+
+:::{.incremental}
+- **Pas de reprise automatique** sur le seul avis de l'outil : 4 lignes signalées sur 10 sont justes.
+- **Prioriser la relecture** : commencer par les lignes signalées, en particulier par les deux signaux à la fois.
+- **Aider la correction** : afficher le code alternatif et l'explication de l'outil à l'annotateur, qui tranche.
+- **Repérer des annotations douteuses** dans l'historique, au passage.
+:::
+
+::: {.source}
+Recommandations reprises de [A] § Recommandations.
+:::
+
+## Ce dont nous aurions besoin de vous
+
+1. **Arbitrer un échantillon de désaccords** outil / annotation, dans une application de revue déjà prête (quelques centaines de libellés, à se répartir).
+   → On saura enfin ce que vaut réellement l'outil, et on corrigera des annotations.
+2. **Relire et compléter les règles de lecture** (slide « Les règles de lecture données à l'outil »), en priorité :
+   - restauration : sur place / à emporter ;
+   - santé ;
+   - marques et abréviations fréquentes.
+3. **Votre avis sur l'usage** : à quel moment de la chaîne de reprise un signal comme celui-ci serait-il utile ?
+
+::: {.source}
+Application de revue : `src/evaluation/apps/match_verifier_eval_app.py`.
+:::
+
+## Prochaines étapes côté SSP Lab
+
+- Corriger les défauts repérés dans l'outil (alternative égale au code jugé, verdict incohérent avec ses notes).
+- Intégrer vos règles de lecture COICOP.
+- Relancer l'évaluation sur les mêmes données pour mesurer le gain, avec cette fois des intervalles de confiance.
+
+## Merci
+
+Résultats détaillés et graphiques interactifs : site GRAAL, page **« MatchVerifier COICOP »**.
+
+<br>
+
+[Les données sources relèvent du secret statistique : ces slides ne présentent que des agrégats, aucun libellé réel.]{.small}
+
+# Annexe
+
+## Détail des chiffres {.compact}
+
+| Définition de l'erreur | Paires | dont erreurs Sirus | Erreurs repérées | Rejets à tort | Précision du signal* | Alternative = code humain |
+|---|---|---|---|---|---|---|
+| Code exact au niveau 4 | 8 909 | 2 148 | 50 % | 7,1 % | 63 % | 44 % |
+| Branche (Sirus plus précis accepté) | 8 909 | 1 988 | 51 % | 7,6 % | 58 % | 42 % |
+| Branche, hors codes 98/99 | 8 568 | 1 647 | 51 % | 7,6 % | 58 % | 51 % |
+
+\* part des lignes signalées qui sont de vraies erreurs, ramenée au taux d'erreur réel de Sirus (19,6 % en exact, 17,3 % en branche).
+
+- *Alternative = code humain* : parmi les erreurs repérées, part où le code proposé par l'outil tombe dans la branche du code humain.
+- Run du vérificateur : 12 → 13 octobre 2026, commit `c3e01a2`, modèle `qwen3-6-35b-moe`, profil `coicop2018`.
+
+::: {.source}
+[J] `truths` ; [D] § Résultats principaux ; dates : [R] `session_id` et `mv_report.log`.
+:::
+
+## Reproduire {.compact}
+
+```bash
+# 1. Verdicts du vérificateur sur toutes les paires
+NOMENCLATURE=coicop2018 uv run -m src.evaluation.match_verifier_eval \
+  --train-set <predictions.parquet> --text-column raw_product \
+  --code-column sirus_code --expected-code-column code_lvl4 \
+  --n-samples 20000 --output data/eval/match_verifier_eval_coicop
+
+# 2. Second modèle (Summary classifier)
+NOMENCLATURE=coicop2018 uv run -m src.evaluation.summary_pairs_eval \
+  --run-dir data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe \
+  --summary-path data/coicop_summary.txt
+
+# 3. Agrégats (JSON du site, rapport)
+R=data/eval/match_verifier_eval_coicop
+python $R/mv_report.py $R/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe $R/run.log $R/RAPPORT.md \
+  --total 8981 --summary-total 8717 \
+  --public-md docs/eval/match_verifier_coicop.md \
+  --public-json presentation/data/match_verifier_coicop.json
+
+# 4. Contrôle des chiffres cités dans ces slides
+uv run python slides_coicop/sources/verifier_chiffres.py \
+  data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe/match_verifier_eval.parquet
+```
+
+Données d'entrée : `projet-budget-famille/.../2026-09-08/codif-c9vjm/reconcile-sirus/predictions.parquet` (copie archivée : `s3://projet-budget-famille/archive/data/coicop/`).
+
+::: {.source}
+Commande 1 : [A] § Reproduire ; 2 : docstring de `summary_pairs_eval.py` ; 3 : arguments de `mv_report.py` (`main()`).
+:::

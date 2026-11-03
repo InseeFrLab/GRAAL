@@ -1,0 +1,134 @@
+[
+  {
+    "definition": "libellé brut identique",
+    "n_libelles_total": 9045,
+    "n_libelles_repetes": 1202,
+    "n_lignes_repetees": 6852,
+    "humain_toujours_meme_code": 0.9209650582362728,
+    "sirus_toujours_meme_code": 0.9267886855241264,
+    "humain_part_lignes_code_majoritaire": 0.9524226503210741,
+    "sirus_part_lignes_code_majoritaire": 0.9573847051955633,
+    "matrice_libelles": {
+      "codes différents": {
+        "codes différents": 43,
+        "toujours le même code": 45,
+        "Total": 88
+      },
+      "toujours le même code": {
+        "codes différents": 52,
+        "toujours le même code": 1062,
+        "Total": 1114
+      },
+      "Total": {
+        "codes différents": 95,
+        "toujours le même code": 1107,
+        "Total": 1202
+      }
+    },
+    "matrice_lignes": {
+      "codes différents": {
+        "codes différents": 703,
+        "toujours le même code": 602,
+        "Total": 1305
+      },
+      "toujours le même code": {
+        "codes différents": 239,
+        "toujours le même code": 5308,
+        "Total": 5547
+      },
+      "Total": {
+        "codes différents": 942,
+        "toujours le même code": 5910,
+        "Total": 6852
+      }
+    }
+  },
+  {
+    "definition": "libellé normalisé",
+    "n_libelles_total": 8833,
+    "n_libelles_repetes": 1263,
+    "n_lignes_repetees": 7125,
+    "humain_toujours_meme_code": 0.9152810768012668,
+    "sirus_toujours_meme_code": 0.9255740300870943,
+    "humain_part_lignes_code_majoritaire": 0.9515789473684211,
+    "sirus_part_lignes_code_majoritaire": 0.9578947368421052,
+    "matrice_libelles": {
+      "codes différents": {
+        "codes différents": 45,
+        "toujours le même code": 49,
+        "Total": 94
+      },
+      "toujours le même code": {
+        "codes différents": 62,
+        "toujours le même code": 1107,
+        "Total": 1169
+      },
+      "Total": {
+        "codes différents": 107,
+        "toujours le même code": 1156,
+        "Total": 1263
+      }
+    },
+    "matrice_lignes": {
+      "codes différents": {
+        "codes différents": 743,
+        "toujours le même code": 611,
+        "Total": 1354
+      },
+      "toujours le même code": {
+        "codes différents": 264,
+        "toujours le même code": 5507,
+        "Total": 5771
+      },
+      "Total": {
+        "codes différents": 1007,
+        "toujours le même code": 6118,
+        "Total": 7125
+      }
+    }
+  },
+  {
+    "definition": "libellé brut + type de magasin",
+    "n_libelles_total": 10144,
+    "n_libelles_repetes": 1270,
+    "n_lignes_repetees": 5821,
+    "humain_toujours_meme_code": 0.947244094488189,
+    "sirus_toujours_meme_code": 0.9574803149606299,
+    "humain_part_lignes_code_majoritaire": 0.9663288094829067,
+    "sirus_part_lignes_code_majoritaire": 0.9761209414190002,
+    "matrice_libelles": {
+      "codes différents": {
+        "codes différents": 23,
+        "toujours le même code": 31,
+        "Total": 54
+      },
+      "toujours le même code": {
+        "codes différents": 44,
+        "toujours le même code": 1172,
+        "Total": 1216
+      },
+      "Total": {
+        "codes différents": 67,
+        "toujours le même code": 1203,
+        "Total": 1270
+      }
+    },
+    "matrice_lignes": {
+      "codes différents": {
+        "codes différents": 325,
+        "toujours le même code": 138,
+        "Total": 463
+      },
+      "toujours le même code": {
+        "codes différents": 251,
+        "toujours le même code": 5107,
+        "Total": 5358
+      },
+      "Total": {
+        "codes différents": 576,
+        "toujours le même code": 5245,
+        "Total": 5821
+      }
+    }
+  }
+]
