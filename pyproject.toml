@@ -20,7 +20,7 @@ dependencies = [
     "langchain-neo4j>=0.6.0",
     "langchain-openai>=1.1.4",
     "langchain-text-splitters>=1.1.0",
-    "langfuse==3.11.2",
+    "langfuse==3.15.0",
     "matplotlib>=3.10.8",
     "mlflow>=2.19.0",
     "nbclient>=0.10.4",
