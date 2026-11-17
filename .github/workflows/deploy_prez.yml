@@ -36,8 +36,22 @@ jobs:
         run: |
           quarto render presentation
 
+      # Slides COICOP : document revealjs autonome (hors projet website),
+      # rendu à part puis copié dans le site sous /coicop/.
+      - name: Render COICOP slides
+        run: |
+          quarto render slides_coicop/slides_coicop.qmd
+          mkdir -p presentation/_preview/coicop
+          cd slides_coicop
+          cp -r slides_coicop.html slides_coicop_files data _extensions \
+            custom.css favicon-32x32.png logo.svg background.svg \
+            ../presentation/_preview/coicop/
+          cp slides_coicop.html ../presentation/_preview/coicop/index.html
+
       - name: Deploy to GitHub Pages
         uses: quarto-dev/quarto-actions/publish@v2
         with:
           target: gh-pages
           path: presentation
+          # Déjà rendu ci-dessus ; un nouveau rendu effacerait _preview/coicop.
+          render: false

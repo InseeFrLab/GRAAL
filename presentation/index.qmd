@@ -42,4 +42,12 @@ Le vérificateur détecte-t-il les erreurs de Sirus ? Évaluation sur la vague 1
 [Voir les métriques →](match_verifier_coicop.html){.btn .btn-outline-primary .btn-lg role="button"}
 :::
 
+::: {.g-col-12 .g-col-md-4}
+### 🗣️ Slides COICOP
+
+MatchVerifier sur la vague 1 de Budget de famille : peut-on désigner automatiquement les lignes codées par Sirus à relire en priorité ?
+
+[Voir les slides →](coicop/index.html){.btn .btn-outline-primary .btn-lg role="button"}
+:::
+
 :::

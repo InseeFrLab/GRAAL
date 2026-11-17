@@ -88,7 +88,12 @@ v["s"], v["h"] = v.current_code.astype(str), v.expected_code.astype(str)
 v["alt"] = v.match_verifier_alternative_code.astype(str)
 v["sum4"] = [".".join(str(c).split(".")[:4]) for c in v.summary_code]
 v = v[~v.h.str.startswith(("98", "99"))]
-div = lambda c: c.str[:2]
+
+
+def div(c):
+    return c.str[:2]
+
+
 conflict = v[div(v.s) != div(v.h)].copy()
 # Annotateur suspect : le vérificateur valide nettement Sirus et le second modèle,
 # qui ne voit pas le code Sirus, tombe dans la même division que Sirus.
