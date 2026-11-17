@@ -1,4 +1,5 @@
 import logging
+import os
 
 from langchain_text_splitters import TokenTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -33,6 +34,12 @@ def get_embedding_model(model_name: str) -> OpenAIEmbeddings:
     return OpenAIEmbeddings(
         model=model_name,
         openai_api_base=URL_EMBEDDING_API,
-        openai_api_key="EMPTY",
+        # L'API LLM du Datalab refuse désormais les appels sans clé (401 avec "EMPTY").
+        openai_api_key=os.environ.get("OPENAI_API_KEY", "EMPTY"),
         tiktoken_enabled=False,
+        # Sans tiktoken, langchain chargerait le tokenizer Hugging Face du nom de modèle
+        # pour redécouper les textes — or un nom servi par l'API (« qwen3-embedding-8b »)
+        # n'est pas un identifiant du Hub. Le découpage est déjà fait en amont, cf.
+        # truncate_docs_to_max_tokens.
+        check_embedding_ctx_length=False,
     )

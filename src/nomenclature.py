@@ -18,7 +18,7 @@ runs NAF déjà faits restent comparables à ceux qui suivront.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from dotenv import load_dotenv
 
@@ -77,6 +77,18 @@ NAF2025 = Nomenclature(
           plausible du champ.""",
 )
 
+# NAF rév. 2 (« NAF 2008 ») : mêmes libellés Sirene, mêmes règles de lecture que la NAF
+# 2025 — seuls changent la nomenclature nommée et ses codes. Le graphe est construit
+# depuis les notes explicatives Insee (cf. graph_builder.utils.naf2008_notices).
+NAF2008 = replace(
+    NAF2025,
+    key="naf2008",
+    name="NAF rév. 2",
+    summary_name="NAF rév. 2",
+    example_code="47.91A",
+    example_tool_codes='["47.91A", "4791A"]',
+)
+
 COICOP2018 = Nomenclature(
     key="coicop2018",
     name="COICOP 2018",
@@ -107,7 +119,7 @@ COICOP2018 = Nomenclature(
           plausible du champ.""",
 )
 
-PROFILES = {profile.key: profile for profile in (NAF2025, COICOP2018)}
+PROFILES = {profile.key: profile for profile in (NAF2025, NAF2008, COICOP2018)}
 
 DEFAULT_NOMENCLATURE = NAF2025.key
 
@@ -124,3 +136,15 @@ def get_nomenclature() -> Nomenclature:
 
 
 NOMENCLATURE = get_nomenclature()
+
+
+def nomenclature_env(name: str) -> str:
+    """Variable d'environnement `name`, propre au profil si elle existe.
+
+    Le graphe va avec la nomenclature (cf. docstring du module) : avec
+    `NOMENCLATURE=naf2008`, `nomenclature_env("NEO4J_URL")` lit `NEO4J_URL_NAF2008`
+    s'il est défini, `NEO4J_URL` sinon. Plusieurs graphes peuvent ainsi cohabiter dans
+    un même `.env` — que `load_dotenv(override=True)` fait passer devant les variables
+    de la ligne de commande, si bien qu'un `NEO4J_URL=... uv run` ne suffirait pas.
+    """
+    return os.environ.get(f"{name}_{NOMENCLATURE.key.upper()}") or os.environ[name]
