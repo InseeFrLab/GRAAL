@@ -244,3 +244,6 @@ __marimo__/
 template_files/
 .quarto/
 **/*.quarto_ipynb
+.vault_token
+data/eval/naf2008/
+data/eval/match_verifier_eval_naf2008/
