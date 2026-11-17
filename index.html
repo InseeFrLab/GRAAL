@@ -114,6 +114,10 @@ ul.task-list li input[type="checkbox"] {
     <a class="nav-link" href="./match_verifier_coicop.html"> 
 <span class="menu-text">MatchVerifier COICOP</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./coicop/index.html"> 
+<span class="menu-text">Slides COICOP</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -171,6 +175,11 @@ ul.task-list li input[type="checkbox"] {
 <h3 class="anchored" data-anchor-id="matchverifier-coicop">✅ MatchVerifier COICOP</h3>
 <p>Le vérificateur détecte-t-il les erreurs de Sirus ? Évaluation sur la vague 1 de Budget de famille, contre l’annotation humaine.</p>
 <p><a href="match_verifier_coicop.html" class="btn btn-outline-primary btn-lg" role="button">Voir les métriques →</a></p>
+</section>
+<section id="slides-coicop" class="level3 g-col-12 g-col-md-4">
+<h3 class="anchored" data-anchor-id="slides-coicop">🗣️ Slides COICOP</h3>
+<p>MatchVerifier sur la vague 1 de Budget de famille : peut-on désigner automatiquement les lignes codées par Sirus à relire en priorité ?</p>
+<p><a href="coicop/index.html" class="btn btn-outline-primary btn-lg" role="button">Voir les slides →</a></p>
 </section>
 </div>
 
@@ -250,7 +259,7 @@ ul.task-list li input[type="checkbox"] {
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/InseeFrLab\.github\.io\/GRAAL\/");
+        var filterRegex = new RegExp('/' + window.location.host + '/');
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }

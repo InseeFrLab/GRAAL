@@ -1,0 +1,38 @@
+{
+  "annotateur 11, Sirus 01/02": {
+    "lignes": 226,
+    "type inconnu, autre nom": 0.704,
+    "type : autre commerce": 0.168,
+    "type inconnu, nom évoque un café/restaurant": 0.097,
+    "type : restauration / bar": 0.031
+  },
+  "annotateur 01/02, Sirus 11": {
+    "lignes": 40,
+    "type : restauration / bar": 0.4,
+    "type : autre commerce": 0.275,
+    "type inconnu, autre nom": 0.25,
+    "type inconnu, nom évoque un café/restaurant": 0.075
+  },
+  "tous deux 11": {
+    "lignes": 668,
+    "type : restauration / bar": 0.446,
+    "type inconnu, autre nom": 0.406,
+    "type inconnu, nom évoque un café/restaurant": 0.081,
+    "type : autre commerce": 0.067
+  },
+  "tous deux 01/02": {
+    "lignes": 8240,
+    "type : autre commerce": 0.676,
+    "type inconnu, autre nom": 0.32,
+    "type inconnu, nom évoque un café/restaurant": 0.002,
+    "type : restauration / bar": 0.002
+  },
+  "verificateur_sur_annotateur11_sirus01": {
+    "paires": 127,
+    "rejet_de_sirus": 0.36220472440944884
+  },
+  "verificateur_sur_annotateur01_sirus11": {
+    "paires": 31,
+    "rejet_de_sirus": 0.5161290322580645
+  }
+}
