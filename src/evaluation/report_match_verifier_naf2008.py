@@ -25,6 +25,7 @@ Usage :
 """
 
 import argparse
+import os
 import json
 import math
 from datetime import datetime
@@ -105,7 +106,9 @@ def metrics_row(frame: pl.DataFrame, truth: str, prevalence: float) -> dict:
     return m
 
 
-def build_report(results: pl.DataFrame, pairs_rows: pl.DataFrame, section_of: dict) -> str:
+def build_report(
+    results: pl.DataFrame, pairs_rows: pl.DataFrame, section_of: dict, run: str = ""
+) -> str:
     # Population (lignes) : prévalences d'erreur et mode majoritaire de chaque paire.
     rows = pairs_rows.select(
         pl.col("libelle").alias(TEXT_COLUMN_OUT),
@@ -155,6 +158,8 @@ def build_report(results: pl.DataFrame, pairs_rows: pl.DataFrame, section_of: di
         "- Code jugé : `apet_finale`, code de production (`AUTO` par règles ou `FASTTEXT` par "
         "le modèle). Référence : `apet_manual`, code retenu par l'annotateur. Les deux en NAF rév. 2, "
         "au niveau sous-classe.",
+        f"- Version : `{run}` (`<commit>/<modèle>` sous lequel match_verifier_eval a rangé "
+        "le run, cf. `src.utils.run_provenance`).",
         "- Graphe : NAF rév. 2 construite depuis les notes explicatives Insee "
         "(cf. `graph_builder.utils.naf2008_notices`), profil `NOMENCLATURE=naf2008`.",
         "- Deux vérités : **exacte** (même sous-classe) et **de classe** (mêmes 4 premiers "
@@ -261,7 +266,12 @@ def main() -> int:
 
     hierarchy = load_dataframe(args.hierarchy)
     section_of = dict(zip(hierarchy["APE_NIV5"], hierarchy["APE_NIV1"]))
-    report = build_report(load_results(args.checkpoint), load_dataframe(args.pairs), section_of)
+    # Le checkpoint vit sous <output>/<commit>/<modèle>/ : ses deux dossiers parents
+    # identifient la version du prompt et le modèle jugés.
+    run = "/".join(os.path.normpath(args.checkpoint).split(os.sep)[-3:-1])
+    report = build_report(
+        load_results(args.checkpoint), load_dataframe(args.pairs), section_of, run
+    )
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(report)
     print(report)
