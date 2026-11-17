@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la NAF 2008 (code de production vs annotation humaine)
 
-**État : en cours** — 1476 / 6735 paires (21.9%), mis à jour le 2026-11-17 15:20.
+**État : en cours** — 1508 / 6735 paires (22.4%), mis à jour le 2026-11-17 15:22.
 
 ## Protocole
 
@@ -15,8 +15,8 @@
 
 | Vérité | Paires | dont erreurs | Rappel des erreurs | Rejets à tort | Précision du rejet | Précision à la prévalence réelle | AUC p_match | Alternative = humain (erreurs détectées) |
 |---|---|---|---|---|---|---|---|---|
-| Exacte | 1476 | 361 | 54.3% | 17.7% | 49.9% | 44.0% | 0.694 | 36.2% |
-| Classe | 1476 | 315 | 54.9% | 18.9% | 44.0% | 38.4% | 0.691 | 33.5% |
+| Exacte | 1508 | 366 | 54.4% | 17.5% | 49.9% | 44.2% | 0.696 | 35.7% |
+| Classe | 1508 | 319 | 54.9% | 18.8% | 43.9% | 38.5% | 0.692 | 33.1% |
 
 - **Rappel des erreurs** : part des erreurs de la production que le vérificateur rejette.
 - **Rejets à tort** : part des codes justes qu'il rejette.
@@ -27,12 +27,12 @@
 
 | Type | Paires | Rejetées par le vérificateur |
 |---|---|---|
-| Accord exact | 1115 | 17.7% |
-| Même classe, sous-classe différente | 46 | 50.0% |
-| Même groupe, classe différente | 51 | 39.2% |
+| Accord exact | 1142 | 17.5% |
+| Même classe, sous-classe différente | 47 | 51.1% |
+| Même groupe, classe différente | 53 | 37.7% |
 | Même division, groupe différent | 59 | 55.9% |
 | Même section, division différente | 46 | 60.9% |
-| Section différente | 159 | 57.9% |
+| Section différente | 161 | 58.4% |
 
 Pour « Accord exact », le taux de rejet est un taux de rejet à tort ; pour les autres lignes, plus il est haut, mieux le vérificateur détecte ce type d'écart.
 
@@ -40,8 +40,8 @@ Pour « Accord exact », le taux de rejet est un taux de rejet à tort ; pour le
 
 | Mode | Paires | Taux d'erreur de la production | Rappel des erreurs | Rejets à tort | AUC p_match |
 |---|---|---|---|---|---|
-| AUTO | 871 | 10.3% | 46.4% | 9.6% | 0.699 |
-| FASTTEXT | 605 | 40.7% | 57.8% | 34.8% | 0.616 |
+| AUTO | 891 | 10.3% | 46.5% | 9.4% | 0.701 |
+| FASTTEXT | 617 | 40.7% | 57.9% | 34.8% | 0.620 |
 
 ## Point de fonctionnement (vérité exacte)
 
@@ -49,14 +49,14 @@ Le verdict `is_match` est un seuil parmi d'autres ; en seuillant `p_match` :
 
 | Seuil (rejet si p_match < t) | Rappel des erreurs | Rejets à tort |
 |---|---|---|
-| 0.1 | 54.3% | 17.7% |
-| 0.25 | 54.3% | 17.7% |
-| 0.5 | 54.3% | 17.7% |
-| 0.75 | 54.3% | 17.7% |
-| 0.9 | 54.3% | 17.7% |
+| 0.1 | 54.4% | 17.5% |
+| 0.25 | 54.4% | 17.5% |
+| 0.5 | 54.4% | 17.5% |
+| 0.75 | 54.4% | 17.5% |
+| 0.9 | 54.4% | 17.5% |
 
 _Version agrégée, sans aucun libellé (données soumises au secret statistique)._
 
 ## Coût
 
-Durée moyenne par paire : 25.5 s ; temps d'inférence cumulé : 10.5 h.
+Durée moyenne par paire : 25.5 s ; temps d'inférence cumulé : 10.7 h.
