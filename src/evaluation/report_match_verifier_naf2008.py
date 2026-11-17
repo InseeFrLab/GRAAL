@@ -35,6 +35,7 @@ from dotenv import load_dotenv
 
 from src.evaluation.build_eval_set import load_dataframe
 from src.evaluation.match_verifier_eval import (
+    SUMMARY_FILENAME,
     ALTERNATIVE_CODE_COLUMN,
     CODE_COLUMN_OUT,
     DURATION_COLUMN,
@@ -107,7 +108,11 @@ def metrics_row(frame: pl.DataFrame, truth: str, prevalence: float) -> dict:
 
 
 def build_report(
-    results: pl.DataFrame, pairs_rows: pl.DataFrame, section_of: dict, run: str = ""
+    results: pl.DataFrame,
+    pairs_rows: pl.DataFrame,
+    section_of: dict,
+    run: str = "",
+    finished: bool = False,
 ) -> str:
     # Population (lignes) : prévalences d'erreur et mode majoritaire de chaque paire.
     rows = pairs_rows.select(
@@ -142,7 +147,9 @@ def build_report(
         .alias("gap_type"),
     )
     n = df.height
-    done = "terminé" if n >= n_pairs_total else "en cours"
+    # Un run fini peut laisser quelques paires en échec (réponse vide, etc.) : c'est le
+    # résumé écrit en fin de run, pas le compte, qui dit qu'il est terminé.
+    done = "terminé" if finished or n >= n_pairs_total else "en cours"
     lines = [
         "# Évaluation du MatchVerifier sur la NAF 2008 (code de production vs annotation humaine)",
         "",
@@ -243,7 +250,12 @@ def build_report(
         recall = float((errors[P_MATCH_COLUMN] < t).mean()) if errors.height else float("nan")
         frr = float((correct[P_MATCH_COLUMN] < t).mean()) if correct.height else float("nan")
         lines.append(f"| {t} | {pct(recall)} | {pct(frr)} |")
+    extreme = float(((scored[P_MATCH_COLUMN] < 0.1) | (scored[P_MATCH_COLUMN] > 0.9)).mean())
     lines += [
+        "",
+        f"{pct(extreme)} des `p_match` sont sous 0,1 ou au-dessus de 0,9 : le modèle tranche "
+        "presque toujours avec certitude, et seuiller `p_match` ne déplace guère le point de "
+        "fonctionnement. L'AUC n'en mesure donc qu'une version quasi binaire du verdict.",
         "",
         "_Version agrégée, sans aucun libellé (données soumises au secret statistique)._",
         "",
@@ -270,7 +282,11 @@ def main() -> int:
     # identifient la version du prompt et le modèle jugés.
     run = "/".join(os.path.normpath(args.checkpoint).split(os.sep)[-3:-1])
     report = build_report(
-        load_results(args.checkpoint), load_dataframe(args.pairs), section_of, run
+        load_results(args.checkpoint),
+        load_dataframe(args.pairs),
+        section_of,
+        run,
+        finished=os.path.exists(os.path.join(os.path.dirname(args.checkpoint), SUMMARY_FILENAME)),
     )
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(report)
