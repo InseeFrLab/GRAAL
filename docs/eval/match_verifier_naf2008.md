@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la NAF 2008 (code de production vs annotation humaine)
 
-**État : en cours** — 6732 / 6735 paires (100.0%), mis à jour le 2026-11-17 23:37.
+**État : terminé** — 6732 / 6735 paires (100.0%), mis à jour le 2026-11-17 23:38.
 
 ## Protocole
 
@@ -41,8 +41,8 @@ Pour « Accord exact », le taux de rejet est un taux de rejet à tort ; pour le
 
 | Mode | Paires | Taux d'erreur de la production | Rappel des erreurs | Rejets à tort | AUC p_match |
 |---|---|---|---|---|---|
-| AUTO | 4065 | 10.3% | 41.2% | 9.8% | 0.689 |
-| FASTTEXT | 2667 | 40.7% | 55.2% | 32.3% | 0.625 |
+| AUTO | 4066 | 10.3% | 41.2% | 9.8% | 0.688 |
+| FASTTEXT | 2666 | 40.7% | 55.2% | 32.3% | 0.625 |
 
 ## Point de fonctionnement (vérité exacte)
 
@@ -55,6 +55,8 @@ Le verdict `is_match` est un seuil parmi d'autres ; en seuillant `p_match` :
 | 0.5 | 51.0% | 16.6% |
 | 0.75 | 51.0% | 16.6% |
 | 0.9 | 51.0% | 16.6% |
+
+100.0% des `p_match` sont sous 0,1 ou au-dessus de 0,9 : le modèle tranche presque toujours avec certitude, et seuiller `p_match` ne déplace guère le point de fonctionnement. L'AUC n'en mesure donc qu'une version quasi binaire du verdict.
 
 _Version agrégée, sans aucun libellé (données soumises au secret statistique)._
 
