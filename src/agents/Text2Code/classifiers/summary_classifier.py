@@ -19,7 +19,9 @@ modèle choisit directement quel code interroger, sans notion de position à fai
 évoluer pas à pas.
 
 Le résumé est chargé depuis un fichier texte pré-généré par `build_nace_summary.py`
-(pas recalculé à chaque appel).
+(pas recalculé à chaque appel). Le nom de la nomenclature et de l'objet classé viennent
+du profil `NOMENCLATURE` (cf. src.nomenclature) ; le profil `naf2025` reproduit les
+formulations d'origine.
 """
 
 import logging
@@ -27,6 +29,7 @@ import logging
 from src.agents.base_agent import BaseAgent
 from src.agents.closers.match_verifier import MatchVerificationInput
 from src.neo4j_graph.graph import Graph
+from src.nomenclature import NOMENCLATURE
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +50,7 @@ class SummaryAgenticClassifier(BaseAgent):
 
     def get_instructions(self) -> str:
         return f"""
-        Vous êtes un expert en classification NACE.
+        Vous êtes un expert en classification {NOMENCLATURE.summary_name}.
 
         Voici un résumé de la nomenclature pour vous orienter :
 
@@ -68,7 +71,7 @@ class SummaryAgenticClassifier(BaseAgent):
         """
 
     def build_prompt(self, activity: str) -> str:
-        return f"Activité à classifier : {activity}"
+        return f"{NOMENCLATURE.item_label} à classifier : {activity}"
 
     async def __call__(self, activity: str) -> MatchVerificationInput:
         result = await super().__call__(activity)

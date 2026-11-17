@@ -6,6 +6,10 @@ project:
     - presentation.qmd
     - embeddings.qmd
     - multi_method_eval.qmd
+    - match_verifier_coicop.qmd
+
+  resources:
+    - data/match_verifier_coicop.json
 
   output-dir: _preview
 
@@ -21,3 +25,5 @@ website:
         href: embeddings.qmd
       - text: "Éval. multi-méthode"
         href: multi_method_eval.qmd
+      - text: "MatchVerifier COICOP"
+        href: match_verifier_coicop.qmd

@@ -49,6 +49,7 @@ from agents.model_settings import ModelSettings
 from src.agents.base_agent import BaseAgent
 from src.neo4j_graph.build_nace_summary import build_summary_text
 from src.neo4j_graph.graph import Graph
+from src.nomenclature import NOMENCLATURE
 
 logger = logging.getLogger(__name__)
 
@@ -132,17 +133,17 @@ class MatchAssessment(BaseModel):
     )
     match_score: int = Field(
         description="Correspondance entre le libellé et le code jugé, en pourcentage. 100 "
-        "= l'activité décrite est en plein dans le champ du code ; 50 = le libellé est "
-        "compatible mais trop vague ou partiellement couvert ; 0 = la notice l'exclut "
-        "explicitement ou le coeur de l'activité est hors du champ du code.",
+        f"= {NOMENCLATURE.item_described} est en plein dans le champ du code ; 50 = le "
+        "libellé est compatible mais trop vague ou partiellement couvert ; 0 = la notice "
+        f"l'exclut explicitement ou {NOMENCLATURE.item_core} est hors du champ du code.",
         ge=0,
         le=100,
     )
     alternative_code: str = Field(
         description="Le code terminal de la nomenclature, différent du code jugé, qui "
-        "correspondrait le mieux à cette activité. Toujours rempli, y compris quand le "
-        "code jugé convient : c'est le meilleur concurrent, pas un remplaçant. Format "
-        "exact du résumé de la nomenclature (ex: 47.91A)."
+        f"correspondrait le mieux à {NOMENCLATURE.item_this}. Toujours rempli, y compris "
+        "quand le code jugé convient : c'est le meilleur concurrent, pas un remplaçant. "
+        f"Format exact du résumé de la nomenclature (ex: {NOMENCLATURE.example_code})."
     )
     alternative_score: int = Field(
         description="Correspondance entre le libellé et alternative_code, en pourcentage, "
@@ -151,7 +152,8 @@ class MatchAssessment(BaseModel):
         le=100,
     )
     is_match: bool = Field(
-        description="true si le code jugé reste un codage acceptable de cette activité, "
+        description="true si le code jugé reste un codage acceptable de "
+        f"{NOMENCLATURE.item_this}, "
         f"false s'il est incompatible (match_score < {INCOMPATIBLE_BELOW}) ou si "
         f"l'alternative fait nettement mieux (alternative_score dépasse match_score d'au "
         f"moins {ALTERNATIVE_WINS_MARGIN} points)."
@@ -368,8 +370,8 @@ class MatchVerifier(BaseAgent):
         tout un run, au lieu d'une fois par ligne.
         """
         return f"""
-        Tu es un expert de la nomenclature NACE/NAF. Ton travail est d'auditer des
-        couples (libellé d'activité, code) : dire si le code tient, et surtout dire
+        Tu es un expert de la nomenclature {NOMENCLATURE.name}. Ton travail est d'auditer des
+        couples ({NOMENCLATURE.label_kind}, code) : dire si le code tient, et surtout dire
         quel autre code aurait pu faire mieux.
 
         Voici la nomenclature complète, code et nom de chaque position :
@@ -386,18 +388,7 @@ class MatchVerifier(BaseAgent):
         l'écart est franc, conclus directement. La notice du code jugé, elle, t'est déjà
         donnée dans le message : ne la redemande jamais.
 
-        Comment lire un libellé — ils sont saisis par les déclarants : tronqués,
-        abrégés, en majuscules, souvent moins précis que la nomenclature, parfois
-        accompagnés d'un code saisi à la main qui n'engage personne.
-        - Plusieurs activités **conflictuelles** (qui relèvent de codes différents et
-          s'excluent) : c'est **la première citée** qui décide du code. L'ordre du
-          libellé est l'ordre de l'importance, toujours.
-        - Plusieurs activités qui ne se contredisent pas (une énumération, un métier
-          décrit par ses tâches) : ne code pas un élément de la liste, code
-          l'impression d'ensemble — ce qu'est l'activité prise comme un tout.
-        - Une imprécision n'est pas une erreur : un libellé trop vague pour trancher
-          finement reste correctement codé par un code dont il décrit une partie
-          plausible du champ.
+{NOMENCLATURE.reading_rules}
 
         Comment trancher :
         - `match_score` note le code jugé, `alternative_score` note le meilleur
@@ -405,7 +396,7 @@ class MatchVerifier(BaseAgent):
           chaque fois, même quand le code jugé est manifestement bon, pour être sûr
           qu'aucun autre code ne correspond mieux.
         - Le code jugé garde le bénéfice du doute : tu ne le rejettes que si sa notice
-          le rend incompatible avec l'activité (match_score < {INCOMPATIBLE_BELOW}) ou
+          le rend incompatible avec {NOMENCLATURE.item_the} (match_score < {INCOMPATIBLE_BELOW}) ou
           si l'alternative le dépasse d'au moins {ALTERNATIVE_WINS_MARGIN} points. À
           scores voisins, `is_match` reste true.
 
@@ -459,9 +450,9 @@ class MatchVerifier(BaseAgent):
             )
 
         prompt = f"""
-        Audite ce couple (activité, code).
+        Audite ce couple ({NOMENCLATURE.item_lower}, code).
 
-        Activité : {match_verification_input.activity}
+        {NOMENCLATURE.item_label} : {match_verification_input.activity}
 
         Code jugé : {match_verification_input.code}
         {code_definition_line}
@@ -471,7 +462,7 @@ class MatchVerifier(BaseAgent):
            et ton alternative sur un élément concret de notice.
         2. `match_score` : correspondance libellé / code jugé, en pourcentage.
         3. `alternative_code` : le code terminal, différent de {match_verification_input.code},
-           qui correspondrait le mieux à cette activité — toujours, même si le code jugé
+           qui correspondrait le mieux à {NOMENCLATURE.item_this} — toujours, même si le code jugé
            te paraît bon.
         4. `alternative_score` : correspondance libellé / alternative, en pourcentage.
         5. `is_match` : le code jugé tient-il ?

@@ -4,8 +4,11 @@ from src.evaluation.metrics import (
     accuracy_at_depth,
     evaluate,
     failure_rate,
+    is_within_branch,
     low_confidence_rate,
     normalize_code,
+    roc_auc,
+    verifier_metrics,
 )
 
 
@@ -118,3 +121,45 @@ def test_evaluate_includes_low_confidence_rate_when_given():
     confidences = [0.0, 0.9]
     report = evaluate(y_true, y_pred, confidences=confidences)
     assert report["low_confidence_rate"] == 0.5
+
+
+def test_is_within_branch():
+    # Code jugé plus fin que le code humain, dans sa branche : accord.
+    assert is_within_branch("11.1.1.1", "11.1.1")
+    assert is_within_branch("01.1.1.3", "0111.3")
+    # Égalité : accord.
+    assert is_within_branch("01.1.4.2", "01.1.4.2")
+    # Code jugé plus court que le code humain : pas un accord.
+    assert not is_within_branch("09.7.1", "09.7.1.9")
+    # Autre branche, ou code manquant.
+    assert not is_within_branch("01.1.6.5", "01.1.6.1")
+    assert not is_within_branch(None, "01.1")
+    assert not is_within_branch("01.1", None)
+
+
+def test_roc_auc_ranks_and_ties():
+    assert roc_auc([True, False], [0.9, 0.1]) == 1.0
+    assert roc_auc([True, False], [0.1, 0.9]) == 0.0
+    assert roc_auc([True, False], [0.5, 0.5]) == 0.5
+    # Le score None est ignoré, pas compté comme 0.
+    assert roc_auc([True, False, True], [0.9, 0.1, None]) == 1.0
+    assert math.isnan(roc_auc([True, True], [0.2, 0.3]))
+
+
+def test_verifier_metrics_counts_errors_as_the_positive_class():
+    # Deux codes faux (un rejeté, un accepté), deux bons (un rejeté à tort).
+    report = verifier_metrics(
+        expected_match=[False, False, True, True],
+        verdicts=[False, True, False, True],
+        p_match=[0.1, 0.8, 0.4, 0.9],
+        error_prevalence=0.2,
+    )
+    assert report["n_errors"] == 2 and report["n_correct"] == 2
+    assert report["error_recall"] == 0.5
+    assert report["false_rejection_rate"] == 0.5
+    assert report["rejection_precision"] == 0.5
+    assert report["balanced_accuracy"] == 0.5
+    # Erreurs : scores 1-p = 0.9 et 0.2 ; bons : 0.6 et 0.1 -> 3 paires gagnées sur 4.
+    assert report["roc_auc"] == 0.75
+    # À 20 % d'erreurs, un rejet sur cinq seulement porte sur une vraie erreur.
+    assert math.isclose(report["rejection_precision_at_prevalence"], 0.2)

@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -9,6 +10,7 @@ from langchain_openai import OpenAIEmbeddings
 from pydantic import BaseModel
 
 from agents import function_tool
+from src.nomenclature import NOMENCLATURE
 
 logger = logging.getLogger(__name__)
 load_dotenv(override=True)
@@ -123,26 +125,29 @@ def make_notice_tools(graph):
     codes examinés.
     """
 
-    @function_tool
     def get_notices(codes: List[str]) -> Dict[str, str]:
-        """
-        Retourne la notice officielle (nom, inclusions, exclusions, règle d'affectation)
-        de plusieurs codes NACE d'un coup.
-
-        Args:
-            codes: Codes NACE à consulter, pointés ou non (ex: ["47.91A", "4799A"]).
-                   Demande-les tous dans un seul appel plutôt qu'un par appel.
-
-        Returns:
-            Dictionnaire {code demandé: notice}, avec un message explicite pour un code
-            inconnu de la base
-        """
         return {
             code: graph.get_notice(code) or f"Aucune notice : code {code} inconnu de la base."
             for code in codes
         }
 
-    return [get_notices]
+    # La docstring est la description de l'outil envoyée au modèle : elle nomme la
+    # nomenclature du profil courant (cf. src.nomenclature), d'où son assemblage ici
+    # plutôt qu'en littéral, avant que function_tool ne la lise.
+    get_notices.__doc__ = f"""
+        Retourne la notice officielle (nom, inclusions, exclusions, règle d'affectation)
+        de plusieurs codes {NOMENCLATURE.summary_name} d'un coup.
+
+        Args:
+            codes: Codes {NOMENCLATURE.summary_name} à consulter, pointés ou non (ex: {NOMENCLATURE.example_tool_codes}).
+                   Demande-les tous dans un seul appel plutôt qu'un par appel.
+
+        Returns:
+            Dictionnaire {{code demandé: notice}}, avec un message explicite pour un code
+            inconnu de la base
+        """
+
+    return [function_tool(get_notices)]
 
 
 class Neo4JConfig(BaseModel):
@@ -357,7 +362,14 @@ class Graph:
         if not result:
             logger.info("No result in _cached_get_code_information")
             return ()
-        result = _freeze_dict(result[0])
+        # Une section absente du parquet de notices arrive en NaN (float), pas en None,
+        # selon la façon dont le graphe a été construit : c'est le cas de
+        # `Implementation_rule` sur presque toute la COICOP. On la ramène à None ici, une
+        # fois, plutôt que de faire porter le test à chaque lecteur (`get_notice` faisait
+        # `.strip()` dessus).
+        result = _freeze_dict(
+            {k: None if isinstance(v, float) and math.isnan(v) else v for k, v in result[0].items()}
+        )
         logger.info(f"_cached_get_code_information with code {code}: Return: {result}")
         return result
 

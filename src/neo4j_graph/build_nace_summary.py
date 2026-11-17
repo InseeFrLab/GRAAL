@@ -22,6 +22,7 @@ import logging
 
 from src.config import neo4j_config
 from src.neo4j_graph.graph import Graph
+from src.nomenclature import NOMENCLATURE
 from src.utils import storage
 from src.utils.logging import configure_logging
 
@@ -30,7 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 def build_summary_text(rows: list[dict], max_level: int) -> str:
-    lines = [f"Résumé de la nomenclature NACE (niveaux 1 à {max_level}) :", ""]
+    lines = [
+        f"Résumé de la nomenclature {NOMENCLATURE.summary_name} (niveaux 1 à {max_level}) :",
+        "",
+    ]
     for row in rows:
         indent = "  " * (row["level"] - 1)
         lines.append(f"{indent}{row['code']} - {row['name']}")
