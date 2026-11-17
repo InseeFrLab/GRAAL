@@ -330,6 +330,7 @@ async def verify_rows(
     checkpoint_path: str | None = None,
     session_id: str | None = None,
     extra_columns: tuple[str, ...] = (),
+    append: bool = False,
 ) -> list[dict]:
     """Verify each row's existing (text, code) label with MatchVerifier.
 
@@ -360,11 +361,13 @@ async def verify_rows(
 
     `extra_columns` are copied as-is from each row into its entry (e.g. the expected
     code and verdict, cf. prepare_expected_pairs).
+
+    `append` opens the checkpoint in append mode instead of truncating it (--resume).
     """
     checkpoint = None
     if checkpoint_path is not None:
         storage.makedirs(os.path.dirname(checkpoint_path) or ".")
-        checkpoint = storage.open_path(checkpoint_path, "w", encoding="utf-8")
+        checkpoint = storage.open_path(checkpoint_path, "a" if append else "w", encoding="utf-8")
 
     semaphore = asyncio.Semaphore(concurrency)
     total = len(rows)
@@ -432,6 +435,32 @@ async def verify_rows(
     return [entry for entry in results if entry is not None]
 
 
+def _row_key(row: dict, text_column: str, code_column: str) -> tuple:
+    """Identité d'une ligne à vérifier : libellé, code jugé et, s'il y en a un, code
+    attendu — la clé de dédoublonnage de prepare_expected_pairs."""
+    return (row[text_column], str(row[code_column]), row.get(EXPECTED_CODE_COLUMN))
+
+
+def load_checkpoint(path: str, text_column: str, code_column: str) -> dict[tuple, dict]:
+    """Lignes déjà vérifiées d'un run interrompu, par clé (cf. _row_key).
+
+    Le checkpoint est écrit sous le même <commit>/<modèle> que le run qui le reprend
+    (cf. run_subpath) : on ne mélange donc jamais deux versions du prompt. Une dernière
+    ligne tronquée par l'interruption est ignorée, et sera refaite.
+    """
+    if not storage.path_exists(path):
+        return {}
+    done = {}
+    with storage.open_path(path, "r", encoding="utf-8") as f:
+        for line in f:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            done[_row_key(entry, text_column, code_column)] = entry
+    return done
+
+
 async def run(args) -> int:
     # Before anything expensive: refuse a run whose results couldn't be attributed
     # to a commit, rather than discovering it after 500 LLM calls.
@@ -473,15 +502,28 @@ async def run(args) -> int:
         os.path.join(args.checkpoint_dir, subpath) if args.checkpoint_dir else output_dir
     )
     checkpoint_path = os.path.join(checkpoint_dir, "match_verifier_eval.checkpoint.jsonl")
-    results = await verify_rows(
+    rows = sample.to_dicts()
+    done = load_checkpoint(checkpoint_path, text_column, code_column) if args.resume else {}
+    previous = [
+        done[key]
+        for key in map(lambda r: _row_key(r, text_column, code_column), rows)
+        if key in done
+    ]
+    todo = [r for r in rows if _row_key(r, text_column, code_column) not in done]
+    if args.resume:
+        logger.info(
+            f"Resuming: {len(previous)} rows already in {checkpoint_path}, {len(todo)} to go"
+        )
+    results = previous + await verify_rows(
         verifier,
-        sample.to_dicts(),
+        todo,
         text_column,
         code_column,
         concurrency=args.concurrency,
         checkpoint_path=checkpoint_path,
         session_id=session_id,
         extra_columns=tuple(name for name, _ in extra_schema),
+        append=args.resume,
     )
 
     details = pl.DataFrame(
@@ -632,6 +674,13 @@ def main() -> int:
         "(default: --output). Worth pointing at a local directory when --output is on S3: "
         "s3fs only uploads on close, so a checkpoint written there survives nothing that "
         "the final parquet wouldn't have survived anyway",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reprend un run interrompu : les lignes déjà dans le checkpoint du même "
+        "<commit>/<modèle> ne sont pas revérifiées, et le checkpoint est complété au lieu "
+        "d'être écrasé. Même --seed et --n-samples que le run repris",
     )
     parser.add_argument(
         "--allow-dirty",
