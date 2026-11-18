@@ -21,7 +21,8 @@ Usage :
     uv run -m src.evaluation.report_match_verifier_naf2008 \
         --checkpoint data/eval/match_verifier_eval_naf2008/full/<commit>/<modèle>/match_verifier_eval.checkpoint.jsonl \
         --pairs data/eval/naf2008/pairs_test_NAF2008.parquet \
-        --output docs/eval/match_verifier_naf2008.md
+        --output docs/eval/match_verifier_naf2008.md \
+        --site-json presentation/data/match_verifier_naf2008.json
 """
 
 import argparse
@@ -107,13 +108,11 @@ def metrics_row(frame: pl.DataFrame, truth: str, prevalence: float) -> dict:
     return m
 
 
-def build_report(
-    results: pl.DataFrame,
-    pairs_rows: pl.DataFrame,
-    section_of: dict,
-    run: str = "",
-    finished: bool = False,
-) -> str:
+def prepare(
+    results: pl.DataFrame, pairs_rows: pl.DataFrame, section_of: dict
+) -> tuple[pl.DataFrame, pl.DataFrame, float, float, int]:
+    """Joint les verdicts à la population ; rend (paires évaluées, lignes, prévalences
+    exacte et de classe, nombre de paires distinctes)."""
     # Population (lignes) : prévalences d'erreur et mode majoritaire de chaque paire.
     rows = pairs_rows.select(
         pl.col("libelle").alias(TEXT_COLUMN_OUT),
@@ -129,8 +128,10 @@ def build_report(
     pair_mode = (
         rows.group_by(keys + ["mode_calcul_ape"])
         .len()
-        .sort("len", descending=True)
-        .unique(keys, keep="first")
+        # Égalité de lignes : AUTO avant FASTTEXT, pour un rapport reproductible
+        # (l'ordre de sortie de group_by ne l'est pas).
+        .sort(["len", "mode_calcul_ape"], descending=[True, False])
+        .unique(keys, keep="first", maintain_order=True)
         .drop("len")
     )
     n_pairs_total = rows.unique(keys).height
@@ -145,6 +146,19 @@ def build_report(
             return_dtype=pl.Utf8,
         )
         .alias("gap_type"),
+    )
+    return df, rows, prevalence_exact, prevalence_class, n_pairs_total
+
+
+def build_report(
+    results: pl.DataFrame,
+    pairs_rows: pl.DataFrame,
+    section_of: dict,
+    run: str = "",
+    finished: bool = False,
+) -> str:
+    df, rows, prevalence_exact, prevalence_class, n_pairs_total = prepare(
+        results, pairs_rows, section_of
     )
     n = df.height
     # Un run fini peut laisser quelques paires en échec (réponse vide, etc.) : c'est le
@@ -268,12 +282,150 @@ def build_report(
     return "\n".join(lines)
 
 
+def _num(x: float) -> float | None:
+    return None if x is None or (isinstance(x, float) and math.isnan(x)) else x
+
+
+def build_site_data(
+    results: pl.DataFrame,
+    pairs_rows: pl.DataFrame,
+    section_of: dict,
+    run: str = "",
+    finished: bool = False,
+) -> dict:
+    """Agrégats lus par presentation/match_verifier_naf2008.qmd (aucun libellé)."""
+    df, rows, prevalence_exact, prevalence_class, n_pairs_total = prepare(
+        results, pairs_rows, section_of
+    )
+    n = df.height
+    truths = []
+    for key, name, truth, prev in (
+        ("exact", "Exacte", EXPECTED_MATCH_COLUMN, prevalence_exact),
+        ("class", "Classe", "expected_match_class", prevalence_class),
+    ):
+        m = metrics_row(df, truth, prev)
+        truths.append(
+            {
+                "key": key,
+                "name": name,
+                "n": m["n"],
+                "n_errors": m["n_errors"],
+                **{
+                    k: _num(m.get(k))
+                    for k in (
+                        "error_recall",
+                        "false_rejection_rate",
+                        "rejection_precision",
+                        "rejection_precision_at_prevalence",
+                        "roc_auc",
+                    )
+                },
+                "alt_recovers": _num(m["alternative_recovers"]),
+            }
+        )
+    by_type = [
+        {
+            "type": gap,
+            "n": sub.height,
+            "is_error": gap != GAP_TYPES[0],
+            "rejection_rate": float((~sub[VERDICT_COLUMN]).mean()),
+        }
+        for gap in GAP_TYPES
+        if (sub := df.filter(pl.col("gap_type") == gap)).height
+    ]
+    by_mode = []
+    for mode in ("AUTO", "FASTTEXT"):
+        sub = df.filter(pl.col("mode_calcul_ape") == mode)
+        if not sub.height:
+            continue
+        mode_rows = rows.filter(pl.col("mode_calcul_ape") == mode)
+        prev = float((mode_rows[CODE_COLUMN_OUT] != mode_rows[EXPECTED_CODE_COLUMN]).mean())
+        m = metrics_row(sub, EXPECTED_MATCH_COLUMN, prev)
+        by_mode.append(
+            {
+                "mode": mode,
+                "n_rows": mode_rows.height,
+                "n": m["n"],
+                "error_prevalence": prev,
+                "flag_rate": float((~sub[VERDICT_COLUMN]).mean()),
+                **{
+                    k: _num(m.get(k))
+                    for k in (
+                        "error_recall",
+                        "false_rejection_rate",
+                        "rejection_precision_at_prevalence",
+                        "roc_auc",
+                    )
+                },
+            }
+        )
+
+    # Courbe rappel / rejets à tort en seuillant p_match (vérité exacte).
+    scored = df.filter(pl.col(P_MATCH_COLUMN).is_not_null())
+    is_error = ~scored[EXPECTED_MATCH_COLUMN]
+    p = scored[P_MATCH_COLUMN]
+    n_err, n_ok = int(is_error.sum()), int((~is_error).sum())
+    curve = [{"threshold": 0.0, "recall": 0.0, "false_rejection": 0.0}]
+    for t in sorted(set(p.to_list())):
+        flagged = p <= t
+        point = {
+            "threshold": t,
+            "recall": float((flagged & is_error).sum()) / n_err,
+            "false_rejection": float((flagged & ~is_error).sum()) / n_ok,
+        }
+        # p_match est quasi continu près de 0 et 1 : un point par pas de 0,5 % suffit.
+        last = curve[-1]
+        if max(
+            point["recall"] - last["recall"], point["false_rejection"] - last["false_rejection"]
+        ) >= 0.005 or t == max(p):
+            curve.append(point)
+    exact = truths[0]
+    hist = []
+    bins = [i / 10 for i in range(11)]
+    for cls, mask in (("Erreur de la production", is_error), ("Code juste", ~is_error)):
+        values = p.filter(mask)
+        for lo, hi in zip(bins[:-1], bins[1:]):
+            count = int(((values >= lo) & ((values < hi) | (hi == 1.0))).sum())
+            hist.append(
+                {"class": cls, "lo": lo, "hi": hi, "share": count / len(values), "count": count}
+            )
+    return {
+        "updated": f"{datetime.now():%Y-%m-%d %H:%M}",
+        "state": "terminé" if finished or n >= n_pairs_total else "en cours",
+        "run": run,
+        "n_done": n,
+        "n_total": n_pairs_total,
+        "population": {
+            "n_rows": rows.height,
+            "n_pairs": n_pairs_total,
+            "error_prevalence": prevalence_exact,
+            "error_prevalence_class": prevalence_class,
+        },
+        "truths": truths,
+        "by_type": by_type,
+        "by_mode": by_mode,
+        "curve": curve,
+        "verdict_point": {
+            "recall": exact["error_recall"],
+            "false_rejection": exact["false_rejection_rate"],
+        },
+        "p_match_hist": hist,
+        "p_match_extreme": float(((p < 0.1) | (p > 0.9)).mean()),
+        "mean_duration_s": float(df[DURATION_COLUMN].mean()),
+        "total_duration_h": float(df[DURATION_COLUMN].sum() / 3600),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--checkpoint", required=True, help="match_verifier_eval checkpoint .jsonl")
     parser.add_argument("--pairs", required=True, help="Sortie de prepare_naf2008_pairs")
     parser.add_argument("--hierarchy", default=HIERARCHY_PATH)
     parser.add_argument("--output", required=True, help="Rapport markdown")
+    parser.add_argument(
+        "--site-json",
+        help="Agrégats pour la page du site (presentation/data/match_verifier_naf2008.json)",
+    )
     args = parser.parse_args()
 
     hierarchy = load_dataframe(args.hierarchy)
@@ -281,13 +433,13 @@ def main() -> int:
     # Le checkpoint vit sous <output>/<commit>/<modèle>/ : ses deux dossiers parents
     # identifient la version du prompt et le modèle jugés.
     run = "/".join(os.path.normpath(args.checkpoint).split(os.sep)[-3:-1])
-    report = build_report(
-        load_results(args.checkpoint),
-        load_dataframe(args.pairs),
-        section_of,
-        run,
-        finished=os.path.exists(os.path.join(os.path.dirname(args.checkpoint), SUMMARY_FILENAME)),
-    )
+    results, pairs_rows = load_results(args.checkpoint), load_dataframe(args.pairs)
+    finished = os.path.exists(os.path.join(os.path.dirname(args.checkpoint), SUMMARY_FILENAME))
+    report = build_report(results, pairs_rows, section_of, run, finished=finished)
+    if args.site_json:
+        site = build_site_data(results, pairs_rows, section_of, run, finished=finished)
+        with open(args.site_json, "w", encoding="utf-8") as f:
+            json.dump(site, f, ensure_ascii=False, indent=1)
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(report)
     print(report)

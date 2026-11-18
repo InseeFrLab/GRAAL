@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la NAF 2008 (code de production vs annotation humaine)
 
-**État : terminé** — 6732 / 6735 paires (100.0%), mis à jour le 2026-11-17 23:38.
+**État : terminé** — 6732 / 6735 paires (100.0%), mis à jour le 2026-11-18 08:32.
 
 ## Protocole
 
@@ -41,8 +41,8 @@ Pour « Accord exact », le taux de rejet est un taux de rejet à tort ; pour le
 
 | Mode | Paires | Taux d'erreur de la production | Rappel des erreurs | Rejets à tort | AUC p_match |
 |---|---|---|---|---|---|
-| AUTO | 4066 | 10.3% | 41.2% | 9.8% | 0.688 |
-| FASTTEXT | 2666 | 40.7% | 55.2% | 32.3% | 0.625 |
+| AUTO | 4071 | 10.3% | 41.1% | 9.8% | 0.688 |
+| FASTTEXT | 2661 | 40.7% | 55.3% | 32.3% | 0.625 |
 
 ## Point de fonctionnement (vérité exacte)
 
