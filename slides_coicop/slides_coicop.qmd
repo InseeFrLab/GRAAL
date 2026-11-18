@@ -1,6 +1,6 @@
 ---
 title: "Vérifier automatiquement la codification COICOP"
-subtitle: "Premiers résultats sur la vague 1 de Budget de famille"
+subtitle: "Premiers résultats sur la vague 1 de Budget de famille, et le même test sur la NAF"
 author:
   - name: Meilame Tayebjee
     email: meilame.tayebjee@insee.fr
@@ -279,6 +279,128 @@ Pour 100 lignes codées par Sirus :
 Hors 98/99, sur les 8 480 paires classées par les deux modèles, d'où 62 % au lieu de 58 % pour le vérificateur seul. [J] `summary.detectors` ; [D] § Détecter les erreurs de Sirus. Message : quand les deux signalent, 2 lignes sur 3 sont de vraies erreurs ; attraper 75 % des erreurs demande de relire un tiers des lignes.
 :::
 
+# Le même test sur la NAF
+
+## Même méthode, autre nomenclature
+
+```{mermaid}
+flowchart LR
+  A["8 431 lignes"] -->|"doublons regroupés"| B["6 735 paires"]
+  B -->|"− 3 échecs"| C["6 732 paires jugées"]
+```
+
+- **Code jugé** : le code APE attribué en production, par règles (AUTO) ou par le modèle fastText.
+- **Référence** : le code de l'annotateur, campagne d'annotation 2024.
+- **Notices** : notes explicatives Insee de la NAF rév. 2.
+
+La production se trompe sur 1 ligne sur 5.
+
+::: {.notes}
+Jeu de test de la campagne d'annotation 2024, joint par liasse aux exports Label Studio pour retrouver `apet_finale` ; `src/evaluation/prepare_naf2008_pairs.py`. Erreur = sous-classe différente (référence « exacte ») : 20,3 % des lignes, [JN] `population.error_prevalence`. 3 échecs = réponse du modèle tronquée (`finish_reason=length`). Même modèle et mêmes règles de verdict qu'en COICOP, profil `naf2008`, commit `b753427`. Tous les codes sont dans le graphe : aucune ligne écartée.
+:::
+
+## COICOP et NAF côte à côte
+
+| | COICOP | NAF |
+|---|---|---|
+| Erreurs repérées | 51 % | 51 % |
+| Codes justes rejetés à tort | 7,6 % | [17 %]{.orange} |
+| Signalements justes | 58 % | [44 %]{.orange} |
+| Code proposé = code humain | 52 % | 36 % |
+| Lignes à relire, pour 100 | 16 | 24 |
+
+[Il repère autant d'erreurs, mais rejette deux fois plus de codes justes.]{.orange}
+
+::: {.notes}
+NAF : référence exacte (sous-classe), 6 732 paires dont 1 595 erreurs, [JN] `truths[exact]`. Intervalles à 95 % : ± 2,5 pts et ± 1 pt. Référence « classe » (4 premiers caractères) : 53 % / 17,4 % / 40 %. COICOP : référence branche, [J] `truths[branch]` ; code proposé hors 98/99. Lignes à relire = taux d'erreur × repérées + (1 − taux d'erreur) × rejets à tort. Durée : 27,7 s par paire en NAF, 51,8 h de calcul.
+:::
+
+## L'origine du code change tout {.compact}
+
+| Code de production | Lignes | Erreurs de la production | Erreurs repérées | Rejets à tort | Signalements justes |
+|---|---|---|---|---|---|
+| Règles (AUTO) | 5 653 | 10 % | 41 % | 9,8 % | 32 % |
+| Modèle (fastText) | 2 778 | 41 % | 55 % | [32 %]{.orange} | 54 % |
+
+- Règles : peu d'erreurs, donc 2 signalements sur 3 portent sur un code juste.
+- fastText : il rejette un tiers des codes justes. Ces libellés sont difficiles pour lui aussi.
+
+::: {.notes}
+Référence exacte, mode majoritaire de chaque paire (`mode_calcul_ape`). [JN] `by_mode` ; [DN] § Par mode d'attribution. AUC de p_match : 0,69 en AUTO, 0,63 en fastText.
+:::
+
+## Lui aussi repère surtout les erreurs grossières
+
+```{ojs}
+//| echo: false
+dataNaf = FileAttachment("data/match_verifier_naf2008.json").json()
+LABELS_NAF = ({
+  "Accord exact": "Codes identiques",
+  "Même classe, sous-classe différente": "Sous-classe différente",
+  "Même groupe, classe différente": "Classe différente",
+  "Même division, groupe différent": "Groupe différent",
+  "Même section, division différente": "Division différente",
+  "Section différente": "Section différente",
+})
+KINDS_NAF = ({error: "Erreur de la production (rejet souhaité)", ok: "Codes identiques (rejet à tort)"})
+typesNaf = dataNaf.by_type.map((d) => ({...d, label: LABELS_NAF[d.type] ?? d.type, kind: d.is_error ? KINDS_NAF.error : KINDS_NAF.ok}))
+```
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width: 1000,
+  height: 300,
+  marginLeft: 240,
+  marginRight: 90,
+  marginBottom: 20,
+  style: {fontSize: "17px", background: "transparent"},
+  x: {label: null, percent: true, domain: [0, 100], grid: true, tickFormat: (d) => d + " %"},
+  y: {label: null, domain: typesNaf.map((d) => d.label).reverse()},
+  color: {
+    legend: true,
+    style: {fontSize: "16px"},
+    domain: Object.values(KINDS_NAF),
+    range: [COLORS.error, COLORS.ok],
+  },
+  marks: [
+    Plot.barX(typesNaf, {
+      y: "label", x: "rejection_rate", rx2: 4, insetTop: 4, insetBottom: 4,
+      fill: "kind",
+    }),
+    Plot.text(typesNaf, {
+      y: "label", x: "rejection_rate", dx: 6, textAnchor: "start",
+      text: (d) => `${fmtPct(d.rejection_rate)}  (n = ${d.n.toLocaleString("fr-FR")})`,
+    }),
+    Plot.ruleX([0]),
+  ],
+})
+```
+
+[Part des paires rejetées, selon l'écart entre la production et l'annotateur.]{.small}
+
+::: {.notes}
+De 36 % pour une sous-classe voisine à 58 % quand la section change. [JN] `by_type` ; types définis par `gap_type()` dans `report_match_verifier_naf2008.py`.
+:::
+
+## D'où viennent les rejets à tort {.compact}
+
+Cinq codes en portent 43 %.
+
+| Code | Intitulé | Rejets à tort | Codes justes rejetés |
+|---|---|---|---|
+| 68.20B | Location de terrains et d'autres biens immobiliers | 173 | 32 % |
+| 81.21Z | Nettoyage courant des bâtiments | 72 | 43 % |
+| 96.09Z | Autres services personnels n.c.a. | 50 | 30 % |
+| 66.30Z | Gestion de fonds | 45 | 90 % |
+| 47.91B | Vente à distance sur catalogue spécialisé | 30 | 37 % |
+
+[Les annotateurs suivent des conventions absentes des notes : une SCI va en 68.20B.]{.orange}
+
+::: {.notes}
+853 rejets à tort au total, par paire. Autres conventions : « homme toutes mains » → 81.21Z, conciergerie → 96.09Z. Beaucoup de libellés sont des objets sociaux juridiques et multi-activités. [AN] § D'où viennent les rejets à tort ; `docs/cadrage_2026-07.md` § 3.3. Piste : donner au vérificateur les libellés annotés les plus proches, avec leur code (environ 19 000 annotations NAF 2008 hors jeu de test).
+:::
+
 # Limites
 
 ## Ce que ces résultats ne disent pas
@@ -322,7 +444,7 @@ Application de revue : `src/evaluation/apps/match_verifier_eval_app.py`. L'arbit
 
 ## Merci
 
-Résultats détaillés : site GRAAL, page « MatchVerifier COICOP ».
+Résultats détaillés : site GRAAL, pages « MatchVerifier COICOP » et « MatchVerifier NAF 2008 ».
 
 [Données sous secret statistique : agrégats uniquement, aucun libellé réel.]{.small}
 
@@ -338,8 +460,11 @@ Résultats détaillés : site GRAAL, page « MatchVerifier COICOP ».
 | **[A]** | `presentation/match_verifier_coicop.qmd`, § *Analyse* | Analyse rédigée, dont une relecture manuelle |
 | **[P]** | `src/agents/closers/match_verifier.py`, `src/nomenclature.py` | Consignes du vérificateur, inchangées depuis le run |
 | **[C]** | `slides_coicop/sources/verifier_chiffres.py` | Recalcul de contrôle depuis [R] (3 nov. 2026) |
+| **[JN]** | `presentation/data/match_verifier_naf2008.json` | NAF : agrégats calculés par `report_match_verifier_naf2008.py` |
+| **[DN]** | `docs/eval/match_verifier_naf2008.md` | NAF : rapport chiffré versionné |
+| **[AN]** | `presentation/match_verifier_naf2008.qmd`, § *Analyse* | NAF : analyse rédigée |
 
-Dépôt [InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL), branche `main` (PR #60). [R] est hors dépôt (secret statistique) : `s3://projet-budget-famille/archive/`. Les renvois de chaque slide sont dans les notes de l'orateur (touche S).
+Dépôt [InseeFrLab/GRAAL](https://github.com/InseeFrLab/GRAAL), branche `main` (PR #60, NAF : PR #62). [R] est hors dépôt (secret statistique) : `s3://projet-budget-famille/archive/`. Les renvois de chaque slide sont dans les notes de l'orateur (touche S).
 
 ## Les 400 lignes écartées {.compact}
 
