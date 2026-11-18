@@ -43,6 +43,14 @@ Le vérificateur détecte-t-il les erreurs de Sirus ? Évaluation sur la vague 1
 :::
 
 ::: {.g-col-12 .g-col-md-4}
+### ✅ MatchVerifier NAF 2008
+
+Même évaluation sur la NAF rév. 2 : le vérificateur détecte-t-il les erreurs du codage APE de production (règles et fastText), contre l'annotation humaine ?
+
+[Voir les métriques →](match_verifier_naf2008.html){.btn .btn-outline-primary .btn-lg role="button"}
+:::
+
+::: {.g-col-12 .g-col-md-4}
 ### 🗣️ Slides COICOP
 
 MatchVerifier sur la vague 1 de Budget de famille : peut-on désigner automatiquement les lignes codées par Sirus à relire en priorité ?

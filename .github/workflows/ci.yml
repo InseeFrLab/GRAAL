@@ -26,9 +26,11 @@ jobs:
         # src.evaluation.match_verifier_suggestions, which imports `polars` and
         # `src.utils.storage` at module level (the latter imports `s3fs`), even
         # though the tested function (fuse_candidates) touches neither a dataframe
-        # nor S3. Verified against a clean venv with only this line's packages that
-        # the full suite (25 passed, 6 skipped) needs nothing further.
-        run: pip install ruff==0.14.9 pytest python-dotenv polars s3fs
+        # nor S3. pandas and pypdf are for tests/test_naf2008_notices.py: the NAF 2008
+        # notice parser imports both at module level, and build_notices returns a
+        # pandas DataFrame. Verified against a clean venv with only this line's
+        # packages that the full suite (30 passed, 7 skipped) needs nothing further.
+        run: pip install ruff==0.14.9 pytest python-dotenv polars s3fs pandas pypdf
 
       - name: Lint
         run: ruff check .

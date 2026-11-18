@@ -7,9 +7,11 @@ project:
     - embeddings.qmd
     - multi_method_eval.qmd
     - match_verifier_coicop.qmd
+    - match_verifier_naf2008.qmd
 
   resources:
     - data/match_verifier_coicop.json
+    - data/match_verifier_naf2008.json
 
   output-dir: _preview
 
@@ -27,5 +29,7 @@ website:
         href: multi_method_eval.qmd
       - text: "MatchVerifier COICOP"
         href: match_verifier_coicop.qmd
+      - text: "MatchVerifier NAF 2008"
+        href: match_verifier_naf2008.qmd
       - text: "Slides COICOP"
         href: coicop/index.html
