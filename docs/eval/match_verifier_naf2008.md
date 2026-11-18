@@ -1,6 +1,6 @@
 # Évaluation du MatchVerifier sur la NAF 2008 (code de production vs annotation humaine)
 
-**État : terminé** — 6732 / 6735 paires (100.0%), mis à jour le 2026-11-18 08:32.
+**État : terminé** — 6732 / 6735 paires (100.0%), mis à jour le 2026-11-18 09:32.
 
 ## Protocole
 
