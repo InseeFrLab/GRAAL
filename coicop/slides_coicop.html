@@ -209,7 +209,7 @@
 
 <section id="title-slide" data-background-image="_extensions/InseeFrLab/onyxia/background.svg" data-background-size="contain" class="quarto-title-block center">
   <h1 class="title">Vérifier automatiquement la codification COICOP</h1>
-  <p class="subtitle">Premiers résultats sur la vague 1 de Budget de famille</p>
+  <p class="subtitle">Premiers résultats sur la vague 1 de Budget de famille, et le même test sur la NAF</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -791,6 +791,317 @@ Théo Ferry
       }</style></aside>
 </section></section>
 <section>
+<section id="le-même-test-sur-la-naf" class="title-slide slide level1 center" data-background-image="background.svg" data-background-size="contain">
+<h1>Le même test sur la NAF</h1>
+
+</section>
+<section id="même-méthode-autre-nomenclature" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Même méthode, autre nomenclature</h2>
+<div class="cell" data-reveal="true" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class=""><p></p>
+<div>
+
+<pre class="mermaid mermaid-js">flowchart LR
+  A["8 431 lignes"] --&gt;|"doublons regroupés"| B["6 735 paires"]
+  B --&gt;|"− 3 échecs"| C["6 732 paires jugées"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ul>
+<li><strong>Code jugé</strong> : le code APE attribué en production, par règles (AUTO) ou par le modèle fastText.</li>
+<li><strong>Référence</strong> : le code de l’annotateur, campagne d’annotation 2024.</li>
+<li><strong>Notices</strong> : notes explicatives Insee de la NAF rév. 2.</li>
+</ul>
+<p>La production se trompe sur 1 ligne sur 5.</p>
+<aside class="notes">
+<p>Jeu de test de la campagne d’annotation 2024, joint par liasse aux exports Label Studio pour retrouver <code>apet_finale</code> ; <code>src/evaluation/prepare_naf2008_pairs.py</code>. Erreur = sous-classe différente (référence « exacte ») : 20,3 % des lignes, [JN] <code>population.error_prevalence</code>. 3 échecs = réponse du modèle tronquée (<code>finish_reason=length</code>). Même modèle et mêmes règles de verdict qu’en COICOP, profil <code>naf2008</code>, commit <code>b753427</code>. Tous les codes sont dans le graphe : aucune ligne écartée.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="coicop-et-naf-côte-à-côte" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>COICOP et NAF côte à côte</h2>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th></th>
+<th>COICOP</th>
+<th>NAF</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Erreurs repérées</td>
+<td>51 %</td>
+<td>51 %</td>
+</tr>
+<tr class="even">
+<td>Codes justes rejetés à tort</td>
+<td>7,6 %</td>
+<td><span class="orange">17 %</span></td>
+</tr>
+<tr class="odd">
+<td>Signalements justes</td>
+<td>58 %</td>
+<td><span class="orange">44 %</span></td>
+</tr>
+<tr class="even">
+<td>Code proposé = code humain</td>
+<td>52 %</td>
+<td>36 %</td>
+</tr>
+<tr class="odd">
+<td>Lignes à relire, pour 100</td>
+<td>16</td>
+<td>24</td>
+</tr>
+</tbody>
+</table>
+<p><span class="orange">Il repère autant d’erreurs, mais rejette deux fois plus de codes justes.</span></p>
+<aside class="notes">
+<p>NAF : référence exacte (sous-classe), 6 732 paires dont 1 595 erreurs, [JN] <code>truths[exact]</code>. Intervalles à 95 % : ± 2,5 pts et ± 1 pt.&nbsp;Référence « classe » (4 premiers caractères) : 53 % / 17,4 % / 40 %. COICOP : référence branche, [J] <code>truths[branch]</code> ; code proposé hors 98/99. Lignes à relire = taux d’erreur × repérées + (1 − taux d’erreur) × rejets à tort. Durée : 27,7 s par paire en NAF, 51,8 h de calcul.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="lorigine-du-code-change-tout" class="slide level2 compact" data-background-image="background.svg" data-background-size="contain">
+<h2>L’origine du code change tout</h2>
+<table class="caption-top" style="width:100%;">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Code de production</th>
+<th>Lignes</th>
+<th>Erreurs de la production</th>
+<th>Erreurs repérées</th>
+<th>Rejets à tort</th>
+<th>Signalements justes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Règles (AUTO)</td>
+<td>5 653</td>
+<td>10 %</td>
+<td>41 %</td>
+<td>9,8 %</td>
+<td>32 %</td>
+</tr>
+<tr class="even">
+<td>Modèle (fastText)</td>
+<td>2 778</td>
+<td>41 %</td>
+<td>55 %</td>
+<td><span class="orange">32 %</span></td>
+<td>54 %</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Règles : peu d’erreurs, donc 2 signalements sur 3 portent sur un code juste.</li>
+<li>fastText : il rejette un tiers des codes justes. Ces libellés sont difficiles pour lui aussi.</li>
+</ul>
+<aside class="notes">
+<p>Référence exacte, mode majoritaire de chaque paire (<code>mode_calcul_ape</code>). [JN] <code>by_mode</code> ; [DN] § Par mode d’attribution. AUC de p_match : 0,69 en AUTO, 0,63 en fastText.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="lui-aussi-repère-surtout-les-erreurs-grossières" class="slide level2" data-background-image="background.svg" data-background-size="contain">
+<h2>Lui aussi repère surtout les erreurs grossières</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="336" data-source-offset="-0"><pre class="sourceCode numberSource js number-lines code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 335;"><span id="cb4-336"><a href="" aria-label="336"></a>dataNaf <span class="op">=</span> <span class="fu">FileAttachment</span>(<span class="st">"data/match_verifier_naf2008.json"</span>)<span class="op">.</span><span class="fu">json</span>()</span>
+<span id="cb4-337"><a href="" aria-label="337"></a>LABELS_NAF <span class="op">=</span> ({</span>
+<span id="cb4-338"><a href="" aria-label="338"></a>  <span class="st">"Accord exact"</span><span class="op">:</span> <span class="st">"Codes identiques"</span><span class="op">,</span></span>
+<span id="cb4-339"><a href="" aria-label="339"></a>  <span class="st">"Même classe, sous-classe différente"</span><span class="op">:</span> <span class="st">"Sous-classe différente"</span><span class="op">,</span></span>
+<span id="cb4-340"><a href="" aria-label="340"></a>  <span class="st">"Même groupe, classe différente"</span><span class="op">:</span> <span class="st">"Classe différente"</span><span class="op">,</span></span>
+<span id="cb4-341"><a href="" aria-label="341"></a>  <span class="st">"Même division, groupe différent"</span><span class="op">:</span> <span class="st">"Groupe différent"</span><span class="op">,</span></span>
+<span id="cb4-342"><a href="" aria-label="342"></a>  <span class="st">"Même section, division différente"</span><span class="op">:</span> <span class="st">"Division différente"</span><span class="op">,</span></span>
+<span id="cb4-343"><a href="" aria-label="343"></a>  <span class="st">"Section différente"</span><span class="op">:</span> <span class="st">"Section différente"</span><span class="op">,</span></span>
+<span id="cb4-344"><a href="" aria-label="344"></a>})</span>
+<span id="cb4-345"><a href="" aria-label="345"></a>KINDS_NAF <span class="op">=</span> ({<span class="dt">error</span><span class="op">:</span> <span class="st">"Erreur de la production (rejet souhaité)"</span><span class="op">,</span> <span class="dt">ok</span><span class="op">:</span> <span class="st">"Codes identiques (rejet à tort)"</span>})</span>
+<span id="cb4-346"><a href="" aria-label="346"></a>typesNaf <span class="op">=</span> dataNaf<span class="op">.</span><span class="at">by_type</span><span class="op">.</span><span class="fu">map</span>((d) <span class="kw">=&gt;</span> ({<span class="op">...</span>d<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> LABELS_NAF[d<span class="op">.</span><span class="at">type</span>] <span class="op">??</span> d<span class="op">.</span><span class="at">type</span><span class="op">,</span> kind<span class="op">:</span> d<span class="op">.</span><span class="at">is_error</span> <span class="op">?</span> KINDS_NAF<span class="op">.</span><span class="at">error</span> <span class="op">:</span> KINDS_NAF<span class="op">.</span><span class="at">ok</span>}))</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-4-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-4-2" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-4-3" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-4-4" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="350" data-source-offset="0"><pre class="sourceCode numberSource js number-lines code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 349;"><span id="cb5-350"><a href="" aria-label="350"></a>Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb5-351"><a href="" aria-label="351"></a>  <span class="dt">width</span><span class="op">:</span> <span class="dv">1000</span><span class="op">,</span></span>
+<span id="cb5-352"><a href="" aria-label="352"></a>  <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span></span>
+<span id="cb5-353"><a href="" aria-label="353"></a>  <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">240</span><span class="op">,</span></span>
+<span id="cb5-354"><a href="" aria-label="354"></a>  <span class="dt">marginRight</span><span class="op">:</span> <span class="dv">90</span><span class="op">,</span></span>
+<span id="cb5-355"><a href="" aria-label="355"></a>  <span class="dt">marginBottom</span><span class="op">:</span> <span class="dv">20</span><span class="op">,</span></span>
+<span id="cb5-356"><a href="" aria-label="356"></a>  <span class="dt">style</span><span class="op">:</span> {<span class="dt">fontSize</span><span class="op">:</span> <span class="st">"17px"</span><span class="op">,</span> <span class="dt">background</span><span class="op">:</span> <span class="st">"transparent"</span>}<span class="op">,</span></span>
+<span id="cb5-357"><a href="" aria-label="357"></a>  <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="kw">null</span><span class="op">,</span> <span class="dt">percent</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">100</span>]<span class="op">,</span> <span class="dt">grid</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">tickFormat</span><span class="op">:</span> (d) <span class="kw">=&gt;</span> d <span class="op">+</span> <span class="st">" %"</span>}<span class="op">,</span></span>
+<span id="cb5-358"><a href="" aria-label="358"></a>  <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="kw">null</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> typesNaf<span class="op">.</span><span class="fu">map</span>((d) <span class="kw">=&gt;</span> d<span class="op">.</span><span class="at">label</span>)<span class="op">.</span><span class="fu">reverse</span>()}<span class="op">,</span></span>
+<span id="cb5-359"><a href="" aria-label="359"></a>  <span class="dt">color</span><span class="op">:</span> {</span>
+<span id="cb5-360"><a href="" aria-label="360"></a>    <span class="dt">legend</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb5-361"><a href="" aria-label="361"></a>    <span class="dt">style</span><span class="op">:</span> {<span class="dt">fontSize</span><span class="op">:</span> <span class="st">"16px"</span>}<span class="op">,</span></span>
+<span id="cb5-362"><a href="" aria-label="362"></a>    <span class="dt">domain</span><span class="op">:</span> <span class="bu">Object</span><span class="op">.</span><span class="fu">values</span>(KINDS_NAF)<span class="op">,</span></span>
+<span id="cb5-363"><a href="" aria-label="363"></a>    <span class="dt">range</span><span class="op">:</span> [COLORS<span class="op">.</span><span class="at">error</span><span class="op">,</span> COLORS<span class="op">.</span><span class="at">ok</span>]<span class="op">,</span></span>
+<span id="cb5-364"><a href="" aria-label="364"></a>  }<span class="op">,</span></span>
+<span id="cb5-365"><a href="" aria-label="365"></a>  <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb5-366"><a href="" aria-label="366"></a>    Plot<span class="op">.</span><span class="fu">barX</span>(typesNaf<span class="op">,</span> {</span>
+<span id="cb5-367"><a href="" aria-label="367"></a>      <span class="dt">y</span><span class="op">:</span> <span class="st">"label"</span><span class="op">,</span> <span class="dt">x</span><span class="op">:</span> <span class="st">"rejection_rate"</span><span class="op">,</span> <span class="dt">rx2</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span> <span class="dt">insetTop</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span> <span class="dt">insetBottom</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span></span>
+<span id="cb5-368"><a href="" aria-label="368"></a>      <span class="dt">fill</span><span class="op">:</span> <span class="st">"kind"</span><span class="op">,</span></span>
+<span id="cb5-369"><a href="" aria-label="369"></a>    })<span class="op">,</span></span>
+<span id="cb5-370"><a href="" aria-label="370"></a>    Plot<span class="op">.</span><span class="fu">text</span>(typesNaf<span class="op">,</span> {</span>
+<span id="cb5-371"><a href="" aria-label="371"></a>      <span class="dt">y</span><span class="op">:</span> <span class="st">"label"</span><span class="op">,</span> <span class="dt">x</span><span class="op">:</span> <span class="st">"rejection_rate"</span><span class="op">,</span> <span class="dt">dx</span><span class="op">:</span> <span class="dv">6</span><span class="op">,</span> <span class="dt">textAnchor</span><span class="op">:</span> <span class="st">"start"</span><span class="op">,</span></span>
+<span id="cb5-372"><a href="" aria-label="372"></a>      <span class="dt">text</span><span class="op">:</span> (d) <span class="kw">=&gt;</span> <span class="vs">`</span><span class="sc">${</span><span class="fu">fmtPct</span>(d<span class="op">.</span><span class="at">rejection_rate</span>)<span class="sc">}</span><span class="vs">  (n = </span><span class="sc">${</span>d<span class="op">.</span><span class="at">n</span><span class="op">.</span><span class="fu">toLocaleString</span>(<span class="st">"fr-FR"</span>)<span class="sc">}</span><span class="vs">)`</span><span class="op">,</span></span>
+<span id="cb5-373"><a href="" aria-label="373"></a>    })<span class="op">,</span></span>
+<span id="cb5-374"><a href="" aria-label="374"></a>    Plot<span class="op">.</span><span class="fu">ruleX</span>([<span class="dv">0</span>])<span class="op">,</span></span>
+<span id="cb5-375"><a href="" aria-label="375"></a>  ]<span class="op">,</span></span>
+<span id="cb5-376"><a href="" aria-label="376"></a>})</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-5" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+<p><span class="small">Part des paires rejetées, selon l’écart entre la production et l’annotateur.</span></p>
+<aside class="notes">
+<p>De 36 % pour une sous-classe voisine à 58 % quand la section change. [JN] <code>by_type</code> ; types définis par <code>gap_type()</code> dans <code>report_match_verifier_naf2008.py</code>.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="doù-viennent-les-rejets-à-tort" class="slide level2 compact" data-background-image="background.svg" data-background-size="contain">
+<h2>D’où viennent les rejets à tort</h2>
+<p>Cinq codes en portent 43 %.</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Code</th>
+<th>Intitulé</th>
+<th>Rejets à tort</th>
+<th>Codes justes rejetés</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>68.20B</td>
+<td>Location de terrains et d’autres biens immobiliers</td>
+<td>173</td>
+<td>32 %</td>
+</tr>
+<tr class="even">
+<td>81.21Z</td>
+<td>Nettoyage courant des bâtiments</td>
+<td>72</td>
+<td>43 %</td>
+</tr>
+<tr class="odd">
+<td>96.09Z</td>
+<td>Autres services personnels n.c.a.</td>
+<td>50</td>
+<td>30 %</td>
+</tr>
+<tr class="even">
+<td>66.30Z</td>
+<td>Gestion de fonds</td>
+<td>45</td>
+<td>90 %</td>
+</tr>
+<tr class="odd">
+<td>47.91B</td>
+<td>Vente à distance sur catalogue spécialisé</td>
+<td>30</td>
+<td>37 %</td>
+</tr>
+</tbody>
+</table>
+<p><span class="orange">Les annotateurs suivent des conventions absentes des notes : une SCI va en 68.20B.</span></p>
+<aside class="notes">
+<p>853 rejets à tort au total, par paire. Autres conventions : « homme toutes mains » → 81.21Z, conciergerie → 96.09Z. Beaucoup de libellés sont des objets sociaux juridiques et multi-activités. [AN] § D’où viennent les rejets à tort ; <code>docs/cadrage_2026-07.md</code> § 3.3. Piste : donner au vérificateur les libellés annotés les plus proches, avec leur code (environ 19 000 annotations NAF 2008 hors jeu de test).</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section></section>
+<section>
 <section id="limites" class="title-slide slide level1 center" data-background-image="background.svg" data-background-size="contain">
 <h1>Limites</h1>
 
@@ -874,7 +1185,7 @@ Théo Ferry
 </section>
 <section id="merci" class="slide level2" data-background-image="background.svg" data-background-size="contain">
 <h2>Merci</h2>
-<p>Résultats détaillés : site GRAAL, page « MatchVerifier COICOP ».</p>
+<p>Résultats détaillés : site GRAAL, pages « MatchVerifier COICOP » et « MatchVerifier NAF 2008 ».</p>
 <p><span class="small">Données sous secret statistique : agrégats uniquement, aucun libellé réel.</span></p>
 </section></section>
 <section>
@@ -928,9 +1239,24 @@ Théo Ferry
 <td><code>slides_coicop/sources/verifier_chiffres.py</code></td>
 <td>Recalcul de contrôle depuis [R] (3 nov. 2026)</td>
 </tr>
+<tr class="odd">
+<td><strong>[JN]</strong></td>
+<td><code>presentation/data/match_verifier_naf2008.json</code></td>
+<td>NAF : agrégats calculés par <code>report_match_verifier_naf2008.py</code></td>
+</tr>
+<tr class="even">
+<td><strong>[DN]</strong></td>
+<td><code>docs/eval/match_verifier_naf2008.md</code></td>
+<td>NAF : rapport chiffré versionné</td>
+</tr>
+<tr class="odd">
+<td><strong>[AN]</strong></td>
+<td><code>presentation/match_verifier_naf2008.qmd</code>, § <em>Analyse</em></td>
+<td>NAF : analyse rédigée</td>
+</tr>
 </tbody>
 </table>
-<p>Dépôt <a href="https://github.com/InseeFrLab/GRAAL">InseeFrLab/GRAAL</a>, branche <code>main</code> (PR #60). [R] est hors dépôt (secret statistique) : <code>s3://projet-budget-famille/archive/</code>. Les renvois de chaque slide sont dans les notes de l’orateur (touche S).</p>
+<p>Dépôt <a href="https://github.com/InseeFrLab/GRAAL">InseeFrLab/GRAAL</a>, branche <code>main</code> (PR #60, NAF : PR #62). [R] est hors dépôt (secret statistique) : <code>s3://projet-budget-famille/archive/</code>. Les renvois de chaque slide sont dans les notes de l’orateur (touche S).</p>
 </section>
 <section id="les-400-lignes-écartées" class="slide level2 compact" data-background-image="background.svg" data-background-size="contain">
 <h2>Les 400 lignes écartées</h2>
@@ -1129,27 +1455,27 @@ Théo Ferry
 </section>
 <section id="reproduire" class="slide level2 compact" data-background-image="background.svg" data-background-size="contain">
 <h2>Reproduire</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="" aria-label="1"></a><span class="co"># 1. Verdicts du vérificateur sur toutes les paires</span></span>
-<span id="cb4-2"><a href="" aria-label="2"></a><span class="va">NOMENCLATURE</span><span class="op">=</span>coicop2018 <span class="ex">uv</span> run <span class="at">-m</span> src.evaluation.match_verifier_eval <span class="dt">\</span></span>
-<span id="cb4-3"><a href="" aria-label="3"></a>  <span class="at">--train-set</span> <span class="op">&lt;</span>predictions.parquet<span class="op">&gt;</span> --text-column raw_product <span class="dt">\</span></span>
-<span id="cb4-4"><a href="" aria-label="4"></a>  <span class="at">--code-column</span> sirus_code <span class="at">--expected-code-column</span> code_lvl4 <span class="dt">\</span></span>
-<span id="cb4-5"><a href="" aria-label="5"></a>  <span class="at">--n-samples</span> 20000 <span class="at">--output</span> data/eval/match_verifier_eval_coicop</span>
-<span id="cb4-6"><a href="" aria-label="6"></a></span>
-<span id="cb4-7"><a href="" aria-label="7"></a><span class="co"># 2. Second modèle (Summary classifier)</span></span>
-<span id="cb4-8"><a href="" aria-label="8"></a><span class="va">NOMENCLATURE</span><span class="op">=</span>coicop2018 <span class="ex">uv</span> run <span class="at">-m</span> src.evaluation.summary_pairs_eval <span class="dt">\</span></span>
-<span id="cb4-9"><a href="" aria-label="9"></a>  <span class="at">--run-dir</span> data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe <span class="dt">\</span></span>
-<span id="cb4-10"><a href="" aria-label="10"></a>  <span class="at">--summary-path</span> data/coicop_summary.txt</span>
-<span id="cb4-11"><a href="" aria-label="11"></a></span>
-<span id="cb4-12"><a href="" aria-label="12"></a><span class="co"># 3. Agrégats (JSON du site, rapport)</span></span>
-<span id="cb4-13"><a href="" aria-label="13"></a><span class="va">R</span><span class="op">=</span>data/eval/match_verifier_eval_coicop</span>
-<span id="cb4-14"><a href="" aria-label="14"></a><span class="ex">python</span> <span class="va">$R</span>/mv_report.py <span class="va">$R</span>/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe <span class="va">$R</span>/run.log <span class="va">$R</span>/RAPPORT.md <span class="dt">\</span></span>
-<span id="cb4-15"><a href="" aria-label="15"></a>  <span class="at">--total</span> 8981 <span class="at">--summary-total</span> 8717 <span class="dt">\</span></span>
-<span id="cb4-16"><a href="" aria-label="16"></a>  <span class="at">--public-md</span> docs/eval/match_verifier_coicop.md <span class="dt">\</span></span>
-<span id="cb4-17"><a href="" aria-label="17"></a>  <span class="at">--public-json</span> presentation/data/match_verifier_coicop.json</span>
-<span id="cb4-18"><a href="" aria-label="18"></a></span>
-<span id="cb4-19"><a href="" aria-label="19"></a><span class="co"># 4. Contrôle des chiffres cités dans ces slides</span></span>
-<span id="cb4-20"><a href="" aria-label="20"></a><span class="ex">uv</span> run python slides_coicop/sources/verifier_chiffres.py <span class="dt">\</span></span>
-<span id="cb4-21"><a href="" aria-label="21"></a>  data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe/match_verifier_eval.parquet</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="" aria-label="1"></a><span class="co"># 1. Verdicts du vérificateur sur toutes les paires</span></span>
+<span id="cb6-2"><a href="" aria-label="2"></a><span class="va">NOMENCLATURE</span><span class="op">=</span>coicop2018 <span class="ex">uv</span> run <span class="at">-m</span> src.evaluation.match_verifier_eval <span class="dt">\</span></span>
+<span id="cb6-3"><a href="" aria-label="3"></a>  <span class="at">--train-set</span> <span class="op">&lt;</span>predictions.parquet<span class="op">&gt;</span> --text-column raw_product <span class="dt">\</span></span>
+<span id="cb6-4"><a href="" aria-label="4"></a>  <span class="at">--code-column</span> sirus_code <span class="at">--expected-code-column</span> code_lvl4 <span class="dt">\</span></span>
+<span id="cb6-5"><a href="" aria-label="5"></a>  <span class="at">--n-samples</span> 20000 <span class="at">--output</span> data/eval/match_verifier_eval_coicop</span>
+<span id="cb6-6"><a href="" aria-label="6"></a></span>
+<span id="cb6-7"><a href="" aria-label="7"></a><span class="co"># 2. Second modèle (Summary classifier)</span></span>
+<span id="cb6-8"><a href="" aria-label="8"></a><span class="va">NOMENCLATURE</span><span class="op">=</span>coicop2018 <span class="ex">uv</span> run <span class="at">-m</span> src.evaluation.summary_pairs_eval <span class="dt">\</span></span>
+<span id="cb6-9"><a href="" aria-label="9"></a>  <span class="at">--run-dir</span> data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe <span class="dt">\</span></span>
+<span id="cb6-10"><a href="" aria-label="10"></a>  <span class="at">--summary-path</span> data/coicop_summary.txt</span>
+<span id="cb6-11"><a href="" aria-label="11"></a></span>
+<span id="cb6-12"><a href="" aria-label="12"></a><span class="co"># 3. Agrégats (JSON du site, rapport)</span></span>
+<span id="cb6-13"><a href="" aria-label="13"></a><span class="va">R</span><span class="op">=</span>data/eval/match_verifier_eval_coicop</span>
+<span id="cb6-14"><a href="" aria-label="14"></a><span class="ex">python</span> <span class="va">$R</span>/mv_report.py <span class="va">$R</span>/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe <span class="va">$R</span>/run.log <span class="va">$R</span>/RAPPORT.md <span class="dt">\</span></span>
+<span id="cb6-15"><a href="" aria-label="15"></a>  <span class="at">--total</span> 8981 <span class="at">--summary-total</span> 8717 <span class="dt">\</span></span>
+<span id="cb6-16"><a href="" aria-label="16"></a>  <span class="at">--public-md</span> docs/eval/match_verifier_coicop.md <span class="dt">\</span></span>
+<span id="cb6-17"><a href="" aria-label="17"></a>  <span class="at">--public-json</span> presentation/data/match_verifier_coicop.json</span>
+<span id="cb6-18"><a href="" aria-label="18"></a></span>
+<span id="cb6-19"><a href="" aria-label="19"></a><span class="co"># 4. Contrôle des chiffres cités dans ces slides</span></span>
+<span id="cb6-20"><a href="" aria-label="20"></a><span class="ex">uv</span> run python slides_coicop/sources/verifier_chiffres.py <span class="dt">\</span></span>
+<span id="cb6-21"><a href="" aria-label="21"></a>  data/eval/match_verifier_eval_coicop/v0.0.1-10-gc3e01a2/qwen3-6-35b-moe/match_verifier_eval.parquet</span></code></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Données d’entrée : <code>projet-budget-famille/.../2026-09-08/codif-c9vjm/reconcile-sirus/predictions.parquet</code> (copie archivée : <code>s3://projet-budget-famille/archive/data/coicop/</code>).</p>
 <div class="source">
 <p>Commande 1 : [A] § Reproduire ; 2 : docstring de <code>summary_pairs_eval.py</code> ; 3 : arguments de <code>mv_report.py</code> (<code>main()</code>).</p>
@@ -1372,7 +1698,7 @@ Théo Ferry
       });
     </script>
     <script type="ojs-module-contents">
-    eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6ImRhdGEgPSBGaWxlQXR0YWNobWVudChcImRhdGEvbWF0Y2hfdmVyaWZpZXJfY29pY29wLmpzb25cIikuanNvbigpXG5mbXRQY3QgPSAoeCkgPT4gKDEwMCAqIHgpLnRvTG9jYWxlU3RyaW5nKFwiZnItRlJcIiwge21heGltdW1GcmFjdGlvbkRpZ2l0czogMH0pICsgXCIgJVwiXG5DT0xPUlMgPSAoe2Vycm9yOiBcIiMyYTc4ZDZcIiwgb2s6IFwiI2ViNjgzNFwifSlcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMiIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6IkxBQkVMUyA9ICh7XG4gIFwiQWNjb3JkIGV4YWN0XCI6IFwiQ29kZXMgaWRlbnRpcXVlc1wiLFxuICBcIk3Dqm1lIGRpdmlzaW9uLCBncm91cGUgZGlmZsOpcmVudFwiOiBcIkdyb3VwZSBkaWZmw6lyZW50XCIsXG4gIFwiRGl2aXNpb24gZGlmZsOpcmVudGVcIjogXCJEaXZpc2lvbiBkaWZmw6lyZW50ZVwiLFxuICBcIkNvZGUgaHVtYWluIHRlY2huaXF1ZSAoOTgvOTkpXCI6IFwiQ29kZSBodW1haW4gdGVjaG5pcXVlIDk4Lzk5XCIsXG4gIFwiTcOqbWUgZ3JvdXBlLCBjbGFzc2Uvc291cy1jbGFzc2UgZGlmZsOpcmVudGVcIjogXCJDbGFzc2Ugdm9pc2luZSBkaWZmw6lyZW50ZVwiLFxuICBcIkh1bWFpbiBtb2lucyBwcsOpY2lzIChTaXJ1cyA9IHNvdXMtY2F0w6lnb3JpZSlcIjogXCJTaXJ1cyBwbHVzIHByw6ljaXNcIixcbiAgXCJTaXJ1cyBtb2lucyBwcsOpY2lzIHF1ZSBsJ2h1bWFpblwiOiBcIlNpcnVzIG1vaW5zIHByw6ljaXNcIixcbn0pXG5LSU5EID0gKGQpID0+IGQudHlwZSA9PT0gXCJBY2NvcmQgZXhhY3RcIiA/IFwib2tcIiA6IC9wcsOpY2lzLy50ZXN0KGQudHlwZSkgPyBcImRlcHRoXCIgOiBcImVycm9yXCJcbktJTkRTID0gKHtlcnJvcjogXCJWcmFpZSBlcnJldXIgZGUgU2lydXMgKHJlamV0IHNvdWhhaXTDqSlcIiwgZGVwdGg6IFwiw4ljYXJ0IGRlIHByw6ljaXNpb24gc2V1bGVtZW50XCIsIG9rOiBcIkNvZGVzIGlkZW50aXF1ZXMgKHJlamV0IMOgIHRvcnQpXCJ9KVxuT1JERVIgPSAoe2Vycm9yOiAwLCBkZXB0aDogMSwgb2s6IDJ9KVxudHlwZXMgPSBkYXRhLmJ5X3R5cGUubWFwKChkKSA9PiAoey4uLmQsIGxhYmVsOiBMQUJFTFNbZC50eXBlXSA/PyBkLnR5cGUsIGtpbmQ6IEtJTkRTW0tJTkQoZCldLCBrOiBPUkRFUltLSU5EKGQpXX0pKS5zb3J0KChhLCBiKSA9PiBhLmsgLSBiLmsgfHwgYi5yZWplY3Rpb25fcmF0ZSAtIGEucmVqZWN0aW9uX3JhdGUpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTMiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJQbG90LnBsb3Qoe1xuICB3aWR0aDogMTAwMCxcbiAgaGVpZ2h0OiAzMTAsXG4gIG1hcmdpbkxlZnQ6IDI5MCxcbiAgbWFyZ2luUmlnaHQ6IDkwLFxuICBtYXJnaW5Cb3R0b206IDIwLFxuICBzdHlsZToge2ZvbnRTaXplOiBcIjE3cHhcIiwgYmFja2dyb3VuZDogXCJ0cmFuc3BhcmVudFwifSxcbiAgeDoge2xhYmVsOiBudWxsLCBwZXJjZW50OiB0cnVlLCBkb21haW46IFswLCAxMDBdLCBncmlkOiB0cnVlLCB0aWNrRm9ybWF0OiAoZCkgPT4gZCArIFwiICVcIn0sXG4gIHk6IHtsYWJlbDogbnVsbCwgZG9tYWluOiB0eXBlcy5tYXAoKGQpID0+IGQubGFiZWwpfSxcbiAgY29sb3I6IHtcbiAgICBsZWdlbmQ6IHRydWUsXG4gICAgc3R5bGU6IHtmb250U2l6ZTogXCIxNnB4XCJ9LFxuICAgIGRvbWFpbjogT2JqZWN0LnZhbHVlcyhLSU5EUyksXG4gICAgcmFuZ2U6IFtDT0xPUlMuZXJyb3IsIFwiIzlhYTBhNlwiLCBDT0xPUlMub2tdLFxuICB9LFxuICBtYXJrczogW1xuICAgIFBsb3QuYmFyWCh0eXBlcywge1xuICAgICAgeTogXCJsYWJlbFwiLCB4OiBcInJlamVjdGlvbl9yYXRlXCIsIHJ4MjogNCwgaW5zZXRUb3A6IDQsIGluc2V0Qm90dG9tOiA0LFxuICAgICAgZmlsbDogXCJraW5kXCIsXG4gICAgfSksXG4gICAgUGxvdC50ZXh0KHR5cGVzLCB7XG4gICAgICB5OiBcImxhYmVsXCIsIHg6IFwicmVqZWN0aW9uX3JhdGVcIiwgZHg6IDYsIHRleHRBbmNob3I6IFwic3RhcnRcIixcbiAgICAgIHRleHQ6IChkKSA9PiBgJHtmbXRQY3QoZC5yZWplY3Rpb25fcmF0ZSl9ICAobiA9ICR7ZC5uLnRvTG9jYWxlU3RyaW5nKFwiZnItRlJcIil9KWAsXG4gICAgfSksXG4gICAgUGxvdC5ydWxlWChbMF0pLFxuICBdLFxufSlcbiJ9XX0=
+    eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6ImRhdGEgPSBGaWxlQXR0YWNobWVudChcImRhdGEvbWF0Y2hfdmVyaWZpZXJfY29pY29wLmpzb25cIikuanNvbigpXG5mbXRQY3QgPSAoeCkgPT4gKDEwMCAqIHgpLnRvTG9jYWxlU3RyaW5nKFwiZnItRlJcIiwge21heGltdW1GcmFjdGlvbkRpZ2l0czogMH0pICsgXCIgJVwiXG5DT0xPUlMgPSAoe2Vycm9yOiBcIiMyYTc4ZDZcIiwgb2s6IFwiI2ViNjgzNFwifSlcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMiIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6IkxBQkVMUyA9ICh7XG4gIFwiQWNjb3JkIGV4YWN0XCI6IFwiQ29kZXMgaWRlbnRpcXVlc1wiLFxuICBcIk3Dqm1lIGRpdmlzaW9uLCBncm91cGUgZGlmZsOpcmVudFwiOiBcIkdyb3VwZSBkaWZmw6lyZW50XCIsXG4gIFwiRGl2aXNpb24gZGlmZsOpcmVudGVcIjogXCJEaXZpc2lvbiBkaWZmw6lyZW50ZVwiLFxuICBcIkNvZGUgaHVtYWluIHRlY2huaXF1ZSAoOTgvOTkpXCI6IFwiQ29kZSBodW1haW4gdGVjaG5pcXVlIDk4Lzk5XCIsXG4gIFwiTcOqbWUgZ3JvdXBlLCBjbGFzc2Uvc291cy1jbGFzc2UgZGlmZsOpcmVudGVcIjogXCJDbGFzc2Ugdm9pc2luZSBkaWZmw6lyZW50ZVwiLFxuICBcIkh1bWFpbiBtb2lucyBwcsOpY2lzIChTaXJ1cyA9IHNvdXMtY2F0w6lnb3JpZSlcIjogXCJTaXJ1cyBwbHVzIHByw6ljaXNcIixcbiAgXCJTaXJ1cyBtb2lucyBwcsOpY2lzIHF1ZSBsJ2h1bWFpblwiOiBcIlNpcnVzIG1vaW5zIHByw6ljaXNcIixcbn0pXG5LSU5EID0gKGQpID0+IGQudHlwZSA9PT0gXCJBY2NvcmQgZXhhY3RcIiA/IFwib2tcIiA6IC9wcsOpY2lzLy50ZXN0KGQudHlwZSkgPyBcImRlcHRoXCIgOiBcImVycm9yXCJcbktJTkRTID0gKHtlcnJvcjogXCJWcmFpZSBlcnJldXIgZGUgU2lydXMgKHJlamV0IHNvdWhhaXTDqSlcIiwgZGVwdGg6IFwiw4ljYXJ0IGRlIHByw6ljaXNpb24gc2V1bGVtZW50XCIsIG9rOiBcIkNvZGVzIGlkZW50aXF1ZXMgKHJlamV0IMOgIHRvcnQpXCJ9KVxuT1JERVIgPSAoe2Vycm9yOiAwLCBkZXB0aDogMSwgb2s6IDJ9KVxudHlwZXMgPSBkYXRhLmJ5X3R5cGUubWFwKChkKSA9PiAoey4uLmQsIGxhYmVsOiBMQUJFTFNbZC50eXBlXSA/PyBkLnR5cGUsIGtpbmQ6IEtJTkRTW0tJTkQoZCldLCBrOiBPUkRFUltLSU5EKGQpXX0pKS5zb3J0KChhLCBiKSA9PiBhLmsgLSBiLmsgfHwgYi5yZWplY3Rpb25fcmF0ZSAtIGEucmVqZWN0aW9uX3JhdGUpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTMiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJQbG90LnBsb3Qoe1xuICB3aWR0aDogMTAwMCxcbiAgaGVpZ2h0OiAzMTAsXG4gIG1hcmdpbkxlZnQ6IDI5MCxcbiAgbWFyZ2luUmlnaHQ6IDkwLFxuICBtYXJnaW5Cb3R0b206IDIwLFxuICBzdHlsZToge2ZvbnRTaXplOiBcIjE3cHhcIiwgYmFja2dyb3VuZDogXCJ0cmFuc3BhcmVudFwifSxcbiAgeDoge2xhYmVsOiBudWxsLCBwZXJjZW50OiB0cnVlLCBkb21haW46IFswLCAxMDBdLCBncmlkOiB0cnVlLCB0aWNrRm9ybWF0OiAoZCkgPT4gZCArIFwiICVcIn0sXG4gIHk6IHtsYWJlbDogbnVsbCwgZG9tYWluOiB0eXBlcy5tYXAoKGQpID0+IGQubGFiZWwpfSxcbiAgY29sb3I6IHtcbiAgICBsZWdlbmQ6IHRydWUsXG4gICAgc3R5bGU6IHtmb250U2l6ZTogXCIxNnB4XCJ9LFxuICAgIGRvbWFpbjogT2JqZWN0LnZhbHVlcyhLSU5EUyksXG4gICAgcmFuZ2U6IFtDT0xPUlMuZXJyb3IsIFwiIzlhYTBhNlwiLCBDT0xPUlMub2tdLFxuICB9LFxuICBtYXJrczogW1xuICAgIFBsb3QuYmFyWCh0eXBlcywge1xuICAgICAgeTogXCJsYWJlbFwiLCB4OiBcInJlamVjdGlvbl9yYXRlXCIsIHJ4MjogNCwgaW5zZXRUb3A6IDQsIGluc2V0Qm90dG9tOiA0LFxuICAgICAgZmlsbDogXCJraW5kXCIsXG4gICAgfSksXG4gICAgUGxvdC50ZXh0KHR5cGVzLCB7XG4gICAgICB5OiBcImxhYmVsXCIsIHg6IFwicmVqZWN0aW9uX3JhdGVcIiwgZHg6IDYsIHRleHRBbmNob3I6IFwic3RhcnRcIixcbiAgICAgIHRleHQ6IChkKSA9PiBgJHtmbXRQY3QoZC5yZWplY3Rpb25fcmF0ZSl9ICAobiA9ICR7ZC5uLnRvTG9jYWxlU3RyaW5nKFwiZnItRlJcIil9KWAsXG4gICAgfSksXG4gICAgUGxvdC5ydWxlWChbMF0pLFxuICBdLFxufSlcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtNCIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6ImRhdGFOYWYgPSBGaWxlQXR0YWNobWVudChcImRhdGEvbWF0Y2hfdmVyaWZpZXJfbmFmMjAwOC5qc29uXCIpLmpzb24oKVxuTEFCRUxTX05BRiA9ICh7XG4gIFwiQWNjb3JkIGV4YWN0XCI6IFwiQ29kZXMgaWRlbnRpcXVlc1wiLFxuICBcIk3Dqm1lIGNsYXNzZSwgc291cy1jbGFzc2UgZGlmZsOpcmVudGVcIjogXCJTb3VzLWNsYXNzZSBkaWZmw6lyZW50ZVwiLFxuICBcIk3Dqm1lIGdyb3VwZSwgY2xhc3NlIGRpZmbDqXJlbnRlXCI6IFwiQ2xhc3NlIGRpZmbDqXJlbnRlXCIsXG4gIFwiTcOqbWUgZGl2aXNpb24sIGdyb3VwZSBkaWZmw6lyZW50XCI6IFwiR3JvdXBlIGRpZmbDqXJlbnRcIixcbiAgXCJNw6ptZSBzZWN0aW9uLCBkaXZpc2lvbiBkaWZmw6lyZW50ZVwiOiBcIkRpdmlzaW9uIGRpZmbDqXJlbnRlXCIsXG4gIFwiU2VjdGlvbiBkaWZmw6lyZW50ZVwiOiBcIlNlY3Rpb24gZGlmZsOpcmVudGVcIixcbn0pXG5LSU5EU19OQUYgPSAoe2Vycm9yOiBcIkVycmV1ciBkZSBsYSBwcm9kdWN0aW9uIChyZWpldCBzb3VoYWl0w6kpXCIsIG9rOiBcIkNvZGVzIGlkZW50aXF1ZXMgKHJlamV0IMOgIHRvcnQpXCJ9KVxudHlwZXNOYWYgPSBkYXRhTmFmLmJ5X3R5cGUubWFwKChkKSA9PiAoey4uLmQsIGxhYmVsOiBMQUJFTFNfTkFGW2QudHlwZV0gPz8gZC50eXBlLCBraW5kOiBkLmlzX2Vycm9yID8gS0lORFNfTkFGLmVycm9yIDogS0lORFNfTkFGLm9rfSkpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTUiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJQbG90LnBsb3Qoe1xuICB3aWR0aDogMTAwMCxcbiAgaGVpZ2h0OiAzMDAsXG4gIG1hcmdpbkxlZnQ6IDI0MCxcbiAgbWFyZ2luUmlnaHQ6IDkwLFxuICBtYXJnaW5Cb3R0b206IDIwLFxuICBzdHlsZToge2ZvbnRTaXplOiBcIjE3cHhcIiwgYmFja2dyb3VuZDogXCJ0cmFuc3BhcmVudFwifSxcbiAgeDoge2xhYmVsOiBudWxsLCBwZXJjZW50OiB0cnVlLCBkb21haW46IFswLCAxMDBdLCBncmlkOiB0cnVlLCB0aWNrRm9ybWF0OiAoZCkgPT4gZCArIFwiICVcIn0sXG4gIHk6IHtsYWJlbDogbnVsbCwgZG9tYWluOiB0eXBlc05hZi5tYXAoKGQpID0+IGQubGFiZWwpLnJldmVyc2UoKX0sXG4gIGNvbG9yOiB7XG4gICAgbGVnZW5kOiB0cnVlLFxuICAgIHN0eWxlOiB7Zm9udFNpemU6IFwiMTZweFwifSxcbiAgICBkb21haW46IE9iamVjdC52YWx1ZXMoS0lORFNfTkFGKSxcbiAgICByYW5nZTogW0NPTE9SUy5lcnJvciwgQ09MT1JTLm9rXSxcbiAgfSxcbiAgbWFya3M6IFtcbiAgICBQbG90LmJhclgodHlwZXNOYWYsIHtcbiAgICAgIHk6IFwibGFiZWxcIiwgeDogXCJyZWplY3Rpb25fcmF0ZVwiLCByeDI6IDQsIGluc2V0VG9wOiA0LCBpbnNldEJvdHRvbTogNCxcbiAgICAgIGZpbGw6IFwia2luZFwiLFxuICAgIH0pLFxuICAgIFBsb3QudGV4dCh0eXBlc05hZiwge1xuICAgICAgeTogXCJsYWJlbFwiLCB4OiBcInJlamVjdGlvbl9yYXRlXCIsIGR4OiA2LCB0ZXh0QW5jaG9yOiBcInN0YXJ0XCIsXG4gICAgICB0ZXh0OiAoZCkgPT4gYCR7Zm10UGN0KGQucmVqZWN0aW9uX3JhdGUpfSAgKG4gPSAke2Qubi50b0xvY2FsZVN0cmluZyhcImZyLUZSXCIpfSlgLFxuICAgIH0pLFxuICAgIFBsb3QucnVsZVgoWzBdKSxcbiAgXSxcbn0pXG4ifV19
     </script>
     <script type="module">
     if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
