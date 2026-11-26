@@ -39,7 +39,6 @@ Important folders and files:
   - `neo4j_graph/` — graph building and helpers for Neo4j-backed graphs
   - `navigator/` — navigator logic: travel from the root to leaves in the graph, explaining each step
   - `utils/` — utility modules (logging, parser)
-- `presentation/` — presentation materials and templates
 - `pyproject.toml` — project metadata and dependencies
 
 ## Architecture overview
