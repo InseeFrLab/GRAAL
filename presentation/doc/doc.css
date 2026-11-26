@@ -1,0 +1,9 @@
+.draft-banner { border-left: 4px solid #eda100; background: rgba(237,161,0,.08); padding: .6rem 1rem; border-radius: 4px; margin: 0 0 1.2rem; font-size: .92em; }
+.key-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; margin: 1.2rem 0; }
+.figure-box { border: 1px solid rgba(0,0,0,.12); border-radius: 8px; padding: .8rem 1rem; }
+.figure-box .value { display: block; font-size: 1.7rem; font-weight: 600; line-height: 1.2; }
+.figure-box .label { display: block; font-size: .82rem; color: #6c757d; }
+.status { font-size: .8em; padding: .1em .45em; border-radius: 4px; white-space: nowrap; }
+.status-done { background: rgba(27,175,122,.15); }
+.status-partial { background: rgba(237,161,0,.18); }
+.status-todo { background: rgba(108,117,125,.15); }

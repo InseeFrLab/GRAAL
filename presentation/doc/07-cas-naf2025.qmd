@@ -1,0 +1,76 @@
+---
+title: "Travaux exploratoires sur la NAF 2025"
+description: "Classification agentique comparée au modèle supervisé, diagnostic de l'espace d'embedding, vérification des labels d'entraînement."
+---
+
+::: {.draft-banner}
+Ces travaux sont **exploratoires** : petits échantillons ou référence non annotée. Ils orientent les choix de conception mais ne permettent pas de conclure sur les performances.
+:::
+
+Résultats détaillés : [diagnostic embeddings](../embeddings.qmd), [évaluation multi-méthode](../multi_method_eval.qmd).
+
+## Problématique
+
+Le cas d'usage **recodage** demande un classifieur : à partir d'un libellé seul, trouver le bon code. GRAAL en propose trois, agentiques (*Navigator*, *Agentic RAG*, *Summary*, voir le [chapitre 3](03-methodes.qmd)). La question est de savoir comment ils se situent par rapport au modèle supervisé de production, à quel coût, et sur quoi s'appuie leur point de départ.
+
+## Données
+
+Le jeu d'évaluation GRAAL est tiré du jeu de test du modèle de production APE : **5 181 libellés**, stratifiés par sous-classe NAF 2025 (environ 10 par code), avec le code `apet2025` comme référence. Ce code est un **label administratif** (en partie recodé de la NAF rév. 2 vers la NAF 2025), pas une annotation dédiée : sa qualité est incertaine, ce que les résultats ci-dessous confirment.
+
+## L'espace d'embedding comme point de départ
+
+L'*Agentic RAG* démarre sur le code dont la notice est la plus proche du libellé, par similarité d'embedding (`qwen3-embedding-8b`). Sur les 5 181 libellés :
+
+| Mesure | Valeur |
+|---|---|
+| Bon code en tête (accuracy@1) | 48,1 % |
+| Bon code parmi les 5 premiers (recall@5) | 77,5 % |
+| Bonne section en tête | 77,7 % |
+| Accuracy@1 en ajoutant les exclusions au texte encodé | 50,7 % |
+| Recall@5 en ajoutant les exclusions | 80,4 % |
+
+: Qualité de la recherche par similarité libellé → notice. {#tbl-embeddings}
+
+L'exactitude croît régulièrement du code à la section : quand le premier voisin est faux, il reste en général dans la bonne zone de la nomenclature. **La recherche par similarité est un bon point de départ, pas une réponse** : c'est ce qui justifie de la faire vérifier et corriger par un agent qui navigue, plutôt que de s'y fier seule.
+
+## Comparaison de quatre classifieurs (60 libellés)
+
+Les quatre classifieurs ont été lancés sur **60 libellés** du jeu d'évaluation, avec un *MatchVerifier* sur la référence et un arbitrage *CodeChooser* quand les candidats divergent.
+
+| Méthode | Exactitude vs `apet2025` | Durée moyenne par libellé | Échecs |
+|---|---|---|---|
+| Supervisé (production) | 50,0 % | 0,3 s | 0 |
+| *Navigator* | 46,7 % | 76 s | 0 |
+| *Agentic RAG* | 45,0 % | 238 s | 0 |
+| *Summary* | 23,3 % (60,9 % sur ses 23 réponses) | 149 s | 37 |
+
+: Exactitude et coût par méthode, sur 60 libellés. {#tbl-multi}
+
+Ces chiffres se lisent avec précaution :
+
+- **sur 60 libellés, l'intervalle de confiance à 95 % d'une exactitude de 50 % va de 38 % à 62 %** : les trois premières méthodes ne sont pas distinguables ;
+- la référence est douteuse : le *MatchVerifier* ne la confirme que sur 33 lignes sur 60 (55 %), et l'arbitrage final ne la rejoint que sur 27 ;
+- les durées sont gonflées par la contention sur l'endpoint LLM partagé (6 appels en parallèle, nombreux timeouts) ; l'*Agentic RAG*, censé être plus rapide que le *Navigator* grâce à son point de départ, a été le plus lent ;
+- le *Summary* et le *CodeChooser* (55 % d'échecs sur les arbitrages) n'ont pas les garde-fous du *Navigator* : un timeout interrompt l'appel.
+
+Deux constats tiennent malgré tout : **le coût est sans commune mesure** (de 0,3 s à 4 minutes par libellé, un facteur de 800), et **seules les méthodes avec une boucle pilotée en Python sont robustes** aux défaillances de l'endpoint.
+
+Quand un arbitrage a pu se faire, le *CodeChooser* rejoint plus souvent le *Navigator* (83 %) que la référence elle-même (75 %). Ce résultat doit être vérifié : les candidats lui sont présentés dans un ordre fixe, et un **biais de position** pourrait l'expliquer ([chapitre 2](02-litterature.qmd)).
+
+## Vérifier les labels d'entraînement
+
+Le *MatchVerifier* a aussi été lancé sur **2 000 lignes du jeu d'entraînement** NAF 2025, pour estimer la part de labels douteux. Il en rejette **environ 21 %**. Ce chiffre ne mesure pas un taux d'erreur, faute de référence : les chapitres [5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd) montrent qu'une partie des rejets porte sur des codes justes. Ces verdicts sont en cours de revue humaine avec l'application dédiée *[état de la revue à compléter]*.
+
+## Enseignements
+
+- Les classifieurs agentiques **ne battent pas le modèle supervisé** sur son terrain et coûtent deux à trois ordres de grandeur de plus. Leur intérêt est ailleurs : absence de données d'entraînement (nouvelle nomenclature), traçabilité, second avis.
+- La **robustesse** est un sujet à part entière : une chaîne multi-appels doit encadrer chaque appel LLM (relance, repli) pour être utilisable sur un endpoint partagé.
+- Le jeu d'évaluation NAF 2025 hérite des **doutes sur les labels** administratifs : il ne permet pas de classer des méthodes proches.
+
+## Limites et perspectives
+
+- Refaire la comparaison sur **plusieurs centaines de libellés** d'un jeu de référence fiable ([chapitre 4](04-evaluation.qmd#sec-gold)), avec tests appariés.
+- Étendre les garde-fous du *Navigator* au *Summary* et au *CodeChooser*.
+- Mesurer le biais de position du *CodeChooser* en permutant l'ordre des candidats.
+- Comparer d'autres modèles d'embedding pour améliorer le point de départ.
+- Évaluer le cas d'usage **génération synthétique**, encore non mesuré.

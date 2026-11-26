@@ -1,0 +1,123 @@
+---
+title: "Cas d'usage : MatchVerifier sur la COICOP"
+subtitle: "Vérifier la codification Sirus des dépenses de l'enquête Budget de famille"
+description: "Évaluation du MatchVerifier contre l'annotation humaine sur la vague 1 de Budget de famille (COICOP 2018)."
+---
+
+Résultats interactifs : [page MatchVerifier COICOP](../match_verifier_coicop.qmd). Présentation à l'équipe métier : [slides COICOP](../coicop/index.html).
+
+## Problématique
+
+Dans l'enquête Budget de famille, les dépenses des ménages sont codées en COICOP 2018 par une chaîne automatique dont la sortie conciliée s'appelle **Sirus** [@codifcoicopbdf]. Sirus se trompe sur environ **une ligne sur six**. Aujourd'hui, trouver ces erreurs demande de relire.
+
+**Question : le *MatchVerifier* peut-il désigner les lignes à relire en priorité ?** Et quand il rejette un code, propose-t-il le bon ?
+
+La vague 1 est un terrain favorable pour répondre : on y dispose, pour chaque dépense, à la fois du code Sirus et du code retenu par les annotateurs.
+
+## Données
+
+| Étape | Lignes | Paires |
+|---|---|---|
+| Sortie `reconcile-sirus` du workflow de codification (8 septembre 2026) | 14 695 | |
+| − codes Sirus techniques 98/99 absents du graphe (le vérificateur n'aurait aucune notice à lire) | − 400 | |
+| Lignes conservées | 14 295 | |
+| Dédoublonnage (libellé, code Sirus, code humain) | | 8 981 |
+| − paires abandonnées après deux échecs de l'appel LLM (0,8 %) | | − 72 |
+| **Paires jugées** | | **8 909** |
+
+: Constitution du jeu COICOP. {#tbl-coicop-donnees}
+
+- **Code jugé** : le code Sirus, au plus au niveau 4 de la COICOP.
+- **Référence** : le code de l'annotateur, ramené au niveau 4.
+- **Codes techniques 98/99** côté annotateur (regroupements comme « courses alimentaires », remises, impôts) : ils n'ont pas d'équivalent que Sirus puisse prédire et sont isolés dans une vérité « hors 98/99 ».
+- **Taux d'erreur de Sirus** : 19,6 % des lignes en vérité exacte, **17,3 % en vérité de branche**.
+
+## Protocole
+
+Le protocole commun est décrit au [chapitre 4](04-evaluation.qmd). Spécificités :
+
+- **vérité de branche** retenue comme vérité principale : si l'annotateur a codé `03.1.2` (vêtements) et Sirus `03.1.2.1` (vêtements pour hommes), Sirus n'a fait que préciser ;
+- profil `coicop2018`, avec des **règles de lecture** écrites par l'équipe : une marque, un conditionnement, une quantité ne changent pas le poste ; plusieurs articles sur une ligne : le premier cité décide ; un libellé ambigu (« café », qui peut être servi au comptoir ou acheté en paquet) est codé sur la lecture la plus plausible ;
+- modèle `qwen3-6-35b-moe`, prompt du commit `c3e01a2` ;
+- run terminé le 13 octobre 2026 : 49 h de calcul cumulé, 10 h en temps réel avec 5 appels en parallèle, **20 s par paire** en moyenne.
+
+## Résultats
+
+### Vue d'ensemble
+
+| Vérité | Paires | dont erreurs | Erreurs détectées | Rejets à tort | Précision (dans l'éval) | Précision au taux réel | AUC `p_match` | Alternative = humain |
+|---|---|---|---|---|---|---|---|---|
+| Exacte | 8 909 | 2 148 | 49,8 % | 7,1 % | 68,9 % | 63,0 % | 0,73 | 44,2 % |
+| **Branche** | **8 909** | **1 988** | **51,4 %** | **7,6 %** | **65,9 %** | **58,4 %** | **0,74** | **42,4 %** |
+| Branche, hors 98/99 | 8 568 | 1 647 | 51,1 % | 7,6 % | 61,4 % | 58,3 % | 0,73 | 51,5 % |
+
+: Performances du *MatchVerifier* en COICOP, par paire distincte. {#tbl-coicop-res}
+
+- **Il détecte une erreur de Sirus sur deux** et **rejette 7,6 % des codes justes**. Compté par ligne plutôt que par paire, le rappel est de 49 % et les rejets à tort tombent à 5,4 % : les libellés fréquents sont plus faciles.
+- **4 rejets sur 10 portent sur un code juste** au taux d'erreur réel. Envoyer en reprise tout ce qu'il rejette ferait revoir 17 % des lignes pour y trouver la moitié des erreurs.
+- **Quand il rejette à raison, il corrige une fois sur deux** : son alternative tombe dans la branche du code humain dans 52 % des cas (hors codes 98/99, que le graphe ne contient pas).
+
+### Par type d'écart
+
+| Type d'écart entre Sirus et l'humain | Paires | Rejetées |
+|---|---|---|
+| Accord exact (rejet = rejet à tort) | 6 761 | 7,1 % |
+| Même division, groupe différent | 109 | 66,1 % |
+| Division différente | 675 | 57,5 % |
+| Code humain technique 98/99 | 341 | 53,1 % |
+| Même groupe, classe ou sous-classe différente | 768 | 48,8 % |
+| Humain moins précis (Sirus = sous-catégorie) | 160 | 29,4 % |
+| Sirus moins précis que l'humain | 95 | 6,3 % |
+
+: Taux de rejet par type d'écart. {#tbl-coicop-type}
+
+Le vérificateur repère mieux les **erreurs grossières** (environ 60 % de rejet quand la division ou le groupe diffèrent) que les **confusions entre classes voisines** (49 %). Il accepte Sirus quand Sirus est seulement moins précis que l'humain (6 % de rejet), ce qui est le comportement voulu.
+
+Deux divisions se démarquent négativement : la **restauration** (11 : 38 % d'erreurs détectées, 13 % de rejets à tort), qui bute sur l'ambiguïté consommé sur place / acheté en magasin, et la **santé** (06 : 18 % de rejets à tort).
+
+### `p_match` ne permet pas de choisir un seuil
+
+`p_match` est quasi binaire : 17 % des paires sous 0,1, 82 % au-dessus de 0,9. Passer le seuil de 0,1 à 0,9 ne fait varier le taux de rejet que de 17,2 % à 17,5 %. Le seul point de fonctionnement réel est le verdict. Les scores chiffrés discriminent un peu mieux : ne garder que les rejets où l'alternative dépasse le code jugé d'au moins 60 points porte la précision de 61 % à 66 %, pour 29 % de rejets en moins.
+
+### Un second avis : le *Summary classifier*
+
+Pour situer le vérificateur, chaque libellé a aussi été classé par le *Summary classifier* ([chapitre 3](03-methodes.qmd)), sans voir le code Sirus (8 621 libellés sur 8 717, les autres en échec sur un endpoint saturé ; 39 s par libellé).
+
+| Exactitude face à l'humain (hors 98/99) | Sirus | Summary |
+|---|---|---|
+| Division | 92,2 % | 87,7 % |
+| Groupe | 90,9 % | 85,3 % |
+| Niveau 4, exact | 79,0 % | 57,1 % |
+| Niveau 4, branche | 80,9 % | 71,2 % |
+
+: Le *Summary classifier* classe moins bien que Sirus. {#tbl-coicop-summary}
+
+| Signal d'erreur (branche, hors 98/99) | Lignes signalées | Erreurs détectées | Codes justes signalés | Précision au taux réel |
+|---|---|---|---|---|
+| *MatchVerifier* rejette | 15,8 % | 51,1 % | 7,5 % | 61,6 % |
+| *Summary* ≠ Sirus | 31,4 % | 71,5 % | 21,9 % | 43,4 % |
+| **Les deux signalent** | **13,9 %** | **47,7 %** | **5,9 %** | **65,5 %** |
+
+: Combiner le vérificateur et un second classifieur. {#tbl-coicop-combi}
+
+Le *Summary* n'est pas un remplaçant de Sirus, et son désaccord avec Sirus signale trop. Mais **croisé avec le vérificateur**, il donne le signal le plus fiable mesuré : en n'alertant que si les deux signalent, on garde 48 % des erreurs (3 points de moins) en ne signalant plus que 5,9 % des codes justes.
+
+## Enseignements
+
+- **La référence humaine est elle-même bruitée.** Une relecture d'une quarantaine de désaccords tirés au hasard montre qu'environ la moitié ne sont pas des fautes du vérificateur : erreurs « ratées » où le code Sirus est défendable, voire cité par la notice ; rejets « à tort » défendables (notice qui exclut explicitement le produit). Les vraies fautes du vérificateur portent surtout sur des **marques et abréviations** qu'il ne reconnaît pas. Les chiffres ci-dessus sont des **bornes pessimistes**.
+- **Défauts du vérificateur repérés** : son alternative reprend le code jugé dans 7,5 % des paires et en est un sous-code dans 21 %, ce qui ne teste rien ; son verdict contredit sa propre règle (alternative supérieure de 20 points ou plus, mais code accepté) dans 88 paires (1 %).
+- **Le coût est compatible avec un usage hors ligne** sur un échantillon ou en différé (20 s par paire), pas avec un contrôle exhaustif en temps réel.
+
+## Limites
+
+- Une seule vague, une seule annotation par ligne, un seul modèle et un seul prompt.
+- Les 400 lignes à code technique Sirus sont exclues faute de notice.
+- La relecture des désaccords porte sur une quarantaine de cas : elle indique un ordre de grandeur, pas une correction des métriques.
+
+## Perspectives
+
+1. **Prioriser la reprise plutôt que la router** : avec une précision de 58 %, le verdict seul ferait revoir beaucoup de codes justes. Il peut ordonner la relecture, et le croisement avec un second avis est le signal le plus fiable.
+2. **Faire arbitrer un échantillon de désaccords** par l'équipe métier avec l'application de revue, pour séparer les fautes du vérificateur de celles de l'annotation et corriger les annotations fausses.
+3. **Corriger le prompt** : interdire une alternative égale au code jugé ou à l'un de ses sous-codes, rappeler que le verdict suit les scores.
+4. **Compléter les règles de lecture avec l'équipe métier**, en priorité pour la restauration (sur place / à emporter), la santé, les marques et abréviations fréquentes.
+5. **Réévaluer sur des données non vues** (autre vague) après ces corrections.

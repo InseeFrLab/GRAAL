@@ -1,0 +1,65 @@
+---
+title: "Contexte et objectifs"
+description: "Pourquoi un framework d'agents LLM pour la codification automatique, et pour quels usages."
+---
+
+## La codification automatique à l'Insee
+
+Coder un libellé libre dans une nomenclature est une opération massive et répétitive de la statistique publique. Deux exemples servent de fil rouge à cette note :
+
+- **le code APE** : chaque entreprise qui s'immatricule décrit son activité en quelques mots, que l'Insee code dans la NAF (environ 730 sous-classes en NAF rév. 2, 5 niveaux). Depuis fin 2022, un modèle de machine learning appelé en temps réel par Sirene code la majorité des libellés, le reste partant en reprise manuelle [@codifapedocs] ;
+- **la COICOP dans l'enquête Budget de famille** : les dépenses des ménages (tickets de caisse, carnets) sont codées dans la COICOP 2018 par une chaîne qui combine règles, modèles et arbitrage, dont la sortie Sirus est utilisée au [chapitre 5](05-cas-coicop.qmd) [@codifcoicopbdf].
+
+Les modèles supervisés de production, d'abord fastText [@joulin2016] puis torchTextClassifiers [@tayebjee2025jms], ont fait leurs preuves : rapides (moins de 300 ms par prédiction sur CPU), frugaux, précis sur le flux courant. Ils ont toutefois trois dépendances qui motivent GRAAL.
+
+1. **Ils ont besoin de beaucoup de labels** : de 100 000 à 1 million d'observations annotées. Quand une nomenclature est révisée (passage de la NAF rév. 2 à la NAF 2025) ou qu'un nouveau domaine est codé, ces labels n'existent pas encore [@randriamanana2025jms; @pramil2026isi].
+2. **Ils apprennent les labels tels qu'ils sont.** Les données d'entraînement sont des codifications passées, en partie automatiques, en partie manuelles, dont la qualité n'est pas mesurée systématiquement. Un modèle reproduit ces erreurs.
+3. **Ils ne se surveillent pas eux-mêmes.** Sans annotation humaine continue, il n'existe pas aujourd'hui de moyen de savoir si la qualité du modèle déployé se dégrade. Le monitoring est le maillon faible de la chaîne MLOps de l'APE [@codifapedocs].
+
+## Pourquoi des agents LLM sur un graphe
+
+Les grands modèles de langage (LLM) savent lire une note explicative et la confronter à un libellé, sans exemple annoté. Un premier prototype de **RAG** (recherche des notices les plus proches du libellé par similarité d'embeddings, puis choix par un LLM) a montré les limites de l'approche « à plat » : dépendance au découpage des notices et au modèle d'embedding, saturation du contexte, comparaison hétérogène entre un libellé court et une notice longue, aucune trace du raisonnement, et surtout **aucune prise en compte de la hiérarchie** de la nomenclature (voir le [chapitre 2](02-litterature.qmd)).
+
+GRAAL fait deux choix pour y répondre :
+
+- **la nomenclature devient un graphe** : chaque poste est un nœud (code, intitulé, note explicative, inclusions, exclusions), relié à son parent. La hiérarchie est explicite et parcourable ;
+- **les LLM deviennent des agents à outils** : au lieu de recevoir un contexte figé, ils appellent des fonctions (« lire la notice de ce code », « voir les enfants de ce poste », « descendre d'un niveau ») et décident eux-mêmes de ce qu'ils doivent consulter. Chaque appel est journalisé, ce qui rend la décision traçable.
+
+Un principe de conception en découle : **le code ne connaît rien de la nomenclature métier.** Toute la connaissance vit dans le graphe ; changer de nomenclature revient à reconstruire le graphe à partir d'un autre fichier de notes, sans toucher aux agents. Le framework a été instancié sur la NAF 2025, la NACE rév. 2.1, la NAF rév. 2 et la COICOP 2018.
+
+## Objectifs
+
+| Objectif | Ce que cela demande |
+|---|---|
+| **S'affranchir des données labellisées** | Coder à partir des notes explicatives seules (*zero-shot*), ou avec peu d'exemples |
+| **Introduire du raisonnement et de la traçabilité** | Des décisions justifiées étape par étape, exploitant la hiérarchie, rejouables |
+| **Rester générique** | Aucun code spécifique à une nomenclature ; des contrats d'entrée/sortie stricts entre agents |
+| **Mesurer honnêtement** | Une évaluation chiffrée, reproductible, avec intervalles de confiance, plutôt qu'une démonstration |
+
+: Objectifs du projet. {#tbl-objectifs}
+
+## Positionnement : une brique hors ligne, pas un remplaçant
+
+Une chaîne d'agents multiplie les appels LLM : de quelques secondes à plusieurs minutes par libellé, sur des GPU partagés, contre une fraction de seconde pour le modèle supervisé. **GRAAL n'a pas vocation à coder le flux en temps réel.** Il se positionne sur trois cas d'usage hors ligne :
+
+| Cas d'usage | Question | Agent mobilisé | État |
+|---|---|---|---|
+| **Audit et monitoring de la codification** | Ce code attribué (par le modèle, par des règles, par un humain) est-il correct ? Lesquels faut-il revoir en priorité ? | *MatchVerifier*, éventuellement suivi d'un classifieur pour proposer un recodage | [Évalué]{.status .status-done} en COICOP et en NAF rév. 2 (chapitres [5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd)) |
+| **Recodage d'un stock** | Recoder un historique après une révision de nomenclature, ou fiabiliser des labels douteux | Classifieurs agentiques (*Navigator*, *Agentic RAG*, *Summary*), arbitrage *CodeChooser* | [Exploratoire]{.status .status-partial} : 60 libellés en NAF 2025 ([chapitre 7](07-cas-naf2025.qmd)) |
+| **Génération de données synthétiques** | Produire des libellés pour les codes rares, afin d'enrichir l'entraînement du modèle supervisé | *NaiveCode2Text*, *Code2Text* | [Non évalué]{.status .status-todo} |
+
+: Les trois cas d'usage de GRAAL. {#tbl-usages}
+
+Ce positionnement fixe la barre : il ne s'agit pas de « battre » le modèle de production, mais de savoir **ce que chaque cas d'usage apporte concrètement**, et à quel coût. Le critère pertinent est souvent conditionnel : un moteur moins bon que le modèle de production sur l'ensemble du flux peut être utile s'il a raison là où le modèle se trompe [@codifapedocs].
+
+## Historique du projet
+
+| Période | Étape |
+|---|---|
+| Début 2026 | Prototype RAG, puis premier agent *Navigator* sur la NAF 2025 ; première présentation du framework |
+| Juillet 2026 | Consolidation du dépôt, intégration continue, module d'évaluation (métriques par niveau, bootstrap, tests appariés), jeu d'évaluation stratifié NAF 2025, diagnostic de l'espace d'embedding |
+| Septembre 2026 | Refonte du *MatchVerifier* (scores chiffrés, alternative systématique, règle de décision explicite), application de revue humaine déployée |
+| Octobre 2026 | Évaluation complète sur la COICOP (Budget de famille, vague 1), comparaison avec le *Summary classifier* |
+| Novembre 2026 | Évaluation complète sur la NAF rév. 2 (campagne d'annotation 2024) ; présentation des résultats à l'équipe métier |
+
+: Principales étapes. {#tbl-historique}

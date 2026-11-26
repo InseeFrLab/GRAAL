@@ -1,0 +1,58 @@
+---
+title: "Revue de littérature"
+description: "Ce que la littérature dit des approches mobilisées par GRAAL, et comment cela motive ses choix."
+---
+
+::: {.draft-banner}
+**Première version, volontairement courte.** Elle vise à justifier les choix de conception, pas à être exhaustive. Références à compléter, notamment sur les travaux d'autres instituts statistiques qui utilisent des LLM pour la codification *[À compléter]*.
+:::
+
+## Codification automatique dans la statistique publique
+
+La codification de réponses libres (activité, profession, produit) est un problème ancien de la statistique publique. Les premiers outils reposaient sur des dictionnaires et des règles, comme SICORE à l'Insee [@meyer1997]. L'apprentissage statistique les a progressivement remplacés : les comparaisons sur la codification des professions montrent qu'un modèle entraîné sur des réponses codées dépasse les règles, à condition de disposer de beaucoup d'exemples, et qu'un **seuil de confiance** permet de coder automatiquement la part la plus sûre du flux en renvoyant le reste à un codeur [@gweon2017].
+
+C'est le schéma de la codification APE actuelle : un classifieur de texte léger [@joulin2016; @tayebjee2025jms] et un seuil sur son indice de confiance [@codifapedocs]. Ses limites sont connues : besoin d'un large corpus annoté, reproduction des erreurs des labels, coût d'un changement de nomenclature [@randriamanana2025jms].
+
+**Pour GRAAL** : le modèle supervisé reste la référence de production. GRAAL s'évalue par rapport à lui, sur les cas où il est faible (labels rares ou absents, révision de nomenclature, vérification).
+
+## LLM et classification sans exemple
+
+Les LLM classent du texte sans entraînement spécifique, à partir d'une simple description des classes. Mais une nomenclature de plus de mille postes, avec ses notes explicatives, ne tient pas dans un prompt de façon exploitable, et un LLM qui « connaît » la NAF de mémoire peut confondre les versions ou inventer des codes. Les LLM ont aussi été utilisés à l'Insee pour **recoder** les données d'entraînement lors du passage à la NAF 2025, en leur fournissant les notes explicatives des codes candidats issus de la table de passage [@randriamanana2025jms; @pramil2026isi].
+
+Faire raisonner le modèle explicitement avant de répondre (*chain-of-thought*) améliore nettement les tâches qui demandent plusieurs étapes [@wei2022cot].
+
+**Pour GRAAL** : la connaissance de la nomenclature n'est jamais supposée dans le modèle ; elle est lue dans le graphe, version par version. Le raisonnement est activé quand la tâche l'exige (recherche d'un code concurrent pour le *MatchVerifier*), à un coût mesuré ([chapitre 3](03-methodes.qmd)).
+
+## Génération augmentée par recherche (RAG) et graphes
+
+Le RAG consiste à récupérer des documents pertinents puis à les donner au modèle pour qu'il réponde [@lewis2020rag]. Appliqué à la codification, il récupère les notices les plus proches du libellé. Ses limites, observées sur le prototype de GRAAL, sont celles de toute recherche « à plat » : la qualité dépend du découpage et du modèle d'embedding, un libellé de quelques mots se compare mal à une notice de plusieurs paragraphes, et la structure hiérarchique est ignorée.
+
+Les variantes « GraphRAG » organisent le corpus en graphe pour récupérer des ensembles cohérents plutôt que des passages isolés [@edge2024graphrag]. Dans le cas d'une nomenclature, le graphe n'a pas à être construit par extraction : **il est donné** par la hiérarchie officielle.
+
+**Pour GRAAL** : la recherche par similarité n'est conservée que comme **point de départ** (*warm start*) d'un agent qui vérifie et corrige en navigant (*Agentic RAG*). Le diagnostic de l'espace d'embedding ([chapitre 7](07-cas-naf2025.qmd)) confirme ce choix : le bon code n'est en tête qu'une fois sur deux, mais il est parmi les cinq premiers trois fois sur quatre.
+
+## Agents à outils
+
+Un agent alterne raisonnement et actions : il décide d'appeler un outil, lit le résultat, poursuit [@yao2023react]. Les modèles récents sont entraînés à appeler des fonctions décrites par un schéma [@schick2023toolformer], et les API compatibles OpenAI exposent ce mécanisme de façon standard.
+
+**Pour GRAAL** : les outils sont des requêtes Neo4j génériques (lire la notice d'un code, lister les enfants, descendre ou remonter). La classification hiérarchique se fait alors par **descente dans l'arbre**, une approche classique de la classification hiérarchique [@silla2011survey] où chaque niveau est décidé par un LLM qui lit les notices des options. L'expérience a montré qu'un agent laissé libre ne sait pas toujours quand s'arrêter : le critère d'arrêt (code terminal atteint) est donc vérifié **en Python sur le graphe**, jamais laissé à l'appréciation du modèle.
+
+## Le LLM comme juge
+
+Utiliser un LLM pour évaluer une réponse (*LLM-as-a-judge*) est devenu courant ; son accord avec des humains peut être élevé, mais il a des **biais documentés** : préférence pour la position d'une réponse dans la liste, pour les réponses longues, pour ses propres productions [@zheng2023judge; @wang2024fair].
+
+**Pour GRAAL** : le *MatchVerifier* est un juge. D'où plusieurs choix : il ne sait pas d'où vient le code (vérité terrain ou prédiction), il ne voit pas la confiance du classifieur (une ancre, pas un argument), et sa règle de décision est explicite et chiffrée. Le biais de position est un risque identifié pour le *CodeChooser*, qui arbitre une liste ordonnée de candidats ; il reste à mesurer ([chapitre 8](08-enseignements.qmd)).
+
+## Bruit d'étiquetage et jeu de référence
+
+Les labels humains sont bruités, y compris dans les jeux de test : sur des jeux de référence en apprentissage automatique, une part non négligeable des étiquettes de test est fausse, assez pour inverser le classement de modèles [@northcutt2021pervasive]. Des méthodes existent pour repérer les labels suspects à partir des prédictions d'un modèle [@northcutt2021confident].
+
+Mesurer la fiabilité d'une annotation suppose de **faire annoter les mêmes items par plusieurs personnes** et de calculer un accord corrigé du hasard (kappa, alpha de Krippendorff) [@artstein2008]. Avec plusieurs annotations par item, on peut aussi estimer la vraie classe et le taux d'erreur de chaque annotateur [@dawid1979]. Dans la codification APE, trois experts ne s'accordent sur la sous-classe NAF 2025 que dans environ 62 % des cas [@codifapedocs] : c'est un plafond pour toute métrique calculée contre un seul annotateur.
+
+**Pour GRAAL** : les chiffres des chapitres [5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd) sont calculés contre une annotation simple et doivent être lus comme des **bornes**. Le besoin d'un jeu de référence doublement annoté est détaillé au [chapitre 4](04-evaluation.qmd#sec-gold).
+
+## Incertitude et calibration
+
+Les réseaux de neurones modernes sont souvent mal calibrés : un score de 0,9 ne correspond pas à 90 % de bonnes réponses [@guo2017calibration]. Pour les LLM, deux mesures coexistent : la confiance **verbalisée** par le modèle, généralement surestimée [@xiong2024], et la probabilité lue dans les **logprobs** des tokens générés, mieux informée sur ce que le modèle « sait » [@kadavath2022]. La prédiction conforme fournit, à partir d'un jeu de calibration, des seuils ou des ensembles de prédiction avec une garantie de couverture [@angelopoulos2023gentle].
+
+**Pour GRAAL** : le *MatchVerifier* renvoie les deux mesures (`is_match_score` déclaré, `p_match` lu dans les logprobs). Un constat important des évaluations est que le **raisonnement rend `p_match` quasi binaire** : le modèle ayant tranché dans son bloc de réflexion, il émet le verdict sans hésiter, et il n'y a plus de seuil à choisir. La calibration (conforme ou non) passe donc par les scores chiffrés plutôt que par `p_match`.

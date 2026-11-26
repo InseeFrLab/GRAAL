@@ -1,0 +1,20 @@
+---
+title: "Références"
+number-sections: false
+citation-location: document
+reference-location: document
+nocite: |
+  @*
+---
+
+## Code et documentation
+
+- Dépôt GRAAL : <https://github.com/InseeFrLab/GRAAL>
+- Documentation technique du code : [`docs/framework.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md)
+- Document de cadrage (juillet 2026) : [`docs/cadrage_2026-07.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/cadrage_2026-07.md)
+- Rapports d'évaluation : [`docs/eval/`](https://github.com/InseeFrLab/GRAAL/tree/main/docs/eval)
+
+## Bibliographie
+
+::: {#refs}
+:::

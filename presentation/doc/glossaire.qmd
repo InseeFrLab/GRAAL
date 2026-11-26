@@ -1,0 +1,73 @@
+---
+title: "Glossaire"
+number-sections: false
+---
+
+Agent
+: Programme qui appelle un LLM en boucle, en lui permettant d'appeler des outils (fonctions) et de lire leurs résultats avant de répondre.
+
+*Agentic RAG*
+: Classifieur de GRAAL qui part du code le plus proche par similarité d'embedding, puis le vérifie et le corrige en naviguant dans le graphe.
+
+Alternative = humain
+: Parmi les erreurs détectées par le *MatchVerifier*, part où le code alternatif qu'il propose est le code de l'annotateur (ou un code de sa branche).
+
+AUC
+: Aire sous la courbe ROC. Probabilité qu'une erreur tirée au hasard reçoive un score plus bas qu'un code juste tiré au hasard. 0,5 : hasard ; 1 : séparation parfaite.
+
+*CodeChooser*
+: Agent qui arbitre entre plusieurs codes candidats pour un même libellé et en retient un.
+
+Embedding
+: Représentation d'un texte par un vecteur, telle que des textes proches par le sens aient des vecteurs proches.
+
+Erreurs détectées (rappel)
+: Part des erreurs de la codification de production que le *MatchVerifier* rejette.
+
+*Gold standard* (jeu de référence)
+: Échantillon annoté avec un soin particulier (tirage aléatoire, annotation à l'aveugle, idéalement double annotation et arbitrage), qui sert uniquement à mesurer les performances.
+
+Graphe de nomenclature
+: Base Neo4j où chaque poste de la nomenclature est un nœud portant sa note explicative, relié à son parent.
+
+LLM
+: *Large Language Model*, grand modèle de langage.
+
+*MatchVerifier*
+: Agent qui juge si un code est correct pour un libellé, note ce code et le meilleur concurrent, et rend un verdict `is_match`.
+
+`match_score`, `alternative_score`
+: Notes de 0 à 100 attribuées par le *MatchVerifier* au code jugé et à son alternative.
+
+*Navigator*
+: Classifieur de GRAAL qui descend la hiérarchie depuis la racine, niveau par niveau, jusqu'à un poste terminal.
+
+Note explicative (notice)
+: Texte officiel qui précise le contenu d'un poste : règle d'affectation, inclusions, exclusions.
+
+Paire
+: Combinaison distincte (libellé, code de production, code humain), unité de compte des évaluations.
+
+`p_match`
+: Probabilité que le code soit correct, lue dans les logprobs du token `true`/`false` du verdict.
+
+Précision du rejet
+: Part des rejets du *MatchVerifier* qui portent sur de vraies erreurs. Au taux réel : recalculée au taux d'erreur de la population.
+
+Profil de nomenclature
+: Paramétrage (`naf2025`, `naf2008`, `coicop2018`) qui sélectionne le graphe et les règles de lecture d'une nomenclature.
+
+RAG
+: *Retrieval-Augmented Generation* : récupérer des documents pertinents et les donner au LLM pour qu'il réponde.
+
+Rejets à tort
+: Part des codes justes que le *MatchVerifier* rejette.
+
+Sirus
+: Sortie conciliée de la chaîne de codification COICOP de Budget de famille.
+
+*Summary classifier*
+: Classifieur de GRAAL qui reçoit d'emblée un résumé de toute la nomenclature et choisit librement quels outils appeler.
+
+Vérité exacte, de branche, de classe
+: Définitions de l'erreur de production : code différent ; code différent et pas une subdivision du code humain ; quatre premiers caractères différents.

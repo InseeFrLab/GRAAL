@@ -1,0 +1,19 @@
+bibliography: references.bib
+lang: fr
+author:
+  - name: Théo Ferry
+    affiliations:
+      - SSP Lab, Insee
+  - name: Meilame Tayebjee
+    affiliations:
+      - SSP Lab, Insee
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    reference-location: margin
+    citation-location: margin
+    css: doc.css
+    mermaid:
+      theme: neutral

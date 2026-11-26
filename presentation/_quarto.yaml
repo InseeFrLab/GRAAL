@@ -8,6 +8,7 @@ project:
     - multi_method_eval.qmd
     - match_verifier_coicop.qmd
     - match_verifier_naf2008.qmd
+    - doc/*.qmd
 
   resources:
     - data/match_verifier_coicop.json
@@ -21,6 +22,8 @@ website:
     left:
       - text: "Accueil"
         href: index.qmd
+      - text: "Documentation"
+        href: doc/index.qmd
       - text: "Présentation"
         href: presentation.qmd
       - text: "Diagnostic embeddings"
@@ -33,3 +36,23 @@ website:
         href: match_verifier_naf2008.qmd
       - text: "Slides COICOP"
         href: coicop/index.html
+
+  sidebar:
+    - id: doc
+      title: "Documentation"
+      style: docked
+      contents:
+        - text: "Présentation de la note"
+          href: doc/index.qmd
+        - doc/01-contexte.qmd
+        - doc/02-litterature.qmd
+        - doc/03-methodes.qmd
+        - doc/04-evaluation.qmd
+        - section: "Cas d'usage"
+          contents:
+            - doc/05-cas-coicop.qmd
+            - doc/06-cas-naf2008.qmd
+            - doc/07-cas-naf2025.qmd
+        - doc/08-enseignements.qmd
+        - doc/glossaire.qmd
+        - doc/references.qmd

@@ -1,0 +1,138 @@
+---
+title: "Méthodes"
+description: "Le graphe de nomenclature, les agents de GRAAL et les choix de conception qui les sous-tendent."
+---
+
+Ce chapitre décrit les composants de GRAAL et justifie leurs choix. Le détail du code (contrats Pydantic, options de la CLI, variables d'environnement) est dans [`docs/framework.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md).
+
+## Vue d'ensemble
+
+GRAAL tient en trois briques :
+
+1. **un graphe de connaissance** (Neo4j [@neo4j]) qui représente la nomenclature ;
+2. **des agents LLM à outils**, chacun défini par un prompt, un jeu d'outils et un type de sortie ;
+3. **des contrats d'entrée/sortie stricts** (schémas Pydantic) qui permettent de chaîner les agents sans code de parsing ad hoc.
+
+```{mermaid}
+%%| label: fig-architecture
+%%| fig-cap: "Architecture de GRAAL. Les classifieurs proposent un code, les agents « closers » jugent ou arbitrent."
+flowchart TB
+  N[("Notes explicatives")] --> G[("Graphe Neo4j : codes, notices, hiérarchie, embeddings")]
+  L["Libellé"] --> C["Classifieurs : Navigator, Agentic RAG, Summary, Supervisé"]
+  G -. outils .-> C
+  G -. notices .-> MV
+  C -->|"code + explication"| MV["MatchVerifier : juge un code"]
+  C -->|"codes candidats"| CC["CodeChooser : arbitre"]
+  MV --> V["verdict, scores, code alternatif"]
+  CC --> D["code retenu"]
+```
+
+Les modèles sont servis par vLLM derrière une API compatible OpenAI, sur l'infrastructure de l'Insee. Les évaluations de cette note utilisent le modèle servi sous le nom `qwen3-6-35b-moe`, à température 0. Chaque appel est tracé dans Langfuse.
+
+## Le graphe de nomenclature
+
+Le graphe est construit à partir d'un fichier de notes explicatives, une ligne par poste :
+
+| Champ | Contenu |
+|---|---|
+| `CODE`, `NAME`, `LEVEL` | Code, intitulé, niveau hiérarchique (0 = racine) |
+| `PARENT_CODE` | Poste parent, d'où la relation `HAS_PARENT` |
+| `FINAL` | Le poste est-il terminal (feuille) ? |
+| `Implementation_rule`, `Includes`, `IncludesAlso`, `Excludes` | Note explicative : règle d'affectation, contenu, contenu également, exclusions |
+
+: Champs d'un nœud du graphe. {#tbl-noeud}
+
+Un embedding est calculé sur la concaténation de l'intitulé, de la règle d'affectation et des inclusions, pour la recherche par similarité.
+
+Des **profils de nomenclature** (`NOMENCLATURE=naf2025`, `naf2008`, `coicop2018`) sélectionnent l'instance Neo4j et quelques paramètres propres à la nomenclature, notamment les **règles de lecture** données au *MatchVerifier* (par exemple en COICOP : une marque ou un conditionnement ne changent pas le poste). Le code des agents est identique d'une nomenclature à l'autre.
+
+## Les outils
+
+Les agents interrogent le graphe par des fonctions génériques :
+
+- **sans état** : `get_code_information(code)`, `get_children(code)`, `get_siblings(code)`, `get_notices([codes])` ;
+- **avec état**, pour le *Navigator* qui garde une position courante : `get_current_children()`, `go_to_child(code)`, `go_to_parent()`, `navigate_to(code)`, `is_current_final()`.
+
+Un déplacement invalide (aller vers un code qui n'est pas un enfant) échoue explicitement. Chaque appel est journalisé avec la position avant et après, ce qui donne une trace rejouable du raisonnement.
+
+## Les classifieurs
+
+Tous rendent la même sortie : le libellé, un code, une explication et une confiance. Ils sont donc interchangeables en amont d'un juge.
+
+| Classifieur | Principe | Garde-fous |
+|---|---|---|
+| ***Navigator*** | Part de la racine et descend niveau par niveau en lisant les notices des enfants, en justifiant chaque choix | Arrêt décidé en Python quand le graphe dit que le poste est terminal ; relance si le modèle répète le même appel ; descente forcée vers une feuille si le budget de pas est épuisé |
+| ***Agentic RAG*** | Prend comme point de départ le code le plus proche par similarité d'embedding, le vérifie puis navigue pour le corriger si besoin | Mêmes garde-fous que le *Navigator* |
+| ***Summary*** | Reçoit d'emblée un résumé de toute la nomenclature (codes et intitulés) et les outils sans état ; choisit librement quoi consulter | Aucun : un seul appel libre, plus simple mais moins robuste |
+| **Supervisé** | Appelle l'API du modèle de production (codif-ape-API) | Pas un agent : sert de référence |
+
+: Les classifieurs de GRAAL. {#tbl-classifieurs}
+
+Le choix d'une **boucle pilotée en Python** pour le *Navigator* vient de l'expérience : un agent laissé libre ne peut pas à la fois utiliser ses outils de façon fiable et savoir quand s'arrêter, et il renvoie parfois un poste intermédiaire comme réponse. La boucle alterne une phase d'exploration (appel d'outil obligatoire) et une phase de finalisation (sortie structurée, sans outil), et n'accepte de conclure que juste après un déplacement réel sur une feuille.
+
+## Le *MatchVerifier*
+
+Le *MatchVerifier* est l'agent le plus abouti, et celui que cette note évalue en détail. Il reçoit **un libellé et un code** et répond à la question : ce code est-il correct pour ce libellé ?
+
+### Ce qu'il voit et ce qu'il rend
+
+| En entrée | En sortie |
+|---|---|
+| Le libellé | `match_score` : note du code jugé, de 0 à 100 |
+| Le code et sa notice complète (lue dans le graphe) | `alternative_code` : le meilleur code concurrent qu'il trouve, à chaque appel |
+| Le résumé de toute la nomenclature (niveaux 1 à 5, codes et intitulés, environ 21 000 tokens) | `alternative_score` : la note de ce concurrent |
+| Un outil, `get_notices`, pour lire en un appel les notices de plusieurs codes candidats | `explanation`, puis le verdict `is_match` |
+| Optionnellement, l'explication fournie par un classifieur | `is_match_score` (netteté déclarée) et `p_match` (probabilité lue dans les logprobs) |
+
+: Entrées et sorties du *MatchVerifier*. {#tbl-mv}
+
+Il ne sait **pas d'où vient le code** : le même prompt juge un label humain et une prédiction de modèle. Annoncer une vérité terrain inviterait à la valider, annoncer une prédiction inviterait à la corriger. La confiance d'un classifieur amont n'est pas montrée non plus : c'est une ancre, pas un argument.
+
+### Une règle de décision explicite
+
+« Ce code correspond-il ? » n'est pas un critère : les libellés sont tronqués, abrégés, plus vagues que la nomenclature, et sans règle le modèle s'en invente une, souvent trop stricte. Le prompt fixe donc :
+
+- le code jugé **garde le bénéfice du doute** : il n'est rejeté que si sa notice le rend incompatible (`match_score` < 40) **ou** si l'alternative le dépasse d'au moins 20 points ;
+- pour un libellé à plusieurs activités : si elles s'excluent, **la première citée** décide ; sinon (énumération, métier décrit par ses tâches), on code **l'impression d'ensemble** ;
+- des **règles de lecture propres à chaque nomenclature**, via le profil.
+
+Nommer une alternative à chaque appel a deux intérêts : le verdict devient une comparaison entre deux codes plutôt qu'un jugement absolu, et quand le rejet est justifié, l'alternative est une **proposition de correction**.
+
+### Le prix du raisonnement
+
+Chercher le meilleur concurrent parmi un millier de postes, puis comparer deux notices, demande de raisonner. Le mode *thinking* du modèle est donc activé. Le coût a été mesuré sur un même échantillon : **13 à 15 s par paire avec raisonnement, contre 1,5 s sans** (environ 2 400 tokens générés en médiane contre 150). Aucun réglage intermédiaire n'a fonctionné :
+
+| Intervention | Effet sur la durée |
+|---|---|
+| Consigne de brièveté | Aucun |
+| Consigne stricte (« 3 phrases maximum ») | Pire : le modèle compte ses phrases |
+| Résumé réduit aux niveaux 1 à 3 | Aucun : le volume de contexte n'est pas en cause |
+| Short-list de candidats par embedding | Pire |
+| Paramètres `thinking_budget`, `reasoning_effort` | Ignorés par l'endpoint |
+
+: Tentatives pour réduire le coût du raisonnement. {#tbl-thinking}
+
+La longueur du raisonnement est une propriété du couple (modèle, tâche), pas du prompt. En conditions réelles, avec cinq appels en parallèle sur un endpoint partagé, la durée moyenne observée est de **20 s par paire en COICOP et 28 s en NAF**.
+
+Le raisonnement a un second effet, moins attendu : il rend `p_match` **quasi binaire**. Le modèle tranche dans son bloc de réflexion, puis émet le verdict sans hésitation. La probabilité lue dans les logprobs, qui devait permettre de choisir un seuil après coup, ne prend en pratique que deux valeurs (voir chapitres [5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd)).
+
+## Le *CodeChooser*
+
+Le *CodeChooser* arbitre entre plusieurs codes candidats pour un même libellé (par exemple la vérité terrain et les prédictions de quatre classifieurs) et rend exactement l'un d'eux, avec une explication. Il n'a pas d'outil et ne fait qu'un tour : arbitrer entre des codes déjà retenus est un jugement en un coup. Il a été utilisé dans l'évaluation multi-méthode du [chapitre 7](07-cas-naf2025.qmd).
+
+## Génération de données synthétiques
+
+Deux approches existent, à des stades de maturité différents :
+
+- ***NaiveCode2Text*** échantillonne des éléments de la notice d'un code pour construire des prompts variés et générer des libellés plausibles (par lots, avec une orientation « métier ») ;
+- ***Code2Text***, version agentique, est au stade de squelette.
+
+Aucune n'a encore été évaluée. La métrique prévue est indirecte : le gain de performance du modèle supervisé réentraîné avec ces données sur les classes enrichies.
+
+## Outillage d'évaluation
+
+Pour que les chiffres soient reproductibles et comparables :
+
+- **chaque résultat est épinglé** au commit du prompt et au modèle qui a répondu (`<commit>/<modèle>`) ; le script refuse de démarrer si les fichiers qui définissent le prompt ont des modifications non commitées ;
+- le module d'évaluation fournit l'exactitude par niveau hiérarchique, des **intervalles de confiance par bootstrap** stratifié et des **tests appariés** (bootstrap apparié, McNemar) pour comparer deux méthodes sur les mêmes libellés ;
+- une **application de revue humaine** (Flask, déployée sur Kubernetes) montre à un annotateur le libellé, le code et sa notice, le verdict et l'alternative, et lui demande si le verdict est correct et quel code il aurait mis. Elle gère plusieurs annotateurs avec une part commune pour mesurer l'accord, et enregistre ce qui a été affiché pour mesurer l'influence des suggestions.

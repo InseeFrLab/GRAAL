@@ -6,7 +6,7 @@ format:
     toc: false
 ---
 
-Ce site rassemble les supports du projet GRAAL. Choisissez une page ci-dessous.
+Ce site rassemble les supports du projet GRAAL. Pour une vue d'ensemble du projet, de ses choix méthodologiques et de ses résultats, commencez par la [**note technique**](doc/index.qmd). Les autres pages détaillent chaque travail.
 
 ::: {.grid}
 

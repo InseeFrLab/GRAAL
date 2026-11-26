@@ -1,0 +1,121 @@
+---
+title: "Cas d'usage : MatchVerifier sur la NAF rév. 2"
+subtitle: "Vérifier la codification APE de production (règles et modèle fastText)"
+description: "Évaluation du MatchVerifier contre l'annotation humaine de la campagne 2024 en NAF rév. 2."
+---
+
+Résultats interactifs : [page MatchVerifier NAF 2008](../match_verifier_naf2008.qmd).
+
+## Problématique
+
+Le code APE de production est attribué soit **par règles** (mode `AUTO`), soit **par le modèle fastText** (mode `FASTTEXT`), le reste partant en reprise manuelle. Le cas COICOP a montré que le *MatchVerifier* détecte la moitié des erreurs de Sirus. **La question est double :**
+
+- ce résultat se transpose-t-il à la NAF, une nomenclature plus large et plus juridique, sur des libellés d'entreprises plutôt que de produits ?
+- le *MatchVerifier* pourrait-il servir d'**outil de monitoring du modèle de production**, c'est-à-dire signaler sans annotation humaine les codes à revoir ?
+
+## Données
+
+- **Source** : le jeu de test de la campagne d'annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l'annotateur (`apet_manual`) est la **référence**.
+- **Code jugé** : le code attribué en production (`apet_finale`), retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d'attribution (`AUTO` ou `FASTTEXT`).
+- Les deux codes sont des sous-classes. Tous figurent dans le graphe NAF rév. 2, construit à partir des notes explicatives de l'Insee.
+
+| | Lignes | Paires distinctes | Taux d'erreur de la production |
+|---|---|---|---|
+| Ensemble | 8 431 | 6 735 | 20,3 % (exact), 17,7 % (classe) |
+| dont `AUTO` (règles) | 5 653 | 4 071 | 10,3 % |
+| dont `FASTTEXT` (modèle) | 2 778 | 2 661 | 40,7 % |
+
+: Le jeu NAF rév. 2. Taux d'erreur par mode en vérité exacte, par paire. {#tbl-naf-donnees}
+
+Les deux modes n'ont ni la même difficulté ni le même taux d'erreur : les règles traitent les libellés qu'elles savent reconnaître, le modèle reçoit ceux que les règles n'ont pas su coder. *[À valider avec Nathan : périmètre exact du jeu de test, mode de tirage, ce que voyaient les annotateurs ; voir le [chapitre 4](04-evaluation.qmd#sec-gold)]*.
+
+## Protocole
+
+Identique à la COICOP ([chapitre 4](04-evaluation.qmd)), avec deux vérités : **exacte** (même sous-classe) et **de classe** (mêmes 4 premiers caractères). La vérité de branche n'a pas d'objet ici puisque les deux codes sont toujours des sous-classes.
+
+Profil `naf2008`, modèle `qwen3-6-35b-moe`, prompt du commit `b753427`. Run terminé le 17 novembre 2026 : 6 732 paires jugées sur 6 735 (3 abandonnées, réponse tronquée), **28 s par paire**, 52 h de calcul cumulé.
+
+## Résultats
+
+### Vue d'ensemble
+
+| Vérité | Paires | dont erreurs | Erreurs détectées | Rejets à tort | Précision (dans l'éval) | Précision au taux réel | AUC `p_match` | Alternative = humain |
+|---|---|---|---|---|---|---|---|---|
+| **Exacte** | **6 732** | **1 595** | **51,0 %** | **16,6 %** | **48,8 %** | **43,9 %** | **0,70** | **35,8 %** |
+| Classe | 6 732 | 1 385 | 53,3 % | 17,4 % | 44,3 % | 39,8 % | 0,70 | 34,3 % |
+
+: Performances du *MatchVerifier* en NAF rév. 2, par paire distincte. {#tbl-naf-res}
+
+- **Il détecte une erreur de la production sur deux, comme en COICOP.** Compté par ligne, le rappel est de 52 % et les rejets à tort de 14 %.
+- **Mais il rejette 16,6 % des codes justes**, plus du double de la COICOP (7,6 %). Au taux d'erreur réel, **plus d'un rejet sur deux porte sur un code juste** (précision de 44 %). Envoyer en reprise tout ce qu'il rejette ferait revoir environ un quart des paires pour y trouver la moitié des erreurs.
+- **Quand il rejette à raison, il corrige une fois sur trois** (36 %, contre 52 % en COICOP).
+
+### Selon le mode d'attribution
+
+| Mode | Paires | Erreurs de la production | Taux de rejet | Erreurs détectées | Rejets à tort | Précision au taux réel | AUC |
+|---|---|---|---|---|---|---|---|
+| `AUTO` (règles) | 4 071 | 10,3 % | 13,5 % | 41,1 % | 9,8 % | 32,4 % | 0,69 |
+| `FASTTEXT` (modèle) | 2 661 | 40,7 % | 41,9 % | 55,3 % | 32,3 % | 54,1 % | 0,63 |
+
+: Résultats par mode d'attribution du code de production (vérité exacte). {#tbl-naf-mode}
+
+Sur les codes **par règles**, peu fautifs, deux rejets sur trois portent sur un code juste. Sur les codes **du modèle**, le vérificateur trouve plus d'erreurs mais **rejette un tiers des codes justes** : les libellés que les règles n'ont pas su coder sont aussi plus difficiles pour lui.
+
+### Par type d'écart
+
+| Type d'écart entre la production et l'humain | Paires | Rejetées |
+|---|---|---|
+| Accord exact (rejet = rejet à tort) | 5 137 | 16,6 % |
+| Même classe, sous-classe différente | 210 | 35,7 % |
+| Même groupe, classe différente | 197 | 40,1 % |
+| Même division, groupe différent | 244 | 45,9 % |
+| Même section, division différente | 220 | 57,3 % |
+| Section différente | 724 | 58,1 % |
+
+: Taux de rejet par type d'écart. {#tbl-naf-type}
+
+Comme en COICOP, plus l'écart est grossier, plus il est repéré.
+
+### `p_match` est binaire
+
+99,99 % des `p_match` sont sous 0,1 ou au-dessus de 0,9 : tous les seuils de 0,1 à 0,9 donnent exactement le même point (51,0 % d'erreurs détectées, 16,6 % de rejets à tort). Les rejets à tort se font avec `p_match` ≈ 0 : aucun seuil ne peut les écarter.
+
+### D'où viennent les rejets à tort
+
+Ils sont très concentrés : **cinq codes en portent 43 %**.
+
+| Code | Intitulé | Rejets à tort | Part des codes justes de ce code rejetés |
+|---|---|---|---|
+| 68.20B | Location de terrains et d'autres biens immobiliers | 173 | 32 % |
+| 81.21Z | Nettoyage courant des bâtiments | 72 | 43 % |
+| 96.09Z | Autres services personnels n.c.a. | 50 | 30 % |
+| 66.30Z | Gestion de fonds | 45 | 90 % |
+| 47.91B | Vente à distance sur catalogue spécialisé | 30 | 37 % |
+
+: Les codes qui concentrent les rejets à tort. {#tbl-naf-codes}
+
+Le modèle lit la note explicative **à la lettre** là où les annotateurs appliquent des **conventions de codage absentes des notes** : une SCI va en 68.20B, un « homme toutes mains » en 81.21Z, une conciergerie en 96.09Z. Beaucoup de libellés sont des **objets sociaux juridiques et multi-activités** (« et plus généralement… »), où le vérificateur trouve toujours une activité mieux placée ailleurs. Une partie de ces rejets relève aussi d'une référence discutable (prises de participation codées en 66.30Z plutôt qu'en holding 64.20Z), part que seule une double annotation chiffrerait.
+
+Les défauts relevés en COICOP sont ici marginaux : l'alternative reprend le code jugé dans 1 % des paires, et le verdict contredit ses scores dans 22 paires (0,3 %).
+
+## Enseignements
+
+- **Le rappel se transpose, pas la précision.** Le vérificateur trouve la moitié des erreurs dans les deux nomenclatures, mais en NAF il signale deux fois plus de codes justes.
+- **En l'état, le *MatchVerifier* n'est pas un outil de monitoring du modèle de production.** Sur la part fastText, celle qu'un monitoring viserait, il rejette un tiers des codes justes et son AUC n'est que de 0,63. Son verdict ne peut servir qu'à **prioriser** une reprise, pas à la déclencher. Cette conclusion peut évoluer si ses performances s'améliorent.
+- **Le levier principal est la connaissance des conventions de codage**, pas la capacité de raisonnement : les rejets à tort sont concentrés sur quelques codes et portent sur des conventions que les notes explicatives ne disent pas.
+
+## Limites
+
+- Une seule annotation par liasse ; on ne sait pas quelle part des « rejets à tort » est due à l'annotation.
+- Les modes `AUTO` et `FASTTEXT` portent sur des populations différentes : leurs chiffres ne se comparent pas directement.
+- L'analyse ne tient pas encore compte de **l'indice de confiance du modèle de production**.
+- Résultats en NAF rév. 2 : la production code désormais en NAF 2025, dont le graphe existe aussi mais sans jeu annoté équivalent.
+
+## Perspectives
+
+1. **Analyser les erreurs du vérificateur selon la confiance du modèle de production.** Si le vérificateur est meilleur là où fastText est peu confiant, il pourrait compléter le seuil actuel plutôt que le doubler. Cela suppose de récupérer l'indice de confiance des liasses du jeu de test *[à voir avec Nathan]*.
+2. **Injecter des précédents annotés dans le prompt** : les libellés annotés les plus proches avec leur code humain, pour faire entrer les conventions de codage. Les exports Label Studio NAF 2008 en contiennent environ 19 000 hors jeu de test. Mesurer l'effet sur les rejets à tort sans dégrader le rappel, en excluant les libellés du test pour éviter toute fuite.
+3. **Écrire une fiche de conventions** pour les codes qui concentrent les rejets (68.20B, 81.21Z, 96.09Z, 66.30Z), tirée d'une source officielle (guide de codification APE) plutôt que des erreurs observées, pour ne pas sur-apprendre le test.
+4. **Adapter le prompt aux objets sociaux** : juger l'activité principale en ignorant les formules juridiques, et demander si un codeur de l'Insee retiendrait le code, plutôt que si la note l'autorise à la lettre.
+5. **Protocole** : mettre au point sur les 920 premières paires, mesurer sur les paires restantes uniquement.
+6. **Faire arbitrer un échantillon de désaccords** par un annotateur.

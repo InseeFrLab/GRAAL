@@ -1,0 +1,149 @@
+---
+title: "Protocole d'évaluation"
+description: "Métriques communes aux cas d'usage, définitions de l'erreur, limites des références disponibles et jeu de référence à construire."
+---
+
+## Ce qu'on évalue
+
+L'évaluation porte d'abord sur le *MatchVerifier* en situation d'**audit d'une codification existante** : on lui soumet les codes attribués par la chaîne de production et on compare son verdict à celui d'un annotateur humain sur les mêmes libellés. Le protocole est le même en COICOP et en NAF, ce qui rend les deux cas d'usage comparables.
+
+```{mermaid}
+%%| label: fig-protocole
+%%| fig-cap: "Protocole d'évaluation du MatchVerifier."
+flowchart TB
+  A["Libellé"] --> P["Code de production<br/>(Sirus, règles, fastText)"]
+  A --> H["Code humain<br/>(annotateur)"]
+  P --> MV["MatchVerifier"]
+  A --> MV
+  MV --> V{"rejette ?"}
+  P --> E{"production = humain ?"}
+  H --> E
+  V --> M["Matrice de confusion"]
+  E --> M
+```
+
+## Unité de compte
+
+Les jeux d'évaluation contiennent des doublons : un même libellé, codé de la même façon, revient plusieurs fois. Le *MatchVerifier* juge chaque **paire distincte** (libellé, code de production, code humain) une seule fois, et les métriques sont calculées par paire. Elles sont aussi recalculées **par ligne** (pondérées par le nombre d'occurrences), ce qui reflète mieux le flux : les libellés fréquents sont en général plus faciles.
+
+Toutes les paires du jeu sont jugées, **sans échantillonnage**.
+
+## Définir l'erreur
+
+Une **erreur de production** est un écart entre le code de production et le code humain. Selon la nomenclature, plusieurs définitions sont retenues, car tous les écarts n'ont pas la même gravité :
+
+| Vérité | Définition | Utilisée en |
+|---|---|---|
+| **Exacte** | Même code, au niveau comparé | COICOP (niveau 4), NAF (sous-classe) |
+| **De branche** | Idem, ou le code de production est une subdivision du code humain : l'humain a validé la catégorie, la production n'a fait que préciser | COICOP |
+| **De classe** | Mêmes 4 premiers caractères : un écart de sous-classe (`68.20A` / `68.20B`) n'est pas compté comme une erreur | NAF |
+
+: Définitions de l'erreur. {#tbl-verites}
+
+Les écarts sont aussi **typés** selon le niveau auquel les deux codes divergent (section, division, groupe, classe), pour savoir si le vérificateur repère mieux les erreurs grossières que les confusions entre postes voisins.
+
+## Métriques
+
+Le *MatchVerifier* **détecte** une erreur quand il rejette le code. On en tire une matrice de confusion classique, lue avec le vocabulaire de l'usage visé :
+
+| Métrique | Définition | Question |
+|---|---|---|
+| **Erreurs détectées** (rappel) | rejets parmi les erreurs de production | Quelle part des erreurs le vérificateur trouve-t-il ? |
+| **Rejets à tort** | rejets parmi les codes justes | Quelle part des codes justes signale-t-il à tort ? |
+| **Précision du rejet** | erreurs parmi les rejets | Quand il rejette, a-t-il raison ? |
+| **Alternative = humain** | parmi les erreurs détectées, part où l'alternative proposée est le code humain (ou sa branche) | Peut-il corriger, et pas seulement signaler ? |
+| **AUC de `p_match`** | aire sous la courbe ROC de la probabilité de verdict | Ses probabilités séparent-elles erreurs et codes justes ? |
+| **Durée par paire** | temps de l'appel, retry compris | Combien coûte un verdict ? |
+
+: Métriques d'évaluation du *MatchVerifier*. {#tbl-metriques}
+
+### Précision au taux d'erreur réel
+
+La précision dépend de la proportion d'erreurs dans l'échantillon. Or les paires distinctes ne contiennent pas la même proportion d'erreurs que le flux réel (les libellés fréquents, plus souvent justes, y sont dédoublonnés). La précision est donc **recalculée au taux d'erreur de la population** $\pi$, à partir du rappel $r$ et du taux de rejet à tort $f$, qui ne dépendent pas de la prévalence :
+
+$$
+\text{précision}(\pi) = \frac{\pi \, r}{\pi \, r + (1 - \pi) \, f}
+$$
+
+C'est cette précision qui dit, en production, quelle part des alertes porterait sur de vraies erreurs.
+
+### Lire un rejet à tort
+
+Un « rejet à tort » est un désaccord entre le vérificateur et **un** annotateur. Quand l'annotateur se trompe, le vérificateur peut avoir raison de rejeter. Toutes les métriques ci-dessus sont donc calculées **contre une référence bruitée**, ce qui les biaise vers le pessimisme : erreurs détectées et précision sont sous-estimées, rejets à tort surestimés, dans une mesure inconnue.
+
+## Incertitude
+
+Avec plusieurs milliers de paires par jeu, l'incertitude d'échantillonnage sur les métriques globales est faible (à 95 %, environ ±1 point sur les rejets à tort et ±2,5 points sur les erreurs détectées, calculées sur 1 400 à 2 100 erreurs). Elle devient importante sur les sous-populations (une division, un mode de codage), qui sont accompagnées de leur effectif. Les comparaisons entre méthodes sur les mêmes libellés passent par des tests appariés. **L'incertitude dominante n'est pas l'échantillonnage mais la qualité de la référence.**
+
+## Les références disponibles
+
+| Cas d'usage | Référence | Annotation | Volume |
+|---|---|---|---|
+| COICOP, Budget de famille vague 1 | Code retenu par les annotateurs dans le workflow de codification | Simple | 14 695 lignes, 8 981 paires |
+| NAF rév. 2, campagne d'annotation 2024 | Jeu de test de la campagne, annoté dans Label Studio | Simple | 8 431 lignes, 6 735 paires |
+| NAF 2025, jeu d'évaluation GRAAL | Code `apet2025` du jeu de test du modèle de production (labels administratifs recodés) | Pas une annotation dédiée | 5 181 lignes, stratifié par code |
+
+: Références utilisées dans cette note. {#tbl-references}
+
+Aucune n'est doublement annotée. Les relectures d'échantillon faites en COICOP ([chapitre 5](05-cas-coicop.qmd)) suggèrent qu'**environ la moitié des désaccords** entre le vérificateur et l'annotateur ne sont pas des fautes du vérificateur.
+
+## Vers un jeu de référence doublement annoté {#sec-gold}
+
+::: {.draft-banner}
+**Section de travail**, à construire avec Meilame, Nathan et la division RIAS. Elle rassemble ce qu'on sait déjà, les questions ouvertes et une proposition de démarche.
+:::
+
+### Pourquoi
+
+Un jeu de référence (*gold standard*) est la condition pour :
+
+- mesurer les **vraies** performances du *MatchVerifier*, et de tout autre modèle, y compris le modèle de production ;
+- connaître le **plafond** atteignable, donné par l'accord entre annotateurs ;
+- séparer, dans les désaccords, les fautes du modèle de celles de l'annotation, et **corriger** au passage les annotations fausses.
+
+### Ce qui existe déjà
+
+D'après les échanges avec la division RIAS :
+
+- une **campagne d'annotation en NAF 2008** avec des experts sur Label Studio a fourni environ **12 000 annotations** début 2024, qui ont servi à construire un *gold standard* ; c'est une **annotation simple** ;
+- une seconde campagne a fourni environ **30 000 annotations en NAF 2025**, uniquement pour les **cas non bijectifs** avec la NAF 2008 ; c'est aussi une annotation simple.
+
+Points à clarifier *[À valider avec Nathan et RIAS]* :
+
+- les exports Label Studio NAF 2008 utilisés par GRAAL contiennent environ 27 650 annotations, dont environ 19 000 hors du jeu de test : quel lien avec les 12 000 annotations du *gold standard* (tâches en cours, plusieurs vagues, train et test) ?
+- la note APE mentionne un accord de 62 % entre trois experts sur la sous-classe NAF 2025 [@codifapedocs] : une partie de la campagne NAF 2025 a-t-elle été multi-annotée, et sur quel périmètre ?
+- comment le jeu de test NAF 2008 a-t-il été tiré (aléatoire dans le flux, stratifié, sélectionné sur les reprises) ? Les annotateurs voyaient-ils le code de production ?
+- l'indice de confiance du modèle fastText est-il conservé pour ces liasses ? Il permettrait d'analyser les erreurs du vérificateur en fonction de cette confiance ([chapitre 6](06-cas-naf2008.qmd)).
+
+### Principes proposés
+
+| Principe | Pourquoi |
+|---|---|
+| **Tirage aléatoire dans le flux**, éventuellement stratifié avec poids de redressement | Seul un échantillon du flux donne des métriques qui reflètent la production ; les reprises manuelles sont sélectionnées sur les échecs du modèle |
+| **Annotation à l'aveugle** : l'annotateur ne voit ni le code de production ni le verdict d'un modèle | Montrer une proposition déplace les réponses vers elle |
+| **Double annotation indépendante**, puis **arbitrage** des désaccords par un troisième expert | Mesurer l'accord (kappa) et obtenir une référence plus fiable qu'un annotateur seul |
+| **Consignes écrites** et règles de codage partagées, enrichies au fil des arbitrages | Les rejets à tort du vérificateur en NAF viennent en partie de conventions de codage non écrites ([chapitre 6](06-cas-naf2008.qmd)) |
+| **Split figé** entre une partie qui sert aux choix (prompts, seuils) et une partie réservée à la mesure finale | Ne pas sur-ajuster les prompts au jeu de test |
+| **Versionnement** du jeu et du protocole | Comparer des modèles dans le temps sur la même base |
+
+: Principes proposés pour le jeu de référence. {#tbl-gold}
+
+### Ordres de grandeur
+
+Pour estimer un taux autour de 50 % à ±3 points (95 %), il faut environ 1 100 items. Pour mesurer le **rappel des erreurs** du vérificateur à ±5 points, il faut environ 400 erreurs de production, soit environ 2 000 libellés tirés dans un flux où 20 % des codes sont faux. Une double annotation double la charge ; elle peut être limitée à une partie du jeu (par exemple 30 %) pour mesurer l'accord, le reste étant annoté une fois.
+
+Une alternative moins coûteuse à court terme est de faire **arbitrer les désaccords** existants (vérificateur contre annotateur) par un expert, avec l'application de revue déjà déployée. Elle corrige la mesure sur les désaccords mais ne dit rien des cas où le vérificateur et l'annotateur se trompent ensemble.
+
+### Freins possibles et leviers
+
+*[Hypothèses à confirmer avec RIAS]*
+
+| Frein | Levier |
+|---|---|
+| Disponibilité des experts, déjà mobilisés par les campagnes et la reprise manuelle | Petits lots, répartis dans le temps ; réutiliser des campagnes prévues plutôt qu'en créer une |
+| Coût perçu d'une double annotation | La limiter à une fraction du jeu ; montrer ce qu'elle permet de chiffrer |
+| Sentiment d'être évalué | Présenter l'accord comme une mesure de la difficulté de la tâche, pas des personnes ; agréger |
+| Conventions de codage implicites | Faire de l'arbitrage l'occasion de les écrire, au bénéfice de la reprise manuelle |
+| Outillage | Label Studio est connu des experts ; l'application de revue GRAAL est déployée et gère plusieurs annotateurs |
+
+: Freins et leviers. {#tbl-freins}

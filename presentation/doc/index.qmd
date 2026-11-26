@@ -1,0 +1,69 @@
+---
+title: "GRAAL : des agents LLM pour coder, auditer et générer des labels dans une nomenclature"
+subtitle: "Note technique : contexte, choix méthodologiques, résultats sur les cas d'usage et enseignements"
+description: "Documentation du projet GRAAL (Graph-based Reasoning Agents for Automatic Labelling), SSP Lab, Insee."
+date: 2026-11-26
+date-format: "D MMMM YYYY"
+number-sections: false
+toc: false
+---
+
+::: {.draft-banner}
+**Version de travail du 26 novembre 2026**, à relire avant le point du 1^er^ décembre. Les passages marqués *[À valider]* sont des hypothèses ou des points à confirmer avec les personnes concernées.
+:::
+
+Les nomenclatures statistiques (NAF, COICOP, PCS…) sont hiérarchiques, révisées périodiquement, et accompagnées de **notes explicatives** qui disent ce que chaque poste contient et exclut. À l'Insee, les libellés libres de Sirene et des enquêtes sont codés dans ces nomenclatures par des **modèles supervisés** : rapides et performants, mais entraînés sur des centaines de milliers de labels, dont la qualité n'est pas garantie.
+
+**GRAAL** (*Graph-based Reasoning Agents for Automatic Labelling*) explore une voie complémentaire : des **agents LLM** qui raisonnent directement sur la nomenclature, mise sous forme de **graphe** (Neo4j). Ils lisent les notes explicatives au lieu d'apprendre sur des labels, ce qui leur permet de **justifier** leurs décisions. GRAAL ne vise pas à remplacer le modèle de production : il travaille **hors ligne**, pour vérifier des codes, en proposer et générer des données.
+
+Cette note documente le projet : pourquoi ces choix, comment fonctionnent les agents, comment ils ont été évalués, ce qu'on a appris. Elle se concentre pour l'instant sur l'agent le plus abouti, le ***MatchVerifier***, qui juge si un code attribué à un libellé est correct.
+
+::: {.key-figures}
+::: {.figure-box}
+[2]{.value}
+[nomenclatures évaluées en grandeur réelle (COICOP 2018, NAF rév. 2)]{.label}
+:::
+::: {.figure-box}
+[15 641]{.value}
+[paires libellé / code jugées par le MatchVerifier]{.label}
+:::
+::: {.figure-box}
+[~1 sur 2]{.value}
+[erreurs de la codification de production détectées]{.label}
+:::
+::: {.figure-box}
+[20 à 28 s]{.value}
+[par paire jugée, avec raisonnement activé]{.label}
+:::
+:::
+
+## En bref
+
+- **Ce qui marche.** Le framework est générique : la même base de code tourne sur la NAF 2025, la NAF rév. 2 et la COICOP 2018 en reconstruisant seulement le graphe. Le *MatchVerifier* détecte environ **la moitié des erreurs** de la codification de production, en COICOP (Sirus) comme en NAF (règles + fastText), et ses rejets sont nettement plus souvent justifiés que le hasard.
+- **Ce qui ne suffit pas encore.** Il rejette aussi **7,6 % des codes justes en COICOP et 16,6 % en NAF** (un tiers sur la part codée par fastText). Avec une précision de 44 % à 58 %, son verdict seul **ne peut pas servir d'outil de monitoring** du modèle de production : il peut au mieux **prioriser** une reprise manuelle. Sa probabilité de verdict (`p_match`) est quasi binaire et ne permet pas de choisir un autre seuil.
+- **Ce qui limite toute conclusion.** Les références humaines utilisées sont **annotées une seule fois**, et une relecture d'échantillon montre qu'une part importante des désaccords vient de l'annotation. Les chiffres sont des bornes pessimistes. **Un jeu de référence doublement annoté** est la condition pour mesurer les performances réelles, du *MatchVerifier* comme de tout autre modèle.
+
+## Comment lire cette note
+
+| Chapitre | Contenu |
+|---|---|
+| 1. [Contexte et objectifs](01-contexte.qmd) | La codification automatique à l'Insee, les limites des approches existantes, les trois cas d'usage visés par GRAAL |
+| 2. [Revue de littérature](02-litterature.qmd) | LLM et classification, RAG, agents à outils, LLM juges, bruit d'étiquetage et incertitude : ce qui motive les choix de GRAAL |
+| 3. [Méthodes](03-methodes.qmd) | Le graphe de nomenclature, les agents (classifieurs, *MatchVerifier*, *CodeChooser*, génération), les choix de conception |
+| 4. [Protocole d'évaluation](04-evaluation.qmd) | Métriques communes, définitions de l'erreur, précision au taux réel, limites des références disponibles, jeu de référence à construire |
+| 5. [Cas d'usage : MatchVerifier sur la COICOP](05-cas-coicop.qmd) | Vérifier la codification Sirus de l'enquête Budget de famille |
+| 6. [Cas d'usage : MatchVerifier sur la NAF rév. 2](06-cas-naf2008.qmd) | Vérifier la codification APE de production (règles et fastText) |
+| 7. [Travaux exploratoires sur la NAF 2025](07-cas-naf2025.qmd) | Classification agentique comparée au modèle supervisé, diagnostic de l'espace d'embedding |
+| 8. [Enseignements et perspectives](08-enseignements.qmd) | Ce qu'on retient, limites transverses, prochaines étapes |
+| [Glossaire](glossaire.qmd) | Termes et métriques |
+| [Références](references.qmd) | Articles, documentations, code |
+
+Les résultats détaillés et interactifs restent sur les pages dédiées du site ([MatchVerifier COICOP](../match_verifier_coicop.qmd), [MatchVerifier NAF 2008](../match_verifier_naf2008.qmd), [évaluation multi-méthode](../multi_method_eval.qmd), [diagnostic embeddings](../embeddings.qmd)). La documentation technique du code (contrats des agents, CLI, configuration) est dans [`docs/framework.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md).
+
+## Projets liés
+
+GRAAL est né des besoins de la codification APE et s'inscrit à côté de :
+
+- la [note technique du pipeline MLOps de codification APE](https://inseefrlab.github.io/codif-ape-docs/), qui situe GRAAL parmi les moteurs auxiliaires hors du chemin critique ;
+- [torchTextClassifiers](https://inseefrlab.github.io/torchTextClassifiers/), la librairie de classification supervisée du modèle de production ;
+- la [codification COICOP de Budget de famille](https://inseefrlab.github.io/codif-coicop-bdf/), dont la sortie Sirus sert de cas d'usage au chapitre 5.
