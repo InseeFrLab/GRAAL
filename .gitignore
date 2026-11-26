@@ -16,6 +16,7 @@ data/eval/human_review/
 data/eval/multi_method/
 data/eval/match_verifier_eval_coicop/
 data/coicop/
+eval/results/
 
 # Quarto site render output (output-dir in presentation/_quarto.yaml) - rebuilt by
 # the deploy_prez.yml workflow on every deployment, not source.
