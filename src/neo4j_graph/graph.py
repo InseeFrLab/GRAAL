@@ -210,11 +210,34 @@ class Graph:
         avec un point inséré après les 2 premiers caractères. Partagé par tous les
         lookups par code (get_code_information, get_children, get_descendants,
         get_siblings, get_parent) plutôt que dupliqué dans chacun.
+
+        En dernier recours, un code de classe qui n'existe pas comme noeud est résolu
+        vers son unique sous-classe (cf. `resolve_code`).
         """
         data = fetch(code)
         if not data and "." not in code and len(code) > 2:
-            data = fetch(f"{code[:2]}.{code[2:]}")
+            code = f"{code[:2]}.{code[2:]}"
+            data = fetch(code)
+        if not data:
+            resolved = self.resolve_code(code)
+            if resolved != code:
+                data = fetch(resolved)
         return data
+
+    def resolve_code(self, code: str) -> str:
+        """Le code tel qu'il existe dans le graphe : `code` s'il y est, sinon son unique
+        variante à un caractère de plus, sinon `code` inchangé.
+
+        En NAF 2025, une classe qui n'a qu'une seule sous-classe n'existe que sous la
+        forme de cette sous-classe (« 70.20Y », pas de noeud « 70.20 ») — mais c'est le
+        code NACE européen « 70.20 » que les modèles écrivent spontanément. Sans cette
+        résolution, l'outil répondait « not found » et un code final « 70.20 » était
+        compté faux alors que la réponse était juste.
+        """
+        if not code or self._cached_get_code_information(code):
+            return code
+        candidates = self._cached_single_char_extensions(code)
+        return candidates[0] if len(candidates) == 1 else code
 
     def get_code_information(self, code: str) -> Dict[str, Any]:
         """Retourne les informations d'un code (nom, notice complète, parent, enfants).
@@ -279,7 +302,11 @@ class Graph:
         seen = set()
         while code not in seen:
             seen.add(code)
-            if self.get_code_information(code).get("is_final"):
+            info = self.get_code_information(code)
+            # Le code tel qu'il existe dans le graphe (pointé, ou résolu vers son unique
+            # sous-classe, cf. _with_dotted_retry) plutôt que la forme reçue.
+            code = info.get("code") or code
+            if info.get("is_final"):
                 return code
             children = self.get_children(code)
             if not children:
@@ -326,6 +353,7 @@ class Graph:
         self._cached_get_siblings.cache_clear()
         self._cached_get_parent.cache_clear()
         self._cached_search_codes.cache_clear()
+        self._cached_single_char_extensions.cache_clear()
 
     # ------------------------------------------------------------------
     # get_code_information
@@ -377,6 +405,15 @@ class Graph:
     # ------------------------------------------------------------------
     # get_children
     # ------------------------------------------------------------------
+
+    @lru_cache(maxsize=0)
+    def _cached_single_char_extensions(self, code: str) -> Tuple[str, ...]:
+        query = """
+        MATCH (node)
+        WHERE node.CODE STARTS WITH $code AND size(node.CODE) = size($code) + 1
+        RETURN node.CODE as code
+        """
+        return tuple(r["code"] for r in self.graph.query(query, params={"code": code}))
 
     @lru_cache(maxsize=0)
     def _cached_get_children(self, code: str) -> Tuple[Tuple[Tuple[str, Any], ...], ...]:
