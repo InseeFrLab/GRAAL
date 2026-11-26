@@ -182,11 +182,11 @@ async def verify_one(verifier, graph, clf_output, row: dict) -> None:
     )
 
 
-async def classify_one(clf, text: str, gold: str, verifier=None) -> dict:
+async def classify_one(clf, text: str, gold: str, verifier=None, meta=None) -> dict:
     sink: list = []
     _trace.set(sink)
     out = None
-    row = {"text": text, "gold": gold, "runs": []}
+    row = {"text": text, "gold": gold, **(meta or {}), "runs": []}
     _runs.set(row["runs"])
     start = time.perf_counter()
     try:
@@ -296,12 +296,43 @@ def timing_metrics(rows: list[dict]) -> dict:
     return out
 
 
+def label_metrics(rows: list[dict], pred_key: str) -> dict:
+    """Exactitude à la sous-classe, vue sous l'angle de la fiabilité du label.
+
+    - any_annotation : le code prédit figure parmi les annotations de la liasse (une
+      seule pour la plupart, jusqu'à 4 pour la triple annotation) ;
+    - unanimous : restreinte aux liasses dont toutes les annotations concordent ;
+    - by_source : par source du golden set — les « multivoques » (A) sont par
+      construction les cas ambigus, les « univoques » (B) des traductions d'annotations
+      NAF 2008 (cf. golden_set_naf2025_doc.txt).
+    """
+    if not rows or "annotations" not in rows[0]:
+        return {}
+
+    def acc(sub, ok):
+        return {"accuracy": round(sum(map(ok, sub)) / len(sub), 3), "n": len(sub)} if sub else None
+
+    exact = lambda r: is_correct(r.get(pred_key), r["gold"], None)  # noqa: E731
+    any_annot = lambda r: any(is_correct(r.get(pred_key), a, None) for a in r["annotations"])  # noqa: E731
+    sources = sorted({r["source"] for r in rows})
+    return {
+        "any_annotation": acc(rows, any_annot),
+        "unanimous": acc([r for r in rows if r["unanimous"]], exact),
+        "not_unanimous": acc([r for r in rows if not r["unanimous"]], exact),
+        "by_source": {s: acc([r for r in rows if r["source"] == s], exact) for s in sources},
+    }
+
+
 def compute_metrics(rows: list[dict]) -> dict:
     n = len(rows)
     with_tools = [r for r in rows if r["n_tool_calls"] > 0]
     return {
         "n": n,
         "accuracy": accuracy(rows, "pred"),
+        # Exactitude hors échecs techniques (timeout, etc.), pour ne pas confondre
+        # une panne d'infra avec une erreur de classement.
+        "accuracy_excluding_errors": accuracy([r for r in rows if not r.get("error")], "pred"),
+        "label_view": label_metrics(rows, "pred"),
         "errors": sum(1 for r in rows if r.get("error")),
         "non_final_fallbacks": sum(1 for r in rows if r.get("fallback")),
         "zero_tool_calls": n - len(with_tools),
@@ -322,6 +353,10 @@ def ablation_metrics(rows: list[dict]) -> dict:
         "accuracy": {
             "classifier": accuracy(rows, "pred"),
             "classifier+verifier": accuracy(rows, "pred_verified"),
+        },
+        "label_view": {
+            "classifier": label_metrics(rows, "pred"),
+            "classifier+verifier": label_metrics(rows, "pred_verified"),
         },
         "verifier": verifier_metrics(rows),
     }
@@ -360,6 +395,15 @@ async def main() -> int:
     if args.n and args.n < df.height:
         df = df.sample(n=args.n, seed=args.seed)
     texts, golds = df["libelle"].to_list(), df["apet2025"].to_list()
+    metas = [
+        {
+            # « XXXXX » = jugé inclassable par un annotateur : pas un code à comparer.
+            "annotations": [a for a in m["apet2025_annotations"] if a != "XXXXX"],
+            "unanimous": m["unanimous"],
+            "source": m["source"],
+        }
+        for m in df.select("apet2025_annotations", "unanimous", "source").to_dicts()
+    ]
     logger.info(f"{len(texts)} libellés à classer, sorties dans {out_dir}")
 
     graph = Graph(neo4j_config)
@@ -372,9 +416,9 @@ async def main() -> int:
     rows: list[dict] = []
     with open(os.path.join(out_dir, "predictions.jsonl"), "w", encoding="utf-8") as ckpt:
 
-        async def worker(text, gold):
+        async def worker(text, gold, meta):
             async with semaphore:
-                row = await classify_one(clf, text, gold, verifier)
+                row = await classify_one(clf, text, gold, verifier, meta)
             rows.append(row)
             ckpt.write(json.dumps(row, ensure_ascii=False) + "\n")
             ckpt.flush()
@@ -393,7 +437,7 @@ async def main() -> int:
                 f"gold={gold} pred={row['pred']}{verdict} outils: {calls}"
             )
 
-        await asyncio.gather(*(worker(t, g) for t, g in zip(texts, golds)))
+        await asyncio.gather(*(worker(t, g, m) for t, g, m in zip(texts, golds, metas)))
 
     metrics = compute_metrics(rows)
     if args.verify:
