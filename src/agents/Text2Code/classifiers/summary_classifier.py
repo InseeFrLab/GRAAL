@@ -87,6 +87,8 @@ class SummaryAgenticClassifier(BaseAgent):
         imposée, et vous pouvez conclure directement si le résumé suffit déjà à trancher
         avec certitude.
 
+{NOMENCLATURE.reading_rules}
+
         Renvoyez votre réponse finale dans cet ordre : justifiez votre choix (raisonnez
         avant de conclure), indiquez le code terminal retenu (is_final = 1
         obligatoirement), puis votre niveau de confiance entre 0 et 1.
@@ -137,8 +139,14 @@ class SummaryAgenticClassifier(BaseAgent):
         # reliable source for this field, so it's always overridden with the caller's
         # own known value.
         result.activity = activity
+        # Le code tel qu'il existe dans le graphe : forme pointée, ou classe à sous-classe
+        # unique résolue vers celle-ci (« 70.20 » -> « 70.20Y », cf.
+        # Graph.resolve_code) — sinon une bonne réponse écrite sous sa forme NACE
+        # européenne passerait pour un code non terminal.
+        info = self.graph.get_code_information(result.code)
+        result.code = info.get("code") or result.code
 
-        if not self.graph.get_code_information(result.code).get("is_final"):
+        if not info.get("is_final"):
             # No Python-owned guard rail forces the free-running loop above to stop on
             # a terminal code (cf. this module's docstring) — descend deterministically
             # to a real leaf rather than silently surfacing a non-final one. Same
