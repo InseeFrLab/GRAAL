@@ -30,12 +30,39 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
+def _depth_first(rows: list[dict]) -> list[dict]:
+    """Ordonne les lignes en arbre : chaque code suivi immédiatement de ses enfants.
+
+    `Graph.get_summary_tree` trie par niveau puis par code : toutes les sections, puis
+    toutes les divisions, etc. L'indentation laissait croire à un arbre, mais les
+    enfants d'un code se trouvaient des centaines de lignes plus bas — si bien qu'un
+    modèle lisant `68.32 - ...` ne voyait pas que ce code a des sous-classes et le
+    retenait comme réponse finale. Les racines sont les codes dont le parent n'est pas
+    dans `rows` (en pratique, le parent est la racine de niveau 0, exclue).
+    """
+    codes = {row["code"] for row in rows}
+    children: dict[str | None, list[dict]] = {}
+    for row in rows:
+        parent = row.get("parent_code")
+        children.setdefault(parent if parent in codes else None, []).append(row)
+    for siblings in children.values():
+        siblings.sort(key=lambda r: r["code"])
+
+    ordered: list[dict] = []
+    stack = list(reversed(children.get(None, [])))
+    while stack:
+        row = stack.pop()
+        ordered.append(row)
+        stack.extend(reversed(children.get(row["code"], [])))
+    return ordered
+
+
 def build_summary_text(rows: list[dict], max_level: int) -> str:
     lines = [
         f"Résumé de la nomenclature {NOMENCLATURE.summary_name} (niveaux 1 à {max_level}) :",
         "",
     ]
-    for row in rows:
+    for row in _depth_first(rows):
         indent = "  " * (row["level"] - 1)
         lines.append(f"{indent}{row['code']} - {row['name']}")
     return "\n".join(lines)

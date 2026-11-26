@@ -295,7 +295,8 @@ class Graph:
 
     def get_summary_tree(self, max_level: int) -> List[Dict[str, Any]]:
         """Retourne tous les codes de niveau 1 à `max_level` (racine exclue), triés par
-        niveau puis code, avec leur parent direct.
+        niveau puis code, avec leur parent direct (`build_summary_text` les remet en
+        ordre d'arbre à partir de `parent_code`).
 
         Sert de matière première à `build_nace_summary.py`, appelé une seule fois à la
         construction du résumé (pas un lookup à la volée) : pas de mise en cache, à la

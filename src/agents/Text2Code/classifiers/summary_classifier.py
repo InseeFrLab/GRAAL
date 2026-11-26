@@ -2,15 +2,20 @@
 plutôt qu'une navigation guidée pas à pas (`BaseClassifier`/`NavigatorAgenticClassifier`)
 ou un point de départ par similarité (`AgenticRAGClassifier`).
 
-Contrairement à `BaseClassifier`, qui pilote la boucle exploration/finalisation en
-Python parce qu'un seul `Runner.run` ne peut pas fiablement à la fois utiliser les
-outils et savoir quand s'arrêter, `SummaryAgenticClassifier` laisse le modèle libre :
-un unique `Runner.run` (hérité de `BaseAgent`), `tool_choice` non forcé, où le modèle
-décide lui-même s'il appelle un outil, lequel, avec quel code, et quand conclure. C'est
-un choix de conception assumé pour ce classifieur (donner le plus de liberté possible
-à l'agent) : il n'y a donc pas de garde-fou Python équivalent à celui de
-`BaseClassifier` empêchant la remontée d'un code non terminal — les instructions
-demandent explicitement au modèle de ne conclure que sur un code avec is_final=1.
+Contrairement à `BaseClassifier`, qui pilote pas à pas la navigation en Python,
+`SummaryAgenticClassifier` laisse le modèle libre pendant l'exploration : un
+`Runner.run` en `tool_choice` non forcé, où le modèle décide lui-même s'il appelle un
+outil, lequel, avec quel code, et quand s'arrêter. C'est un choix de conception assumé
+pour ce classifieur (donner le plus de liberté possible à l'agent) : il n'y a donc pas
+de garde-fou Python empêchant la remontée d'un code non terminal pendant l'exploration
+— seulement le repli déterministe de `__call__` si le code final n'est pas terminal.
+
+L'exploration se fait *sans* `output_type`, et la réponse structurée est demandée dans
+un second `Runner.run` (`tool_choice="none"`), comme `BaseClassifier` sépare
+exploration et finalisation. Un `output_type` envoie un `response_format` JSON que le
+backend (vLLM) impose au décodage : le modèle ne peut alors plus émettre d'appel
+d'outil, et concluait systématiquement depuis le seul résumé, sans jamais consulter
+une notice (0 appel d'outil sur tout un échantillon du golden set NAF 2025).
 
 Utilise les outils *stateless* de `Graph` (`get_code_information`, `get_children`,
 `get_descendants`, `get_siblings`, `get_parent`), qui prennent chacun un `code` en
@@ -26,7 +31,9 @@ formulations d'origine.
 
 import logging
 
-from src.agents.base_agent import BaseAgent
+from agents import ItemHelpers, MaxTurnsExceeded, Runner
+from agents.model_settings import ModelSettings
+from src.agents.base_agent import BaseAgent, count_tool_calls
 from src.agents.closers.match_verifier import MatchVerificationInput
 from src.neo4j_graph.graph import Graph
 from src.nomenclature import NOMENCLATURE
@@ -41,6 +48,21 @@ class SummaryAgenticClassifier(BaseAgent):
         with open(summary_path, "r", encoding="utf-8") as f:
             self.summary = f.read()
         super().__init__(graph)
+        # Exploration : outils libres, sans output_type (cf. docstring du module :
+        # un response_format interdirait tout appel d'outil côté backend).
+        self.exploration_agent = self.agent.clone(output_type=None)
+        # Finalisation : mêmes instructions (préfixe de prompt identique), outils
+        # déclarés mais interdits — retirer `tools` alors que l'historique contient des
+        # tool_calls bloque le rendu du chat template côté backend (cf. BaseClassifier).
+        # Sans thinking : le raisonnement a déjà eu lieu pendant l'exploration, ce tour
+        # ne fait que le mettre au format ; le thinking y coûtait ~900 tokens (~6 s).
+        self.finalize_agent = self.agent.clone(
+            model_settings=ModelSettings(
+                temperature=0,
+                tool_choice="none",
+                extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+            ),
+        )
 
     def get_agent_name(self) -> str:
         return "Summary Agentic Classifier"
@@ -73,8 +95,44 @@ class SummaryAgenticClassifier(BaseAgent):
     def build_prompt(self, activity: str) -> str:
         return f"{NOMENCLATURE.item_label} à classifier : {activity}"
 
+    async def _explore(self, prompt: str) -> tuple[list, int]:
+        """Exploration libre ; renvoie (historique de conversation, nb d'appels d'outils).
+
+        Si le budget de tours est épuisé, l'historique accumulé jusque-là est conservé
+        et la finalisation conclut avec ce que le modèle a déjà appris.
+        """
+        try:
+            result = await Runner.run(
+                self.exploration_agent, prompt, max_turns=self.get_max_turns()
+            )
+            return result.to_input_list(), count_tool_calls(result)
+        except MaxTurnsExceeded as e:
+            logger.warning("SummaryAgenticClassifier: exploration hit max_turns, finalizing")
+            data = e.run_data
+            if data is None:
+                return ItemHelpers.input_to_new_input_list(prompt), 0
+            conversation = ItemHelpers.input_to_new_input_list(data.input) + [
+                item.to_input_item() for item in data.new_items
+            ]
+            n_calls = sum(1 for item in data.new_items if item.type == "tool_call_item")
+            return conversation, n_calls
+
     async def __call__(self, activity: str) -> MatchVerificationInput:
-        result = await super().__call__(activity)
+        conversation, tool_calls = await self._explore(self.build_prompt(activity))
+        conversation = conversation + [
+            {
+                "role": "user",
+                "content": (
+                    "Formalisez maintenant votre réponse finale à partir de ce qui précède, "
+                    "sans appeler d'outil : justification, code terminal (is_final = 1), "
+                    "puis confiance entre 0 et 1."
+                ),
+            }
+        ]
+        final = await Runner.run(self.finalize_agent, conversation, max_turns=2)
+        result = final.final_output
+        result.tool_call_count = tool_calls + count_tool_calls(final)
+        logger.info(f"Result of SummaryAgenticClassifier: \n {result}")
         # Same rationale as BaseClassifier._run_navigator_loop: the model is not a
         # reliable source for this field, so it's always overridden with the caller's
         # own known value.
