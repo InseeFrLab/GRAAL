@@ -1,5 +1,5 @@
 ---
-title: "GRAAL : des agents LLM pour coder, auditer et générer des labels dans une nomenclature"
+title: "GRAAL : des agents LLM pour coder et auditer dans une nomenclature"
 subtitle: "Note technique : contexte, choix méthodologiques, résultats sur les cas d'usage et enseignements"
 description: "Documentation du projet GRAAL (Graph-based Reasoning Agents for Automatic Labelling), SSP Lab, Insee."
 date: 2026-11-26
@@ -14,7 +14,7 @@ toc: false
 
 Les nomenclatures statistiques (NAF, COICOP, PCS…) sont hiérarchiques, révisées périodiquement, et accompagnées de **notes explicatives** qui disent ce que chaque poste contient et exclut. À l'Insee, les libellés libres de Sirene et des enquêtes sont codés dans ces nomenclatures par des **modèles supervisés** : rapides et performants, mais entraînés sur des centaines de milliers de labels, dont la qualité n'est pas garantie.
 
-**GRAAL** (*Graph-based Reasoning Agents for Automatic Labelling*) explore une voie complémentaire : des **agents LLM** qui raisonnent directement sur la nomenclature, mise sous forme de **graphe** (Neo4j). Ils lisent les notes explicatives au lieu d'apprendre sur des labels, ce qui leur permet de **justifier** leurs décisions. GRAAL ne vise pas à remplacer le modèle de production : il travaille **hors ligne**, pour vérifier des codes, en proposer et générer des données.
+**GRAAL** (*Graph-based Reasoning Agents for Automatic Labelling*) explore une voie complémentaire : des **agents LLM** qui raisonnent directement sur la nomenclature, mise sous forme de **graphe** (Neo4j). Ils lisent les notes explicatives au lieu d'apprendre sur des labels, ce qui leur permet de **justifier** leurs décisions. GRAAL ne vise pas à remplacer le modèle de production : il travaille **en différé, hors de la chaîne de codification en temps réel**, pour vérifier des codes et en proposer.
 
 Cette note documente le projet : pourquoi ces choix, comment fonctionnent les agents, comment ils ont été évalués, ce qu'on a appris. Elle se concentre pour l'instant sur l'agent le plus abouti, le ***MatchVerifier***, qui juge si un code attribué à un libellé est correct.
 
@@ -47,9 +47,9 @@ Cette note documente le projet : pourquoi ces choix, comment fonctionnent les ag
 
 | Chapitre | Contenu |
 |---|---|
-| 1. [Contexte et objectifs](01-contexte.qmd) | La codification automatique à l'Insee, les limites des approches existantes, les trois cas d'usage visés par GRAAL |
+| 1. [Contexte et objectifs](01-contexte.qmd) | La codification automatique à l'Insee, les limites des approches existantes, les deux cas d'usage visés par GRAAL |
 | 2. [Revue de littérature](02-litterature.qmd) | LLM et classification, RAG, agents à outils, LLM juges, bruit d'étiquetage et incertitude : ce qui motive les choix de GRAAL |
-| 3. [Méthodes](03-methodes.qmd) | Le graphe de nomenclature, les agents (classifieurs, *MatchVerifier*, *CodeChooser*, génération), les choix de conception |
+| 3. [Méthodes](03-methodes.qmd) | Le graphe de nomenclature, les agents (classifieurs, *MatchVerifier*, *CodeChooser*), les choix de conception |
 | 4. [Protocole d'évaluation](04-evaluation.qmd) | Métriques communes, définitions de l'erreur, précision au taux réel, limites des références disponibles, jeu de référence à construire |
 | 5. [Cas d'usage : MatchVerifier sur la COICOP](05-cas-coicop.qmd) | Vérifier la codification Sirus de l'enquête Budget de famille |
 | 6. [Cas d'usage : MatchVerifier sur la NAF rév. 2](06-cas-naf2008.qmd) | Vérifier la codification APE de production (règles et fastText) |

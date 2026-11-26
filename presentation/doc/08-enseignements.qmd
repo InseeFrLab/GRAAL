@@ -10,6 +10,7 @@ description: "Ce que les cas d'usage apprennent sur GRAAL, les limites transvers
 | **Le framework est générique.** Le même code tourne sur quatre nomenclatures ; seuls le graphe et quelques règles de lecture changent | Chapitres [3](03-methodes.qmd), [5](05-cas-coicop.qmd), [6](06-cas-naf2008.qmd) |
 | **Le *MatchVerifier* trouve environ la moitié des erreurs** de la codification de production, en COICOP comme en NAF, et repère mieux les erreurs grossières que les confusions entre postes voisins | Chapitres [5](05-cas-coicop.qmd), [6](06-cas-naf2008.qmd) |
 | **Sa précision ne suffit pas pour un monitoring** : 58 % en COICOP, 44 % en NAF, et un tiers des codes justes rejetés sur la part codée par fastText | Chapitre [6](06-cas-naf2008.qmd) |
+| **Il complète l'indice de confiance du modèle plus qu'il ne le double** : signal presque indépendant, meilleur que l'IC pour repérer les erreurs sur la part fastText, sans suffire à décider seul | Chapitre [6](06-cas-naf2008.qmd#sec-naf-ic) |
 | **On ne peut pas choisir un autre point de fonctionnement** : avec le raisonnement activé, `p_match` est binaire | Chapitres [3](03-methodes.qmd), [5](05-cas-coicop.qmd), [6](06-cas-naf2008.qmd) |
 | **Ses rejets à tort viennent surtout de conventions de codage non écrites** et de libellés multi-activités, pas d'un défaut de raisonnement | Chapitre [6](06-cas-naf2008.qmd) |
 | **Un second avis améliore le signal** : croiser le vérificateur et un autre classifieur porte la précision à 66 % en COICOP | Chapitre [5](05-cas-coicop.qmd) |
@@ -23,8 +24,6 @@ description: "Ce que les cas d'usage apprennent sur GRAAL, les limites transvers
 **Audit et monitoring.** L'utilisation du *MatchVerifier* comme outil de monitoring du modèle de production est **écartée à ce stade**. Il garde un usage plausible pour **prioriser** une reprise manuelle ou un audit (relire d'abord ce qu'il rejette, surtout quand un second avis concorde) et pour **proposer une correction** quand il rejette. La question pourra être rouverte si ses performances s'améliorent, ce que les pistes ci-dessous visent, et surtout si on peut les mesurer sur une référence fiable.
 
 **Recodage.** Les classifieurs agentiques ont un intérêt là où il n'y a pas de données d'entraînement. Leur évaluation reste à faire sur un échantillon de taille suffisante.
-
-**Génération synthétique.** Non évaluée.
 
 ## Ce qui a bien fonctionné dans la démarche
 
@@ -51,7 +50,8 @@ description: "Ce que les cas d'usage apprennent sur GRAAL, les limites transvers
 ### Mieux comprendre les performances du *MatchVerifier* sur l'APE
 
 - [ ] Échanger avec Nathan sur la **nature du jeu annoté** NAF 2008 : périmètre, tirage, qualité des annotations, ce que voyaient les annotateurs.
-- [ ] Analyser la **distribution des erreurs du vérificateur selon l'indice de confiance du modèle de production** : est-il meilleur là où fastText est peu confiant ?
+- [x] Analyser la **distribution des erreurs du vérificateur selon l'indice de confiance du modèle de production** ([chapitre 6](06-cas-naf2008.qmd#sec-naf-ic)) : il est un peu meilleur là où fastText est peu confiant et repère mieux les erreurs que l'IC (AUC 0,66 contre 0,59), sans que les rejets à tort baissent.
+- [ ] Refaire cette analyse avec l'IC réellement utilisé en production et le seuil en vigueur.
 - [ ] Documenter ses performances, ses limites et son apport éventuel par rapport au modèle de production (chapitres [5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd) de cette note, à compléter).
 - [ ] Tester les pistes d'amélioration : précédents annotés dans le prompt, fiche de conventions, prompt adapté aux objets sociaux, avec un protocole séparant mise au point et mesure.
 
@@ -72,4 +72,3 @@ description: "Ce que les cas d'usage apprennent sur GRAAL, les limites transvers
 
 - Faut-il mesurer le biais de position du *CodeChooser* avant de l'utiliser à plus grande échelle ?
 - Quel niveau de performance rendrait le *MatchVerifier* utile pour le monitoring ? Ce seuil est à définir avec le métier, en fonction du coût d'une relecture et de celui d'une erreur non détectée.
-- Le cas d'usage génération synthétique doit-il rester dans le périmètre ?

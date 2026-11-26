@@ -40,26 +40,13 @@ Un principe de conception en découle : **le code ne connaît rien de la nomencl
 
 ## Positionnement : une brique hors ligne, pas un remplaçant
 
-Une chaîne d'agents multiplie les appels LLM : de quelques secondes à plusieurs minutes par libellé, sur des GPU partagés, contre une fraction de seconde pour le modèle supervisé. **GRAAL n'a pas vocation à coder le flux en temps réel.** Il se positionne sur trois cas d'usage hors ligne :
+Une chaîne d'agents multiplie les appels LLM : de quelques secondes à plusieurs minutes par libellé, sur des GPU partagés, contre une fraction de seconde pour le modèle supervisé. **GRAAL n'a pas vocation à coder le flux en temps réel.** Il se positionne sur deux cas d'usage hors ligne :
 
 | Cas d'usage | Question | Agent mobilisé | État |
 |---|---|---|---|
 | **Audit et monitoring de la codification** | Ce code attribué (par le modèle, par des règles, par un humain) est-il correct ? Lesquels faut-il revoir en priorité ? | *MatchVerifier*, éventuellement suivi d'un classifieur pour proposer un recodage | [Évalué]{.status .status-done} en COICOP et en NAF rév. 2 (chapitres [5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd)) |
 | **Recodage d'un stock** | Recoder un historique après une révision de nomenclature, ou fiabiliser des labels douteux | Classifieurs agentiques (*Navigator*, *Agentic RAG*, *Summary*), arbitrage *CodeChooser* | [Exploratoire]{.status .status-partial} : 60 libellés en NAF 2025 ([chapitre 7](07-cas-naf2025.qmd)) |
-| **Génération de données synthétiques** | Produire des libellés pour les codes rares, afin d'enrichir l'entraînement du modèle supervisé | *NaiveCode2Text*, *Code2Text* | [Non évalué]{.status .status-todo} |
 
-: Les trois cas d'usage de GRAAL. {#tbl-usages}
+: Les deux cas d'usage de GRAAL. {#tbl-usages}
 
 Ce positionnement fixe la barre : il ne s'agit pas de « battre » le modèle de production, mais de savoir **ce que chaque cas d'usage apporte concrètement**, et à quel coût. Le critère pertinent est souvent conditionnel : un moteur moins bon que le modèle de production sur l'ensemble du flux peut être utile s'il a raison là où le modèle se trompe [@codifapedocs].
-
-## Historique du projet
-
-| Période | Étape |
-|---|---|
-| Début 2026 | Prototype RAG, puis premier agent *Navigator* sur la NAF 2025 ; première présentation du framework |
-| Juillet 2026 | Consolidation du dépôt, intégration continue, module d'évaluation (métriques par niveau, bootstrap, tests appariés), jeu d'évaluation stratifié NAF 2025, diagnostic de l'espace d'embedding |
-| Septembre 2026 | Refonte du *MatchVerifier* (scores chiffrés, alternative systématique, règle de décision explicite), application de revue humaine déployée |
-| Octobre 2026 | Évaluation complète sur la COICOP (Budget de famille, vague 1), comparaison avec le *Summary classifier* |
-| Novembre 2026 | Évaluation complète sur la NAF rév. 2 (campagne d'annotation 2024) ; présentation des résultats à l'équipe métier |
-
-: Principales étapes. {#tbl-historique}

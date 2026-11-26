@@ -73,4 +73,3 @@ Le *MatchVerifier* a aussi été lancé sur **2 000 lignes du jeu d'entraînemen
 - Étendre les garde-fous du *Navigator* au *Summary* et au *CodeChooser*.
 - Mesurer le biais de position du *CodeChooser* en permutant l'ordre des candidats.
 - Comparer d'autres modèles d'embedding pour améliorer le point de départ.
-- Évaluer le cas d'usage **génération synthétique**, encore non mesuré.

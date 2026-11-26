@@ -120,15 +120,6 @@ Le raisonnement a un second effet, moins attendu : il rend `p_match` **quasi bin
 
 Le *CodeChooser* arbitre entre plusieurs codes candidats pour un même libellé (par exemple la vérité terrain et les prédictions de quatre classifieurs) et rend exactement l'un d'eux, avec une explication. Il n'a pas d'outil et ne fait qu'un tour : arbitrer entre des codes déjà retenus est un jugement en un coup. Il a été utilisé dans l'évaluation multi-méthode du [chapitre 7](07-cas-naf2025.qmd).
 
-## Génération de données synthétiques
-
-Deux approches existent, à des stades de maturité différents :
-
-- ***NaiveCode2Text*** échantillonne des éléments de la notice d'un code pour construire des prompts variés et générer des libellés plausibles (par lots, avec une orientation « métier ») ;
-- ***Code2Text***, version agentique, est au stade de squelette.
-
-Aucune n'a encore été évaluée. La métrique prévue est indirecte : le gain de performance du modèle supervisé réentraîné avec ces données sur les classes enrichies.
-
 ## Outillage d'évaluation
 
 Pour que les chiffres soient reproductibles et comparables :

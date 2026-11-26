@@ -98,22 +98,55 @@ Le modèle lit la note explicative **à la lettre** là où les annotateurs appl
 
 Les défauts relevés en COICOP sont ici marginaux : l'alternative reprend le code jugé dans 1 % des paires, et le verdict contredit ses scores dans 22 paires (0,3 %).
 
+### Selon l'indice de confiance du modèle de production {#sec-naf-ic}
+
+Un monitoring du modèle de production dispose déjà d'un signal gratuit : son **indice de confiance** (IC). La question est donc moins « le vérificateur détecte-t-il des erreurs ? » que « **apporte-t-il quelque chose que l'IC ne dit pas déjà ?** », et en particulier : est-il meilleur là où le modèle est peu confiant ?
+
+**Source de l'IC.** Le tableau de bord de la campagne d'annotation contient, pour chaque liasse du jeu de test, les cinq meilleures prédictions d'un modèle fastText et son IC. C'est une **re-prédiction par le modèle courant au moment de la campagne**, pas nécessairement l'IC qui a décidé du codage en production. Deux indices le montrent :
+
+- sur les liasses `FASTTEXT`, le premier code de ce modèle ne coïncide avec le code de production que dans **64 %** des cas, de façon stable sur toute la période (février 2023 à mai 2024) ;
+- l'IC médian de ces liasses n'est que de **0,35**, et 4 % seulement dépassent 0,8. Si ce sont bien les liasses codées automatiquement par le modèle, le seuil de production était bas, ou une partie de ces codes vient d'une reprise.
+
+*[À valider avec Nathan : que recouvre exactement le mode `FASTTEXT` (code du modèle seul, ou code du modèle puis reprise) ? quel modèle et quel seuil étaient en production à la date des liasses ? l'IC réellement utilisé est-il conservé ?]* Les résultats ci-dessous se lisent donc comme « selon la confiance **d'un** modèle fastText », proche de celui de production.
+
+L'analyse est faite **par liasse**, puisque l'IC est propre à chaque liasse : chaque liasse reçoit le verdict du *MatchVerifier* sur sa paire (8 415 liasses sur 8 431). Le détail est dans [`docs/eval/match_verifier_naf2008_confidence.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/eval/match_verifier_naf2008_confidence.md), produit par `src.evaluation.report_naf2008_confidence`.
+
+| IC du modèle | Liasses | Erreurs de production | Erreurs détectées | Rejets à tort | Précision du rejet |
+|---|---|---|---|---|---|
+| [0 ; 0,2[ | 922 | 47 % | 60 % | 36 % | 60 % |
+| [0,2 ; 0,4[ | 589 | 46 % | 56 % | 33 % | 59 % |
+| [0,4 ; 0,6[ | 523 | 37 % | 52 % | 32 % | 49 % |
+| [0,6 ; 0,8[ | 625 | 31 % | 49 % | 29 % | 43 % |
+| [0,8 ; 1] | 118 | 30 % | 40 % | 15 % | 54 % |
+| **Ensemble `FASTTEXT`** | **2 777** | **41 %** | **55 %** | **32 %** | **55 %** |
+
+: Performances du *MatchVerifier* selon l'IC du modèle, liasses `FASTTEXT` (vérité exacte, par liasse, précision dans l'échantillon). {#tbl-naf-ic}
+
+- **Le vérificateur est un peu meilleur là où le modèle doute.** Sous un IC de 0,4, il détecte 58 % des erreurs avec une précision de 60 % ; entre 0,6 et 0,8, 49 % avec une précision de 43 %. Mais les **rejets à tort restent autour d'un tiers dans toutes les tranches** sous 0,8 : aucune tranche d'IC ne fait du verdict un filtre fiable.
+- **Sur ces liasses, l'IC est un mauvais détecteur d'erreurs, le vérificateur un peu moins mauvais.** L'AUC de l'IC pour repérer une erreur de production est de **0,59** [0,56 ; 0,61], celle du score du vérificateur (écart entre le score de l'alternative et celui du code jugé) de **0,66** [0,64 ; 0,68]. L'écart (+0,07 [+0,04 ; +0,10], bootstrap apparié en grappes de paires) est significatif. À volume de relecture égal (41 % des liasses), relire les liasses de plus faible IC trouve 49 % des erreurs, relire celles que le vérificateur rejette en trouve 55 %, avec moins de codes justes signalés (32 % contre 36 %).
+- **Les deux signaux sont presque indépendants** (corrélation des rangs 0,13) mais **leur combinaison n'apporte rien** sur le classement (AUC 0,66, +0,003 [−0,012 ; +0,019]). Le croisement sert seulement à choisir un point de fonctionnement plus strict : n'alerter que si le vérificateur rejette **et** que l'IC est sous 0,4 signale un quart des liasses, garde 37 % des erreurs et ne rejette plus que 17 % des codes justes, pour une précision de 60 %.
+
+Sur les liasses `AUTO`, codées par règles, le même modèle est presque toujours très confiant (IC ≥ 0,8 pour 98 % d'entre elles) et coïncide avec la règle dans 99 % des cas. L'IC y repère les erreurs des règles avec une AUC de 0,71 [0,68 ; 0,75], le vérificateur de 0,75 [0,71 ; 0,79], et leur combinaison de 0,77 [0,74 ; 0,81]. Aucun de ces écarts n'est significatif.
+
+**En résumé** : sur la part que vise un monitoring, le vérificateur apporte un signal **différent** de l'IC et **un peu meilleur**, mais pas assez bon pour décider seul. Il ne change pas la conclusion du paragraphe suivant ; il indique en revanche où le placer : **après** le seuil, sur les liasses de faible confiance, pour ordonner la relecture.
+
 ## Enseignements
 
 - **Le rappel se transpose, pas la précision.** Le vérificateur trouve la moitié des erreurs dans les deux nomenclatures, mais en NAF il signale deux fois plus de codes justes.
 - **En l'état, le *MatchVerifier* n'est pas un outil de monitoring du modèle de production.** Sur la part fastText, celle qu'un monitoring viserait, il rejette un tiers des codes justes et son AUC n'est que de 0,63. Son verdict ne peut servir qu'à **prioriser** une reprise, pas à la déclencher. Cette conclusion peut évoluer si ses performances s'améliorent.
+- **Il complète l'indice de confiance plus qu'il ne le double.** Sur la part fastText, il détecte mieux les erreurs que l'IC (AUC 0,66 contre 0,59), avec un signal presque indépendant, et il est un peu meilleur là où le modèle doute. Sa place naturelle est d'ordonner la relecture des liasses de faible confiance ([section précédente](#sec-naf-ic)).
 - **Le levier principal est la connaissance des conventions de codage**, pas la capacité de raisonnement : les rejets à tort sont concentrés sur quelques codes et portent sur des conventions que les notes explicatives ne disent pas.
 
 ## Limites
 
 - Une seule annotation par liasse ; on ne sait pas quelle part des « rejets à tort » est due à l'annotation.
 - Les modes `AUTO` et `FASTTEXT` portent sur des populations différentes : leurs chiffres ne se comparent pas directement.
-- L'analyse ne tient pas encore compte de **l'indice de confiance du modèle de production**.
+- L'**indice de confiance** utilisé vient d'une re-prédiction du tableau de bord de la campagne, pas nécessairement de celle qui a codé la liasse en production ; la signification exacte du mode `FASTTEXT` reste à confirmer.
 - Résultats en NAF rév. 2 : la production code désormais en NAF 2025, dont le graphe existe aussi mais sans jeu annoté équivalent.
 
 ## Perspectives
 
-1. **Analyser les erreurs du vérificateur selon la confiance du modèle de production.** Si le vérificateur est meilleur là où fastText est peu confiant, il pourrait compléter le seuil actuel plutôt que le doubler. Cela suppose de récupérer l'indice de confiance des liasses du jeu de test *[à voir avec Nathan]*.
+1. **Consolider l'analyse selon la confiance du modèle de production** ([section dédiée](#sec-naf-ic)) avec l'IC réellement utilisé en production et le seuil en vigueur, pour simuler le vérificateur placé après le seuil *[à voir avec Nathan]*.
 2. **Injecter des précédents annotés dans le prompt** : les libellés annotés les plus proches avec leur code humain, pour faire entrer les conventions de codage. Les exports Label Studio NAF 2008 en contiennent environ 19 000 hors jeu de test. Mesurer l'effet sur les rejets à tort sans dégrader le rappel, en excluant les libellés du test pour éviter toute fuite.
 3. **Écrire une fiche de conventions** pour les codes qui concentrent les rejets (68.20B, 81.21Z, 96.09Z, 66.30Z), tirée d'une source officielle (guide de codification APE) plutôt que des erreurs observées, pour ne pas sur-apprendre le test.
 4. **Adapter le prompt aux objets sociaux** : juger l'activité principale en ignorant les formules juridiques, et demander si un codeur de l'Insee retiendrait le code, plutôt que si la note l'autorise à la lettre.
