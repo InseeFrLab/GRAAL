@@ -29,7 +29,12 @@ class Text2CodeOutput(BaseModel):
 
 
 class Text2Code:
-    def __init__(self, classifier: BaseClassifier, verifier: bool = True):
+    def __init__(self, classifier: BaseClassifier, verifier: bool = False):
+        # Vérifieur désactivé par défaut : sur le golden set NAF 2025 (244 liasses
+        # triple-annotées, 300 du sous-échantillon représentatif), une fois que le
+        # classifieur consulte la notice du code retenu, MatchVerifier accepte 95 % des
+        # prédictions, ne détecte qu'une erreur sur six, et ses remplacements corrigent
+        # autant qu'ils cassent — pour ~70 s de plus par libellé (cf. eval/).
         self.classifier = classifier
 
         if verifier:

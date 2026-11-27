@@ -45,7 +45,9 @@ DEFAULT_SUMMARY_PATH = "data/nace_summary.txt"
 
 
 class SummaryAgenticClassifier(BaseAgent):
-    def __init__(self, graph: Graph, summary_path: str = DEFAULT_SUMMARY_PATH):
+    def __init__(
+        self, graph: Graph, summary_path: str = DEFAULT_SUMMARY_PATH, thinking: bool = False
+    ):
         with open(summary_path, "r", encoding="utf-8") as f:
             self.summary = f.read()
         super().__init__(graph)
@@ -57,7 +59,19 @@ class SummaryAgenticClassifier(BaseAgent):
         # appel (reset_tool_choice, par défaut), la suite de l'exploration reste libre.
         self.exploration_agent = self.agent.clone(
             output_type=None,
-            model_settings=self.agent.model_settings.resolve(ModelSettings(tool_choice="required")),
+            model_settings=self.agent.model_settings.resolve(
+                ModelSettings(
+                    tool_choice="required",
+                    # Sans thinking par défaut : avec, l'exploration était dominée par
+                    # le décodage du raisonnement (~2 700 tokens par libellé). Sur les
+                    # 244 liasses triple-annotées, même exactitude (0,750 sans, 0,734
+                    # avec) et durée médiane divisée par deux (40 s contre 86 s) ; le
+                    # modèle compense par davantage d'appels d'outils.
+                    extra_body=None
+                    if thinking
+                    else {"chat_template_kwargs": {"enable_thinking": False}},
+                )
+            ),
             reset_tool_choice=True,
         )
         # Finalisation : mêmes instructions (préfixe de prompt identique), outils

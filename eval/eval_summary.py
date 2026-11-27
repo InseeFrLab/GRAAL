@@ -16,6 +16,10 @@ dans `in_representative_subset` (distribution des codes proche de la production)
                     au moins 2 annotateurs sur 3 d'accord. Les métriques sont
                     déclinées en accord 3/3 et accord 2/3 seulement. Toujours hors du
                     sous-échantillon représentatif (distribution des codes différente) ;
+    double          les 1 074 liasses à exactement deux annotations (959 concordantes,
+                    115 discordantes). Moins sûres que la triple annotation : la doc ne
+                    les dit pas indépendantes, et 83 % sont des multivoques réannotées,
+                    à dominante agricole ;
     all             le fichier complet, où l'agriculture est très sur-représentée.
 
 Prérequis : `.env` avec Neo4j, l'API LLM et les accès S3 (mêmes variables que src.main).
@@ -392,7 +396,7 @@ async def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
         "--subset",
-        choices=["representative", "triple", "all"],
+        choices=["representative", "triple", "double", "all"],
         default="representative",
         help="vivier de libellés (cf. docstring)",
     )
@@ -405,6 +409,9 @@ async def main() -> int:
         "--verify",
         action="store_true",
         help="ablation : juger chaque prédiction avec MatchVerifier",
+    )
+    parser.add_argument(
+        "--thinking", action="store_true", help="exploration avec thinking (plus lent)"
     )
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
@@ -420,6 +427,8 @@ async def main() -> int:
         df = df.filter(pl.col("in_representative_subset"))
     elif args.subset == "triple":
         df = df.filter(pl.col("annotation_sources").list.contains("triple_annot_2025"))
+    elif args.subset == "double":
+        df = df.filter(pl.col("n_annotations") == 2)
     if args.n and args.n < df.height:
         df = df.sample(n=args.n, seed=args.seed)
     texts, golds = df["libelle"].to_list(), df["apet2025"].to_list()
@@ -440,7 +449,9 @@ async def main() -> int:
 
     graph = Graph(neo4j_config)
     clf = SummaryAgenticClassifier(
-        graph, summary_path=ensure_summary(args.summary, args.rebuild_summary)
+        graph,
+        summary_path=ensure_summary(args.summary, args.rebuild_summary),
+        thinking=args.thinking,
     )
     verifier = MatchVerifier(graph) if args.verify else None
 
@@ -477,6 +488,7 @@ async def main() -> int:
     metrics.update(
         golden=args.golden,
         subset=args.subset,
+        thinking=args.thinking,
         seed=args.seed,
         model=os.environ.get("GENERATION_MODEL"),
     )
