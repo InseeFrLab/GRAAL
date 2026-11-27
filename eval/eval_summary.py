@@ -7,8 +7,16 @@ seul résumé.
 
 Golden set : s3://projet-ape/data/golden_set_naf2025.parquet, documenté dans
 s3://projet-ape/data/golden_set_naf2025_doc.txt. Par défaut, l'échantillon est tiré
-dans `in_representative_subset` (distribution des codes proche de la production) ;
-`--all` tire dans le fichier complet, où l'agriculture est très sur-représentée.
+dans `in_representative_subset` (distribution des codes proche de la production).
+`--subset` choisit un autre vivier :
+    representative  in_representative_subset (défaut) ; une seule annotation par liasse
+                    dans 99,6 % des cas, donc label non contrôlé ;
+    triple          les 244 liasses triple-annotées (source C) : seules annotations
+                    multiples indépendantes du fichier. Le label est la majorité, avec
+                    au moins 2 annotateurs sur 3 d'accord. Les métriques sont
+                    déclinées en accord 3/3 et accord 2/3 seulement. Toujours hors du
+                    sous-échantillon représentatif (distribution des codes différente) ;
+    all             le fichier complet, où l'agriculture est très sur-représentée.
 
 Prérequis : `.env` avec Neo4j, l'API LLM et les accès S3 (mêmes variables que src.main).
 
@@ -24,6 +32,7 @@ exactitude parmi les acceptés, rappel/précision de la détection d'erreurs).
 Usage (depuis la racine du dépôt) :
     uv run python -m eval.eval_summary --n 10                 # debug
     uv run python -m eval.eval_summary --n 200 --concurrency 8 --verify
+    uv run python -m eval.eval_summary --subset triple --n 0 --concurrency 16 --verify
 
 Sorties dans --out (défaut eval/results/summary_<horodatage>/) :
     predictions.jsonl  une ligne par libellé, écrite au fil de l'eau
@@ -315,7 +324,15 @@ def label_metrics(rows: list[dict], pred_key: str) -> dict:
     exact = lambda r: is_correct(r.get(pred_key), r["gold"], None)  # noqa: E731
     any_annot = lambda r: any(is_correct(r.get(pred_key), a, None) for a in r["annotations"])  # noqa: E731
     sources = sorted({r["source"] for r in rows})
+    multi = [r for r in rows if len(r["annotations"]) >= 2]
+    by_agreement = {
+        f"{k}_agree": acc([r for r in multi if r.get("n_agree") == k], exact)
+        for k in sorted({r.get("n_agree") for r in multi if r.get("n_agree")})
+    }
     return {
+        # Liasses à plusieurs annotations, par nombre d'annotateurs d'accord avec le
+        # label (majoritaire) : 3_agree = accord 3/3, 2_agree = accord 2/3 seulement.
+        "by_agreement": by_agreement,
         "any_annotation": acc(rows, any_annot),
         "unanimous": acc([r for r in rows if r["unanimous"]], exact),
         "not_unanimous": acc([r for r in rows if not r["unanimous"]], exact),
@@ -368,7 +385,10 @@ async def main() -> int:
     parser.add_argument("--n", type=int, default=10, help="taille de l'échantillon (0 = tout)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
-        "--all", action="store_true", help="ne pas restreindre à in_representative_subset"
+        "--subset",
+        choices=["representative", "triple", "all"],
+        default="representative",
+        help="vivier de libellés (cf. docstring)",
     )
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--summary", default=DEFAULT_SUMMARY_PATH)
@@ -390,8 +410,10 @@ async def main() -> int:
 
     with storage.open_path(args.golden, "rb") as f:
         df = pl.read_parquet(f)
-    if not args.all:
+    if args.subset == "representative":
         df = df.filter(pl.col("in_representative_subset"))
+    elif args.subset == "triple":
+        df = df.filter(pl.col("annotation_sources").list.contains("triple_annot_2025"))
     if args.n and args.n < df.height:
         df = df.sample(n=args.n, seed=args.seed)
     texts, golds = df["libelle"].to_list(), df["apet2025"].to_list()
@@ -400,6 +422,10 @@ async def main() -> int:
             # « XXXXX » = jugé inclassable par un annotateur : pas un code à comparer.
             "annotations": [a for a in m["apet2025_annotations"] if a != "XXXXX"],
             "unanimous": m["unanimous"],
+            "n_agree": max(
+                Counter(a for a in m["apet2025_annotations"] if a != "XXXXX").values(),
+                default=0,
+            ),
             "source": m["source"],
         }
         for m in df.select("apet2025_annotations", "unanimous", "source").to_dicts()
@@ -444,7 +470,7 @@ async def main() -> int:
         metrics["ablation"] = ablation_metrics(rows)
     metrics.update(
         golden=args.golden,
-        representative_subset=not args.all,
+        subset=args.subset,
         seed=args.seed,
         model=os.environ.get("GENERATION_MODEL"),
     )
