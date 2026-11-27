@@ -41,7 +41,7 @@ Un agent alterne raisonnement et actions : il décide d'appeler un outil, lit le
 
 Utiliser un LLM pour évaluer une réponse (*LLM-as-a-judge*) est devenu courant ; son accord avec des humains peut être élevé, mais il a des **biais documentés** : préférence pour la position d'une réponse dans la liste, pour les réponses longues, pour ses propres productions [@zheng2023judge; @wang2024fair].
 
-**Pour GRAAL** : le *MatchVerifier* est un juge. D'où plusieurs choix : il ne sait pas d'où vient le code (vérité terrain ou prédiction), il ne voit pas la confiance du classifieur (une ancre, pas un argument), et sa règle de décision est explicite et chiffrée. Le biais de position est un risque identifié pour le *CodeChooser*, qui arbitre une liste ordonnée de candidats ; il reste à mesurer ([chapitre 8](08-enseignements.qmd)).
+**Pour GRAAL** : le *MatchVerifier* est un juge. D'où plusieurs choix : il ne sait pas d'où vient le code (vérité terrain ou prédiction), il ne voit pas la confiance du classifieur (une ancre, pas un argument), et sa règle de décision est explicite et chiffrée. Le biais de position est un risque identifié pour le *CodeChooser*, qui arbitre une liste ordonnée de candidats ; il reste à mesurer.
 
 ## Bruit d'étiquetage et jeu de référence
 

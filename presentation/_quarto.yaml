@@ -53,6 +53,5 @@ website:
             - doc/05-cas-coicop.qmd
             - doc/06-cas-naf2008.qmd
             - doc/07-cas-naf2025.qmd
-        - doc/08-enseignements.qmd
         - doc/glossaire.qmd
         - doc/references.qmd

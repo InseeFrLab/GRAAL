@@ -54,7 +54,6 @@ Cette note documente le projet : pourquoi ces choix, comment fonctionnent les ag
 | 5. [Cas d'usage : MatchVerifier sur la COICOP](05-cas-coicop.qmd) | Vérifier la codification Sirus de l'enquête Budget de famille |
 | 6. [Cas d'usage : MatchVerifier sur la NAF rév. 2](06-cas-naf2008.qmd) | Vérifier la codification APE de production (règles et fastText) |
 | 7. [Travaux exploratoires sur la NAF 2025](07-cas-naf2025.qmd) | Classification agentique comparée au modèle supervisé, diagnostic de l'espace d'embedding |
-| 8. [Enseignements et perspectives](08-enseignements.qmd) | Ce qu'on retient, limites transverses, prochaines étapes |
 | [Glossaire](glossaire.qmd) | Termes et métriques |
 | [Références](references.qmd) | Articles, documentations, code |
 

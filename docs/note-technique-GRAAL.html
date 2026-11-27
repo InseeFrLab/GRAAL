@@ -5536,20 +5536,11 @@ window.Quarto = {
   <li><a href="#enseignements-2" id="toc-enseignements-2" class="nav-link" data-scroll-target="#enseignements-2"><span class="header-section-number">7.6</span> Enseignements</a></li>
   <li><a href="#limites-et-perspectives" id="toc-limites-et-perspectives" class="nav-link" data-scroll-target="#limites-et-perspectives"><span class="header-section-number">7.7</span> Limites et perspectives</a></li>
   </ul></li>
-  <li><a href="#enseignements-et-perspectives" id="toc-enseignements-et-perspectives" class="nav-link" data-scroll-target="#enseignements-et-perspectives"><span class="header-section-number">8</span> Enseignements et perspectives</a>
+  <li><a href="#glossaire" id="toc-glossaire" class="nav-link" data-scroll-target="#glossaire"><span class="header-section-number">8</span> Glossaire</a></li>
+  <li><a href="#références" id="toc-références" class="nav-link" data-scroll-target="#références"><span class="header-section-number">9</span> Références</a>
   <ul class="collapse">
-  <li><a href="#ce-quon-retient" id="toc-ce-quon-retient" class="nav-link" data-scroll-target="#ce-quon-retient"><span class="header-section-number">8.1</span> Ce qu’on retient</a></li>
-  <li><a href="#ce-que-cela-dit-des-cas-dusage" id="toc-ce-que-cela-dit-des-cas-dusage" class="nav-link" data-scroll-target="#ce-que-cela-dit-des-cas-dusage"><span class="header-section-number">8.2</span> Ce que cela dit des cas d’usage</a></li>
-  <li><a href="#ce-qui-a-bien-fonctionné-dans-la-démarche" id="toc-ce-qui-a-bien-fonctionné-dans-la-démarche" class="nav-link" data-scroll-target="#ce-qui-a-bien-fonctionné-dans-la-démarche"><span class="header-section-number">8.3</span> Ce qui a bien fonctionné dans la démarche</a></li>
-  <li><a href="#ce-quon-referait-autrement" id="toc-ce-quon-referait-autrement" class="nav-link" data-scroll-target="#ce-quon-referait-autrement"><span class="header-section-number">8.4</span> Ce qu’on referait autrement</a></li>
-  <li><a href="#limites-transverses" id="toc-limites-transverses" class="nav-link" data-scroll-target="#limites-transverses"><span class="header-section-number">8.5</span> Limites transverses</a></li>
-  <li><a href="#prochaines-étapes" id="toc-prochaines-étapes" class="nav-link" data-scroll-target="#prochaines-étapes"><span class="header-section-number">8.6</span> Prochaines étapes</a></li>
-  </ul></li>
-  <li><a href="#glossaire" id="toc-glossaire" class="nav-link" data-scroll-target="#glossaire"><span class="header-section-number">9</span> Glossaire</a></li>
-  <li><a href="#références" id="toc-références" class="nav-link" data-scroll-target="#références"><span class="header-section-number">10</span> Références</a>
-  <ul class="collapse">
-  <li><a href="#code-et-documentation" id="toc-code-et-documentation" class="nav-link" data-scroll-target="#code-et-documentation"><span class="header-section-number">10.1</span> Code et documentation</a></li>
-  <li><a href="#bibliographie" id="toc-bibliographie" class="nav-link" data-scroll-target="#bibliographie"><span class="header-section-number">10.2</span> Bibliographie</a></li>
+  <li><a href="#code-et-documentation" id="toc-code-et-documentation" class="nav-link" data-scroll-target="#code-et-documentation"><span class="header-section-number">9.1</span> Code et documentation</a></li>
+  <li><a href="#bibliographie" id="toc-bibliographie" class="nav-link" data-scroll-target="#bibliographie"><span class="header-section-number">9.2</span> Bibliographie</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -5678,14 +5669,10 @@ window.Quarto = {
 <td>Classification agentique comparée au modèle supervisé, diagnostic de l’espace d’embedding</td>
 </tr>
 <tr class="even">
-<td>8. <a href="#">Enseignements et perspectives</a></td>
-<td>Ce qu’on retient, limites transverses, prochaines étapes</td>
-</tr>
-<tr class="odd">
 <td><a href="#">Glossaire</a></td>
 <td>Termes et métriques</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="#">Références</a></td>
 <td>Articles, documentations, code</td>
 </tr>
@@ -5840,7 +5827,7 @@ Table 2: Les deux cas d’usage de GRAAL.
 <section id="le-llm-comme-juge" class="level2" data-number="2.5">
 <h2 data-number="2.5" class="anchored" data-anchor-id="le-llm-comme-juge"><span class="header-section-number">2.5</span> Le LLM comme juge</h2>
 <p>Utiliser un LLM pour évaluer une réponse (<em>LLM-as-a-judge</em>) est devenu courant ; son accord avec des humains peut être élevé, mais il a des <strong>biais documentés</strong> : préférence pour la position d’une réponse dans la liste, pour les réponses longues, pour ses propres productions <span class="citation" data-cites="zheng2023judge wang2024fair">(<a href="#ref-zheng2023judge" role="doc-biblioref">Zheng et al. 2023</a>; <a href="#ref-wang2024fair" role="doc-biblioref">Wang et al. 2024</a>)</span>.</p>
-<p><strong>Pour GRAAL</strong> : le <em>MatchVerifier</em> est un juge. D’où plusieurs choix : il ne sait pas d’où vient le code (vérité terrain ou prédiction), il ne voit pas la confiance du classifieur (une ancre, pas un argument), et sa règle de décision est explicite et chiffrée. Le biais de position est un risque identifié pour le <em>CodeChooser</em>, qui arbitre une liste ordonnée de candidats ; il reste à mesurer (<a href="#">chapitre 8</a>).</p>
+<p><strong>Pour GRAAL</strong> : le <em>MatchVerifier</em> est un juge. D’où plusieurs choix : il ne sait pas d’où vient le code (vérité terrain ou prédiction), il ne voit pas la confiance du classifieur (une ancre, pas un argument), et sa règle de décision est explicite et chiffrée. Le biais de position est un risque identifié pour le <em>CodeChooser</em>, qui arbitre une liste ordonnée de candidats ; il reste à mesurer.</p>
 </section>
 <section id="bruit-détiquetage-et-jeu-de-référence" class="level2" data-number="2.6">
 <h2 data-number="2.6" class="anchored" data-anchor-id="bruit-détiquetage-et-jeu-de-référence"><span class="header-section-number">2.6</span> Bruit d’étiquetage et jeu de référence</h2>
@@ -7392,137 +7379,8 @@ Table 24: Exactitude et coût par méthode, sur 60 libellés.
 </ul>
 </section>
 </section>
-<section id="enseignements-et-perspectives" class="level1" data-number="8">
-<h1 data-number="8"><span class="header-section-number">8</span> Enseignements et perspectives</h1>
-<section id="ce-quon-retient" class="level2" data-number="8.1">
-<h2 data-number="8.1" class="anchored" data-anchor-id="ce-quon-retient"><span class="header-section-number">8.1</span> Ce qu’on retient</h2>
-<div id="tbl-enseignements" class="quarto-float quarto-figure quarto-figure-center anchored">
-<figure class="quarto-float quarto-float-tbl figure">
-<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-enseignements-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table 25: Principaux enseignements.
-</figcaption>
-<div aria-describedby="tbl-enseignements-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>Constat</th>
-<th>Appui</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>Le framework est générique.</strong> Le même code tourne sur quatre nomenclatures ; seuls le graphe et quelques règles de lecture changent</td>
-<td>Chapitres <a href="#">3</a>, <a href="#">5</a>, <a href="#">6</a></td>
-</tr>
-<tr class="even">
-<td><strong>Le <em>MatchVerifier</em> trouve environ la moitié des erreurs</strong> de la codification de production, en COICOP comme en NAF, et repère mieux les erreurs grossières que les confusions entre postes voisins</td>
-<td>Chapitres <a href="#">5</a>, <a href="#">6</a></td>
-</tr>
-<tr class="odd">
-<td><strong>Sa précision ne suffit pas pour un monitoring</strong> : 58 % en COICOP, 44 % en NAF, et un tiers des codes justes rejetés sur la part codée par fastText</td>
-<td>Chapitre <a href="#">6</a></td>
-</tr>
-<tr class="even">
-<td><strong>Il complète l’indice de confiance du modèle plus qu’il ne le double</strong> : signal presque indépendant, meilleur que l’IC pour repérer les erreurs sur la part fastText, sans suffire à décider seul</td>
-<td>Chapitre <a href="#sec-naf-ic">6</a></td>
-</tr>
-<tr class="odd">
-<td><strong>On ne peut pas choisir un autre point de fonctionnement</strong> : avec le raisonnement activé, <code>p_match</code> est binaire</td>
-<td>Chapitres <a href="#">3</a>, <a href="#">5</a>, <a href="#">6</a></td>
-</tr>
-<tr class="even">
-<td><strong>Ses rejets à tort viennent surtout de conventions de codage non écrites</strong> et de libellés multi-activités, pas d’un défaut de raisonnement</td>
-<td>Chapitre <a href="#">6</a></td>
-</tr>
-<tr class="odd">
-<td><strong>Un second avis améliore le signal</strong> : croiser le vérificateur et un autre classifieur porte la précision à 66 % en COICOP</td>
-<td>Chapitre <a href="#">5</a></td>
-</tr>
-<tr class="even">
-<td><strong>Les classifieurs agentiques ne remplacent pas le modèle supervisé</strong> : pas plus exacts sur 60 libellés, et deux à trois ordres de grandeur plus lents</td>
-<td>Chapitre <a href="#">7</a></td>
-</tr>
-<tr class="odd">
-<td><strong>Les références disponibles limitent toute conclusion</strong> : annotation simple, une part importante des désaccords vient de l’annotation</td>
-<td>Chapitres <a href="#">4</a>, <a href="#">5</a></td>
-</tr>
-</tbody>
-</table>
-</div>
-</figure>
-</div>
-</section>
-<section id="ce-que-cela-dit-des-cas-dusage" class="level2" data-number="8.2">
-<h2 data-number="8.2" class="anchored" data-anchor-id="ce-que-cela-dit-des-cas-dusage"><span class="header-section-number">8.2</span> Ce que cela dit des cas d’usage</h2>
-<p><strong>Audit et monitoring.</strong> L’utilisation du <em>MatchVerifier</em> comme outil de monitoring du modèle de production est <strong>écartée à ce stade</strong>. Il garde un usage plausible pour <strong>prioriser</strong> une reprise manuelle ou un audit (relire d’abord ce qu’il rejette, surtout quand un second avis concorde) et pour <strong>proposer une correction</strong> quand il rejette. La question pourra être rouverte si ses performances s’améliorent, ce que les pistes ci-dessous visent, et surtout si on peut les mesurer sur une référence fiable.</p>
-<p><strong>Recodage.</strong> Les classifieurs agentiques ont un intérêt là où il n’y a pas de données d’entraînement. Leur évaluation reste à faire sur un échantillon de taille suffisante.</p>
-</section>
-<section id="ce-qui-a-bien-fonctionné-dans-la-démarche" class="level2" data-number="8.3">
-<h2 data-number="8.3" class="anchored" data-anchor-id="ce-qui-a-bien-fonctionné-dans-la-démarche"><span class="header-section-number">8.3</span> Ce qui a bien fonctionné dans la démarche</h2>
-<ul>
-<li><strong>Une évaluation exhaustive plutôt qu’une démonstration</strong> : toutes les paires jugées, des métriques orientées usage (erreurs détectées, rejets à tort, précision au taux réel), des pages de résultats publiées.</li>
-<li><strong>Un protocole transposable</strong> : la NAF a été évaluée avec le même protocole que la COICOP, ce qui rend les chiffres comparables.</li>
-<li><strong>La provenance des résultats</strong> : chaque chiffre est attaché à un commit de prompt et à un modèle, ce qui évite de comparer des runs incomparables.</li>
-<li><strong>Les garde-fous en Python</strong> autour des appels LLM : seules les méthodes qui en ont sont robustes sur un endpoint partagé.</li>
-</ul>
-</section>
-<section id="ce-quon-referait-autrement" class="level2" data-number="8.4">
-<h2 data-number="8.4" class="anchored" data-anchor-id="ce-quon-referait-autrement"><span class="header-section-number">8.4</span> Ce qu’on referait autrement</h2>
-<ul>
-<li><strong>Construire la référence avant d’itérer sur les prompts.</strong> Une bonne part du temps a été passée à interpréter des désaccords dont on ne sait pas qui a raison.</li>
-<li><strong>Mesurer le coût du raisonnement avant de l’activer</strong>, et garder une variante sans raisonnement : elle est dix fois plus rapide et préserve un <code>p_match</code> exploitable.</li>
-<li><strong>Séparer mise au point et mesure finale</strong> dès le départ, pour ne pas ajuster les prompts sur le jeu qui sert à les évaluer.</li>
-</ul>
-</section>
-<section id="limites-transverses" class="level2" data-number="8.5">
-<h2 data-number="8.5" class="anchored" data-anchor-id="limites-transverses"><span class="header-section-number">8.5</span> Limites transverses</h2>
-<ul>
-<li><strong>Un seul modèle LLM</strong> (<code>qwen3-6-35b-moe</code>) : les résultats peuvent dépendre fortement du modèle ; l’outillage permet d’en comparer d’autres mais cela n’a pas été fait à grande échelle.</li>
-<li><strong>Dépendance à l’infrastructure</strong> : un endpoint partagé et saturable conditionne les durées et les taux d’échec.</li>
-<li><strong>Reproductibilité partielle</strong> : le prompt est épinglé à un commit, mais le modèle n’est identifié que par son nom ; un changement de poids derrière le même nom ne serait pas visible.</li>
-<li><strong>Secret statistique</strong> : les données sources ne sont pas publiables ; seuls des agrégats le sont.</li>
-</ul>
-</section>
-<section id="prochaines-étapes" class="level2" data-number="8.6">
-<h2 data-number="8.6" class="anchored" data-anchor-id="prochaines-étapes"><span class="header-section-number">8.6</span> Prochaines étapes</h2>
-<section id="mieux-comprendre-les-performances-du-matchverifier-sur-lape" class="level3" data-number="8.6.1">
-<h3 data-number="8.6.1" class="anchored" data-anchor-id="mieux-comprendre-les-performances-du-matchverifier-sur-lape"><span class="header-section-number">8.6.1</span> Mieux comprendre les performances du <em>MatchVerifier</em> sur l’APE</h3>
-<ul class="task-list">
-<li><label><input type="checkbox">Échanger avec Nathan sur la <strong>nature du jeu annoté</strong> NAF 2008 : périmètre, tirage, qualité des annotations, ce que voyaient les annotateurs.</label></li>
-<li><label><input type="checkbox" checked>Analyser la <strong>distribution des erreurs du vérificateur selon l’indice de confiance du modèle de production</strong> (<a href="#sec-naf-ic">chapitre 6</a>) : il est un peu meilleur là où fastText est peu confiant et repère mieux les erreurs que l’IC (AUC 0,66 contre 0,59), sans que les rejets à tort baissent.</label></li>
-<li><label><input type="checkbox">Refaire cette analyse avec l’IC réellement utilisé en production et le seuil en vigueur.</label></li>
-<li><label><input type="checkbox">Documenter ses performances, ses limites et son apport éventuel par rapport au modèle de production (chapitres <a href="#">5</a> et <a href="#">6</a> de cette note, à compléter).</label></li>
-<li><label><input type="checkbox">Tester les pistes d’amélioration : précédents annotés dans le prompt, fiche de conventions, prompt adapté aux objets sociaux, avec un protocole séparant mise au point et mesure.</label></li>
-</ul>
-</section>
-<section id="contribuer-à-un-jeu-de-référence-doublement-annoté" class="level3" data-number="8.6.2">
-<h3 data-number="8.6.2" class="anchored" data-anchor-id="contribuer-à-un-jeu-de-référence-doublement-annoté"><span class="header-section-number">8.6.2</span> Contribuer à un jeu de référence doublement annoté</h3>
-<ul class="task-list">
-<li><label><input type="checkbox">Définir avec Meilame et Nathan les modalités d’un <em>gold standard</em> doublement annoté (<a href="#sec-gold">chapitre 4</a>).</label></li>
-<li><label><input type="checkbox">Identifier les freins côté métier et les leviers, et les documenter.</label></li>
-<li><label><input type="checkbox">Engager la démarche auprès de la division RIAS.</label></li>
-</ul>
-</section>
-<section id="documentation" class="level3" data-number="8.6.3">
-<h3 data-number="8.6.3" class="anchored" data-anchor-id="documentation"><span class="header-section-number">8.6.3</span> Documentation</h3>
-<ul class="task-list">
-<li><label><input type="checkbox">Échanger avec Meilame, Cédric et Julien sur l’environnement du projet et les pratiques de documentation.</label></li>
-<li><label><input type="checkbox">Compléter la revue de littérature, notamment les travaux d’autres instituts statistiques.</label></li>
-<li><label><input type="checkbox">Réconcilier cette note avec <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md"><code>docs/framework.md</code></a> et le document de cadrage, qui contiennent des passages devenus historiques.</label></li>
-<li><label><input type="checkbox">Décider de la langue (une version anglaise, comme la note APE ?) et du lieu de publication.</label></li>
-</ul>
-</section>
-<section id="questions-ouvertes-pour-la-suite" class="level3" data-number="8.6.4">
-<h3 data-number="8.6.4" class="anchored" data-anchor-id="questions-ouvertes-pour-la-suite"><span class="header-section-number">8.6.4</span> Questions ouvertes pour la suite</h3>
-<ul>
-<li>Faut-il mesurer le biais de position du <em>CodeChooser</em> avant de l’utiliser à plus grande échelle ?</li>
-<li>Quel niveau de performance rendrait le <em>MatchVerifier</em> utile pour le monitoring ? Ce seuil est à définir avec le métier, en fonction du coût d’une relecture et de celui d’une erreur non détectée.</li>
-</ul>
-</section>
-</section>
-</section>
-<section id="glossaire" class="level1" data-number="9">
-<h1 data-number="9"><span class="header-section-number">9</span> Glossaire</h1>
+<section id="glossaire" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Glossaire</h1>
 <dl>
 <dt>Agent</dt>
 <dd>
@@ -7618,10 +7476,10 @@ Définitions de l’erreur de production : code différent ; code différent et 
 </dd>
 </dl>
 </section>
-<section id="références" class="level1" data-number="10">
-<h1 data-number="10"><span class="header-section-number">10</span> Références</h1>
-<section id="code-et-documentation" class="level2" data-number="10.1">
-<h2 data-number="10.1" class="anchored" data-anchor-id="code-et-documentation"><span class="header-section-number">10.1</span> Code et documentation</h2>
+<section id="références" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Références</h1>
+<section id="code-et-documentation" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="code-et-documentation"><span class="header-section-number">9.1</span> Code et documentation</h2>
 <ul>
 <li>Dépôt GRAAL : <a href="https://github.com/InseeFrLab/GRAAL" class="uri">https://github.com/InseeFrLab/GRAAL</a></li>
 <li>Documentation technique du code : <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md"><code>docs/framework.md</code></a></li>
@@ -7629,8 +7487,8 @@ Définitions de l’erreur de production : code différent ; code différent et 
 <li>Rapports d’évaluation : <a href="https://github.com/InseeFrLab/GRAAL/tree/main/docs/eval"><code>docs/eval/</code></a></li>
 </ul>
 </section>
-<section id="bibliographie" class="level2" data-number="10.2">
-<h2 data-number="10.2" class="anchored" data-anchor-id="bibliographie"><span class="header-section-number">10.2</span> Bibliographie</h2>
+<section id="bibliographie" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="bibliographie"><span class="header-section-number">9.2</span> Bibliographie</h2>
 <div id="refs" class="references csl-bib-body hanging-indent" role="list">
 <div id="ref-angelopoulos2023gentle" class="csl-entry" role="listitem">
 Angelopoulos, Anastasios N., et Stephen Bates. 2023. <span>« Conformal Prediction: A Gentle Introduction »</span>. <em>Foundations and Trends in Machine Learning</em> 16 (4): 494‑591. <a href="https://doi.org/10.1561/2200000101">https://doi.org/10.1561/2200000101</a>.
