@@ -9,6 +9,7 @@ outil, lequel, avec quel code, et quand s'arrêter. C'est un choix de conception
 pour ce classifieur (donner le plus de liberté possible à l'agent) : il n'y a donc pas
 de garde-fou Python empêchant la remontée d'un code non terminal pendant l'exploration
 — seulement le repli déterministe de `__call__` si le code final n'est pas terminal.
+Seule contrainte : le premier tour doit appeler un outil (`tool_choice="required"`).
 
 L'exploration se fait *sans* `output_type`, et la réponse structurée est demandée dans
 un second `Runner.run` (`tool_choice="none"`), comme `BaseClassifier` sépare
@@ -48,9 +49,19 @@ class SummaryAgenticClassifier(BaseAgent):
         with open(summary_path, "r", encoding="utf-8") as f:
             self.summary = f.read()
         super().__init__(graph)
-        # Exploration : outils libres, sans output_type (cf. docstring du module :
-        # un response_format interdirait tout appel d'outil côté backend).
-        self.exploration_agent = self.agent.clone(output_type=None)
+        # Exploration : sans output_type (cf. docstring du module : un response_format
+        # interdirait tout appel d'outil côté backend). Au moins un appel d'outil est
+        # imposé (tool_choice="required") : livré à lui-même, le modèle concluait depuis
+        # le seul résumé sur 57 % du golden set (55 % de bonnes réponses, contre 69 %
+        # quand il consultait une notice). Le SDK repasse en "auto" dès le premier
+        # appel (reset_tool_choice, par défaut), la suite de l'exploration reste libre.
+        self.exploration_agent = self.agent.clone(
+            output_type=None,
+            model_settings=self.agent.model_settings.resolve(
+                ModelSettings(tool_choice="required")
+            ),
+            reset_tool_choice=True,
+        )
         # Finalisation : mêmes instructions (préfixe de prompt identique), outils
         # déclarés mais interdits — retirer `tools` alors que l'historique contient des
         # tool_calls bloque le rendu du chat template côté backend (cf. BaseClassifier).
@@ -83,9 +94,10 @@ class SummaryAgenticClassifier(BaseAgent):
         d'affectation). À vous de décider, avec les outils à votre disposition
         (get_code_information, get_children, get_descendants, get_siblings, get_parent),
         quels codes approfondir pour confirmer ou affiner la position la plus spécifique
-        possible. Vous êtes libre d'explorer comme vous le souhaitez : aucune étape n'est
-        imposée, et vous pouvez conclure directement si le résumé suffit déjà à trancher
-        avec certitude.
+        possible. Vous êtes libre d'explorer comme vous le souhaitez, avec une seule
+        exigence : avant de conclure, consultez la notice (get_code_information) du code
+        terminal que vous comptez retenir, et vérifiez que l'activité n'en est pas exclue
+        — un nom de poste proche dans le résumé ne suffit pas à trancher.
 
 {NOMENCLATURE.reading_rules}
 
