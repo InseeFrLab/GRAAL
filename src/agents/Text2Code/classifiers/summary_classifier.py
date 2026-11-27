@@ -57,9 +57,7 @@ class SummaryAgenticClassifier(BaseAgent):
         # appel (reset_tool_choice, par défaut), la suite de l'exploration reste libre.
         self.exploration_agent = self.agent.clone(
             output_type=None,
-            model_settings=self.agent.model_settings.resolve(
-                ModelSettings(tool_choice="required")
-            ),
+            model_settings=self.agent.model_settings.resolve(ModelSettings(tool_choice="required")),
             reset_tool_choice=True,
         )
         # Finalisation : mêmes instructions (préfixe de prompt identique), outils
@@ -157,26 +155,71 @@ class SummaryAgenticClassifier(BaseAgent):
         # européenne passerait pour un code non terminal.
         info = self.graph.get_code_information(result.code)
         result.code = info.get("code") or result.code
+        if info.get("is_final"):
+            return result
 
-        if not info.get("is_final"):
-            # No Python-owned guard rail forces the free-running loop above to stop on
-            # a terminal code (cf. this module's docstring) — descend deterministically
-            # to a real leaf rather than silently surfacing a non-final one. Same
-            # "confidence 0.0 marks a forced fallback" convention as
-            # BaseClassifier._fallback_output.
-            logger.warning(
-                f"SummaryAgenticClassifier returned non-final code {result.code!r}, "
-                "falling back to nearest leaf"
+        # Code non terminal (« 68.32 ») ou inexistant (« 47.91H », « 70.22Z » de la NAF
+        # 2008) : plutôt que de descendre arbitrairement vers la première feuille, on
+        # redemande au modèle de choisir parmi les codes terminaux sous le plus proche
+        # ancêtre existant, avec tout le contexte de son exploration.
+        leaves = self.graph.get_leaves(result.code)
+        if len(leaves) == 1:
+            # Une seule feuille possible (« 47.91H » -> « 47.91Y ») : pas de choix à
+            # demander, le raisonnement du modèle reste valable.
+            result.proposed_explanation = (
+                f"[leaf choice from {result.code}] {result.proposed_explanation}"
             )
-            result = MatchVerificationInput(
-                activity=activity,
-                code=self.graph.first_leaf_from(result.code),
-                proposed_explanation=(
-                    f"[non-final fallback] Code non terminal retourné par le modèle : "
-                    f"{result.code}."
+            result.code = leaves[0]["code"]
+            return result
+        if leaves:
+            retry = await self._choose_leaf(final.to_input_list(), result.code, leaves)
+            if retry is not None:
+                retry.activity = activity
+                retry.tool_call_count = result.tool_call_count
+                return retry
+
+        # Dernier recours (aucune feuille, ou choix encore hors liste) : descente
+        # déterministe ; même convention « confiance 0.0 = repli forcé » que
+        # BaseClassifier._fallback_output.
+        logger.warning(
+            f"SummaryAgenticClassifier returned non-final code {result.code!r}, "
+            "falling back to nearest leaf"
+        )
+        return MatchVerificationInput(
+            activity=activity,
+            code=self.graph.first_leaf_from(
+                self.graph.nearest_existing_code(result.code) or result.code
+            ),
+            proposed_explanation=(
+                f"[non-final fallback] Code non terminal retourné par le modèle : {result.code}."
+            ),
+            proposed_confidence=0.0,
+            tool_call_count=result.tool_call_count,
+        )
+
+    async def _choose_leaf(
+        self, conversation: list, code: str, leaves: list[dict]
+    ) -> MatchVerificationInput | None:
+        """Seconde finalisation : choisir parmi `leaves`. None si le choix n'y figure pas."""
+        listing = "\n".join(f"- {leaf['code']} : {leaf['name']}" for leaf in leaves)
+        conversation = conversation + [
+            {
+                "role": "user",
+                "content": (
+                    f"Le code « {code} » n'est pas un code terminal existant de la "
+                    "nomenclature. Choisissez le plus approprié parmi les codes "
+                    f"terminaux suivants :\n{listing}\n\n"
+                    "Répondez sans appeler d'outil : justification, code terminal choisi "
+                    "(is_final = 1), puis confiance entre 0 et 1."
                 ),
-                proposed_confidence=0.0,
-                tool_call_count=result.tool_call_count,
-            )
-
+            }
+        ]
+        final = await Runner.run(self.finalize_agent, conversation, max_turns=2)
+        result = final.final_output
+        chosen = self.graph.get_code_information(result.code).get("code")
+        if chosen not in {leaf["code"] for leaf in leaves}:
+            logger.warning(f"SummaryAgenticClassifier: leaf choice {result.code!r} not in list")
+            return None
+        result.code = chosen
+        result.proposed_explanation = f"[leaf choice from {code}] {result.proposed_explanation}"
         return result

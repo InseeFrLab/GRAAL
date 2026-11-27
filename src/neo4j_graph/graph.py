@@ -314,6 +314,35 @@ class Graph:
             code = children[0]["code"]
         return code
 
+    def nearest_existing_code(self, code: str) -> Optional[str]:
+        """Le code tel qu'il existe dans le graphe, ou à défaut son plus proche ancêtre
+        existant, obtenu en tronquant le code caractère par caractère (« 47.91H », absent
+        de la NAF 2025, donne « 47.91 » ; « 70.22Z », code NAF 2008, donne « 70.22 »).
+        None si aucun préfixe n'existe.
+        """
+        while code:
+            found = self.get_code_information(code).get("code")
+            if found:
+                return found
+            code = code[:-1].rstrip(".")
+        return None
+
+    def get_leaves(self, code: str) -> List[Dict[str, Any]]:
+        """Les codes terminaux sous `code` (lui-même s'il est terminal) : `{code, name}`,
+        triés par code. Sert à faire choisir le modèle parmi de vrais codes terminaux
+        quand il a conclu sur une position intermédiaire.
+        """
+        code = self.nearest_existing_code(code)
+        if code is None:
+            return []
+        query = """
+        MATCH (node {CODE: $code})-[:HAS_CHILD*0..]->(leaf)
+        WHERE NOT (leaf)-[:HAS_CHILD]->()
+        RETURN leaf.CODE as code, leaf.NAME as name
+        ORDER BY leaf.CODE
+        """
+        return self.graph.query(query, params={"code": code})
+
     async def get_closest_codes(self, activity: str, top_k: int = 5) -> List[str]:
         retrieval = await self.db.asimilarity_search(
             f"query : {activity}", k=top_k, filter={"FINAL": 1}

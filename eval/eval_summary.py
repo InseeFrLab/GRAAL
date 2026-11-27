@@ -76,6 +76,7 @@ logger = logging.getLogger("eval.eval_summary")
 
 GOLDEN_SET = "s3://projet-ape/data/golden_set_naf2025.parquet"
 FALLBACK_MARKER = "[non-final fallback]"
+LEAF_CHOICE_MARKER = "[leaf choice from"
 DEPTHS = {"division": 2, "groupe": 3, "classe": 4, "sous-classe": None}
 
 # --- Capture des appels d'outils -------------------------------------------------
@@ -205,6 +206,7 @@ async def classify_one(clf, text: str, gold: str, verifier=None, meta=None) -> d
             confidence=out.proposed_confidence,
             explanation=out.proposed_explanation,
             fallback=out.proposed_explanation.startswith(FALLBACK_MARKER),
+            leaf_choice=out.proposed_explanation.startswith(LEAF_CHOICE_MARKER),
         )
     except Exception as e:  # noqa: BLE001 — une erreur LLM ne doit pas arrêter le lot
         logger.exception(f"Échec sur {text!r}")
@@ -352,6 +354,10 @@ def compute_metrics(rows: list[dict]) -> dict:
         "label_view": label_metrics(rows, "pred"),
         "errors": sum(1 for r in rows if r.get("error")),
         "non_final_fallbacks": sum(1 for r in rows if r.get("fallback")),
+        # Code final non terminal rattrapé par une seconde finalisation (choix parmi les
+        # feuilles), avec son exactitude.
+        "leaf_choices": sum(1 for r in rows if r.get("leaf_choice")),
+        "leaf_choices_correct": sum(1 for r in rows if r.get("leaf_choice") and r.get("correct")),
         "zero_tool_calls": n - len(with_tools),
         "mean_tool_calls": round(sum(r["n_tool_calls"] for r in rows) / n, 2),
         "max_tool_calls": max((r["n_tool_calls"] for r in rows), default=0),
