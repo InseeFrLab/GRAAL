@@ -40,7 +40,7 @@ Cette note documente le projet : pourquoi ces choix, comment fonctionnent les ag
 ## En bref
 
 - **Ce qui marche.** Le framework est générique : la même base de code tourne sur la NAF 2025, la NAF rév. 2 et la COICOP 2018 en reconstruisant seulement le graphe. Le *MatchVerifier* détecte environ **la moitié des erreurs** de la codification de production, en COICOP (Sirus) comme en NAF (règles + fastText), et ses rejets sont nettement plus souvent justifiés que le hasard.
-- **Ce qui ne suffit pas encore.** Il rejette aussi **7,6 % des codes justes en COICOP et 16,6 % en NAF** (un tiers sur la part codée par fastText). Avec une précision de 44 % à 58 %, son verdict seul **ne peut pas servir d'outil de monitoring** du modèle de production : il peut au mieux **prioriser** une reprise manuelle. Sa probabilité de verdict (`p_match`) est quasi binaire et ne permet pas de choisir un autre seuil.
+- **Ce qui ne suffit pas encore.** Il rejette aussi **7,6 % des codes justes en COICOP et 16,6 % en NAF** (un tiers sur la part codée par fastText). Avec une précision de 44 % à 58 %, son verdict seul **ne peut pas servir d'outil de monitoring** du modèle de production : il peut au mieux **prioriser** une reprise manuelle. Sa probabilité de verdict est quasi binaire et ne permet pas de choisir un autre seuil.
 - **Ce qui limite toute conclusion.** Les références humaines utilisées sont **annotées une seule fois**, et une relecture d'échantillon montre qu'une part importante des désaccords vient de l'annotation. Les chiffres sont des bornes pessimistes. **Un jeu de référence doublement annoté** est la condition pour mesurer les performances réelles, du *MatchVerifier* comme de tout autre modèle.
 
 ## Comment lire cette note
@@ -54,6 +54,7 @@ Cette note documente le projet : pourquoi ces choix, comment fonctionnent les ag
 | 5. [Cas d'usage : MatchVerifier sur la COICOP](05-cas-coicop.qmd) | Vérifier la codification Sirus de l'enquête Budget de famille |
 | 6. [Cas d'usage : MatchVerifier sur la NAF rév. 2](06-cas-naf2008.qmd) | Vérifier la codification APE de production (règles et fastText) |
 | 7. [Travaux exploratoires sur la NAF 2025](07-cas-naf2025.qmd) | Classification agentique comparée au modèle supervisé, diagnostic de l'espace d'embedding |
+| 8. [Conclusion](08-conclusion.qmd) | Ce que GRAAL apporte, ce qui ne suffit pas encore, suites envisagées |
 | [Glossaire](glossaire.qmd) | Termes et métriques |
 | [Références](references.qmd) | Articles, documentations, code |
 

@@ -18,7 +18,7 @@ La vague 1 est un terrain favorable pour répondre : on y dispose, pour chaque d
 
 | Étape | Lignes | Paires |
 |---|---|---|
-| Sortie `reconcile-sirus` du workflow de codification (8 septembre 2026) | 14 695 | |
+| Sortie de la chaîne de codification, rapprochée de Sirus (8 septembre 2026) | 14 695 | |
 | − codes Sirus techniques 98/99 absents du graphe (le vérificateur n'aurait aucune notice à lire) | − 400 | |
 | Lignes conservées | 14 295 | |
 | Dédoublonnage (libellé, code Sirus, code humain) | | 8 981 |
@@ -37,7 +37,7 @@ La vague 1 est un terrain favorable pour répondre : on y dispose, pour chaque d
 Le protocole commun est décrit au [chapitre 4](04-evaluation.qmd). Spécificités :
 
 - **vérité de branche** retenue comme vérité principale : si l'annotateur a codé `03.1.2` (vêtements) et Sirus `03.1.2.1` (vêtements pour hommes), Sirus n'a fait que préciser ;
-- profil `coicop2018`, avec des **règles de lecture** écrites par l'équipe : une marque, un conditionnement, une quantité ne changent pas le poste ; plusieurs articles sur une ligne : le premier cité décide ; un libellé ambigu (« café », qui peut être servi au comptoir ou acheté en paquet) est codé sur la lecture la plus plausible ;
+- profil COICOP 2018, avec des **règles de lecture** écrites par l'équipe : une marque, un conditionnement, une quantité ne changent pas le poste ; plusieurs articles sur une ligne : le premier cité décide ; un libellé ambigu (« café », qui peut être servi au comptoir ou acheté en paquet) est codé sur la lecture la plus plausible ;
 - modèle `qwen3-6-35b-moe`, prompt du commit `c3e01a2` ;
 - run terminé le 13 octobre 2026 : 49 h de calcul cumulé, 10 h en temps réel avec 5 appels en parallèle, **20 s par paire** en moyenne.
 
@@ -45,7 +45,7 @@ Le protocole commun est décrit au [chapitre 4](04-evaluation.qmd). Spécificit�
 
 ### Vue d'ensemble
 
-| Vérité | Paires | dont erreurs | Erreurs détectées | Rejets à tort | Précision (dans l'éval) | Précision au taux réel | AUC `p_match` | Alternative = humain |
+| Vérité | Paires | dont erreurs | Erreurs détectées | Rejets à tort | Précision (dans l'éval) | Précision au taux réel | AUC de la probabilité de verdict | Alternative = humain |
 |---|---|---|---|---|---|---|---|---|
 | Exacte | 8 909 | 2 148 | 49,8 % | 7,1 % | 68,9 % | 63,0 % | 0,73 | 44,2 % |
 | **Branche** | **8 909** | **1 988** | **51,4 %** | **7,6 %** | **65,9 %** | **58,4 %** | **0,74** | **42,4 %** |
@@ -75,9 +75,9 @@ Le vérificateur repère mieux les **erreurs grossières** (environ 60 % de reje
 
 Deux divisions se démarquent négativement : la **restauration** (11 : 38 % d'erreurs détectées, 13 % de rejets à tort), qui bute sur l'ambiguïté consommé sur place / acheté en magasin, et la **santé** (06 : 18 % de rejets à tort).
 
-### `p_match` ne permet pas de choisir un seuil
+### La probabilité de verdict ne permet pas de choisir un seuil
 
-`p_match` est quasi binaire : 17 % des paires sous 0,1, 82 % au-dessus de 0,9. Passer le seuil de 0,1 à 0,9 ne fait varier le taux de rejet que de 17,2 % à 17,5 %. Le seul point de fonctionnement réel est le verdict. Les scores chiffrés discriminent un peu mieux : ne garder que les rejets où l'alternative dépasse le code jugé d'au moins 60 points porte la précision de 61 % à 66 %, pour 29 % de rejets en moins.
+La probabilité de verdict est quasi binaire : 17 % des paires sous 0,1, 82 % au-dessus de 0,9. Passer le seuil de 0,1 à 0,9 ne fait varier le taux de rejet que de 17,2 % à 17,5 %. Le seul point de fonctionnement réel est le verdict. Les scores chiffrés discriminent un peu mieux : ne garder que les rejets où l'alternative dépasse le code jugé d'au moins 60 points porte la précision de 61 % à 66 %, pour 29 % de rejets en moins.
 
 ### Un second avis : le *Summary classifier*
 

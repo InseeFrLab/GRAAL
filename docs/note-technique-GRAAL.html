@@ -5455,6 +5455,7 @@ window.Quarto = {
 .status-done { background: rgba(27,175,122,.15); }
 .status-partial { background: rgba(237,161,0,.18); }
 .status-todo { background: rgba(108,117,125,.15); }
+.chapter-lead { font-size: 1.1em; font-style: italic; color: #555; margin: 0.25em 0 1.5em; }
 </style>
 </head>
 
@@ -5536,11 +5537,17 @@ window.Quarto = {
   <li><a href="#enseignements-2" id="toc-enseignements-2" class="nav-link" data-scroll-target="#enseignements-2"><span class="header-section-number">7.6</span> Enseignements</a></li>
   <li><a href="#limites-et-perspectives" id="toc-limites-et-perspectives" class="nav-link" data-scroll-target="#limites-et-perspectives"><span class="header-section-number">7.7</span> Limites et perspectives</a></li>
   </ul></li>
-  <li><a href="#glossaire" id="toc-glossaire" class="nav-link" data-scroll-target="#glossaire"><span class="header-section-number">8</span> Glossaire</a></li>
-  <li><a href="#références" id="toc-références" class="nav-link" data-scroll-target="#références"><span class="header-section-number">9</span> Références</a>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">8</span> Conclusion</a>
   <ul class="collapse">
-  <li><a href="#code-et-documentation" id="toc-code-et-documentation" class="nav-link" data-scroll-target="#code-et-documentation"><span class="header-section-number">9.1</span> Code et documentation</a></li>
-  <li><a href="#bibliographie" id="toc-bibliographie" class="nav-link" data-scroll-target="#bibliographie"><span class="header-section-number">9.2</span> Bibliographie</a></li>
+  <li><a href="#ce-que-graal-apporte" id="toc-ce-que-graal-apporte" class="nav-link" data-scroll-target="#ce-que-graal-apporte"><span class="header-section-number">8.1</span> Ce que GRAAL apporte</a></li>
+  <li><a href="#ce-qui-ne-suffit-pas-encore" id="toc-ce-qui-ne-suffit-pas-encore" class="nav-link" data-scroll-target="#ce-qui-ne-suffit-pas-encore"><span class="header-section-number">8.2</span> Ce qui ne suffit pas encore</a></li>
+  <li><a href="#suites-envisagées" id="toc-suites-envisagées" class="nav-link" data-scroll-target="#suites-envisagées"><span class="header-section-number">8.3</span> Suites envisagées</a></li>
+  </ul></li>
+  <li><a href="#glossaire" id="toc-glossaire" class="nav-link" data-scroll-target="#glossaire"><span class="header-section-number">9</span> Glossaire</a></li>
+  <li><a href="#références" id="toc-références" class="nav-link" data-scroll-target="#références"><span class="header-section-number">10</span> Références</a>
+  <ul class="collapse">
+  <li><a href="#code-et-documentation" id="toc-code-et-documentation" class="nav-link" data-scroll-target="#code-et-documentation"><span class="header-section-number">10.1</span> Code et documentation</a></li>
+  <li><a href="#bibliographie" id="toc-bibliographie" class="nav-link" data-scroll-target="#bibliographie"><span class="header-section-number">10.2</span> Bibliographie</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -5626,7 +5633,7 @@ window.Quarto = {
 <h2 class="unnumbered anchored" data-anchor-id="en-bref">En bref</h2>
 <ul>
 <li><strong>Ce qui marche.</strong> Le framework est générique : la même base de code tourne sur la NAF 2025, la NAF rév. 2 et la COICOP 2018 en reconstruisant seulement le graphe. Le <em>MatchVerifier</em> détecte environ <strong>la moitié des erreurs</strong> de la codification de production, en COICOP (Sirus) comme en NAF (règles + fastText), et ses rejets sont nettement plus souvent justifiés que le hasard.</li>
-<li><strong>Ce qui ne suffit pas encore.</strong> Il rejette aussi <strong>7,6 % des codes justes en COICOP et 16,6 % en NAF</strong> (un tiers sur la part codée par fastText). Avec une précision de 44 % à 58 %, son verdict seul <strong>ne peut pas servir d’outil de monitoring</strong> du modèle de production : il peut au mieux <strong>prioriser</strong> une reprise manuelle. Sa probabilité de verdict (<code>p_match</code>) est quasi binaire et ne permet pas de choisir un autre seuil.</li>
+<li><strong>Ce qui ne suffit pas encore.</strong> Il rejette aussi <strong>7,6 % des codes justes en COICOP et 16,6 % en NAF</strong> (un tiers sur la part codée par fastText). Avec une précision de 44 % à 58 %, son verdict seul <strong>ne peut pas servir d’outil de monitoring</strong> du modèle de production : il peut au mieux <strong>prioriser</strong> une reprise manuelle. Sa probabilité de verdict est quasi binaire et ne permet pas de choisir un autre seuil.</li>
 <li><strong>Ce qui limite toute conclusion.</strong> Les références humaines utilisées sont <strong>annotées une seule fois</strong>, et une relecture d’échantillon montre qu’une part importante des désaccords vient de l’annotation. Les chiffres sont des bornes pessimistes. <strong>Un jeu de référence doublement annoté</strong> est la condition pour mesurer les performances réelles, du <em>MatchVerifier</em> comme de tout autre modèle.</li>
 </ul>
 </section>
@@ -5669,10 +5676,14 @@ window.Quarto = {
 <td>Classification agentique comparée au modèle supervisé, diagnostic de l’espace d’embedding</td>
 </tr>
 <tr class="even">
+<td>8. <a href="#">Conclusion</a></td>
+<td>Ce que GRAAL apporte, ce qui ne suffit pas encore, suites envisagées</td>
+</tr>
+<tr class="odd">
 <td><a href="#">Glossaire</a></td>
 <td>Termes et métriques</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="#">Références</a></td>
 <td>Articles, documentations, code</td>
 </tr>
@@ -5691,6 +5702,9 @@ window.Quarto = {
 </section>
 <section id="contexte-et-objectifs" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Contexte et objectifs</h1>
+<div class="chapter-lead">
+<p>Pourquoi un framework d’agents LLM pour la codification automatique, et pour quels usages.</p>
+</div>
 <section id="la-codification-automatique-à-linsee" class="level2" data-number="1.1">
 <h2 data-number="1.1" class="anchored" data-anchor-id="la-codification-automatique-à-linsee"><span class="header-section-number">1.1</span> La codification automatique à l’Insee</h2>
 <p>Coder un libellé libre dans une nomenclature est une opération massive et répétitive de la statistique publique. Deux exemples servent de fil rouge à cette note :</p>
@@ -5798,6 +5812,9 @@ Table 2: Les deux cas d’usage de GRAAL.
 </section>
 <section id="revue-de-littérature" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Revue de littérature</h1>
+<div class="chapter-lead">
+<p>Ce que la littérature dit des approches mobilisées par GRAAL, et comment cela motive ses choix.</p>
+</div>
 <div class="draft-banner">
 <p><strong>Première version, volontairement courte.</strong> Elle vise à justifier les choix de conception, pas à être exhaustive. Références à compléter, notamment sur les travaux d’autres instituts statistiques qui utilisent des LLM pour la codification <em>[À compléter]</em>.</p>
 </div>
@@ -5837,20 +5854,23 @@ Table 2: Les deux cas d’usage de GRAAL.
 </section>
 <section id="incertitude-et-calibration" class="level2" data-number="2.7">
 <h2 data-number="2.7" class="anchored" data-anchor-id="incertitude-et-calibration"><span class="header-section-number">2.7</span> Incertitude et calibration</h2>
-<p>Les réseaux de neurones modernes sont souvent mal calibrés : un score de 0,9 ne correspond pas à 90 % de bonnes réponses <span class="citation" data-cites="guo2017calibration">(<a href="#ref-guo2017calibration" role="doc-biblioref">Guo et al. 2017</a>)</span>. Pour les LLM, deux mesures coexistent : la confiance <strong>verbalisée</strong> par le modèle, généralement surestimée <span class="citation" data-cites="xiong2024">(<a href="#ref-xiong2024" role="doc-biblioref">Xiong et al. 2024</a>)</span>, et la probabilité lue dans les <strong>logprobs</strong> des tokens générés, mieux informée sur ce que le modèle « sait » <span class="citation" data-cites="kadavath2022">(<a href="#ref-kadavath2022" role="doc-biblioref"><span class="nocase">Kadavath et al.</span> 2022</a>)</span>. La prédiction conforme fournit, à partir d’un jeu de calibration, des seuils ou des ensembles de prédiction avec une garantie de couverture <span class="citation" data-cites="angelopoulos2023gentle">(<a href="#ref-angelopoulos2023gentle" role="doc-biblioref">Angelopoulos et Bates 2023</a>)</span>.</p>
-<p><strong>Pour GRAAL</strong> : le <em>MatchVerifier</em> renvoie les deux mesures (<code>is_match_score</code> déclaré, <code>p_match</code> lu dans les logprobs). Un constat important des évaluations est que le <strong>raisonnement rend <code>p_match</code> quasi binaire</strong> : le modèle ayant tranché dans son bloc de réflexion, il émet le verdict sans hésiter, et il n’y a plus de seuil à choisir. La calibration (conforme ou non) passe donc par les scores chiffrés plutôt que par <code>p_match</code>.</p>
+<p>Les réseaux de neurones modernes sont souvent mal calibrés : un score de 0,9 ne correspond pas à 90 % de bonnes réponses <span class="citation" data-cites="guo2017calibration">(<a href="#ref-guo2017calibration" role="doc-biblioref">Guo et al. 2017</a>)</span>. Pour les LLM, deux mesures coexistent : la confiance <strong>verbalisée</strong> par le modèle, généralement surestimée <span class="citation" data-cites="xiong2024">(<a href="#ref-xiong2024" role="doc-biblioref">Xiong et al. 2024</a>)</span>, et la probabilité que le modèle attribue aux mots qu’il génère (<strong><em>logprobs</em></strong>), mieux informée sur ce que le modèle « sait » <span class="citation" data-cites="kadavath2022">(<a href="#ref-kadavath2022" role="doc-biblioref"><span class="nocase">Kadavath et al.</span> 2022</a>)</span>. La prédiction conforme fournit, à partir d’un jeu de calibration, des seuils ou des ensembles de prédiction avec une garantie de couverture <span class="citation" data-cites="angelopoulos2023gentle">(<a href="#ref-angelopoulos2023gentle" role="doc-biblioref">Angelopoulos et Bates 2023</a>)</span>.</p>
+<p><strong>Pour GRAAL</strong> : le <em>MatchVerifier</em> renvoie les deux mesures : un degré de certitude déclaré, et une probabilité de verdict lue dans les logprobs. Un constat important des évaluations est que le <strong>raisonnement rend cette probabilité quasi binaire</strong> : le modèle ayant tranché dans son brouillon de réflexion, il émet le verdict sans hésiter, et il n’y a plus de seuil à choisir. La calibration (conforme ou non) passe donc par les notes de correspondance plutôt que par la probabilité de verdict.</p>
 </section>
 </section>
 <section id="méthodes" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Méthodes</h1>
-<p>Ce chapitre décrit les composants de GRAAL et justifie leurs choix. Le détail du code (contrats Pydantic, options de la CLI, variables d’environnement) est dans <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md"><code>docs/framework.md</code></a>.</p>
+<div class="chapter-lead">
+<p>Le graphe de nomenclature, les agents de GRAAL et les choix de conception qui les sous-tendent.</p>
+</div>
+<p>Ce chapitre décrit les composants de GRAAL et justifie leurs choix. Le détail technique du code est dans <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md"><code>docs/framework.md</code></a>.</p>
 <section id="vue-densemble" class="level2" data-number="3.1">
 <h2 data-number="3.1" class="anchored" data-anchor-id="vue-densemble"><span class="header-section-number">3.1</span> Vue d’ensemble</h2>
 <p>GRAAL tient en trois briques :</p>
 <ol type="1">
 <li><strong>un graphe de connaissance</strong> (Neo4j <span class="citation" data-cites="neo4j">(<a href="#ref-neo4j" role="doc-biblioref">Neo4j, Inc. 2026</a>)</span>) qui représente la nomenclature ;</li>
 <li><strong>des agents LLM à outils</strong>, chacun défini par un prompt, un jeu d’outils et un type de sortie ;</li>
-<li><strong>des contrats d’entrée/sortie stricts</strong> (schémas Pydantic) qui permettent de chaîner les agents sans code de parsing ad hoc.</li>
+<li><strong>des formats d’entrée et de sortie stricts</strong>, qui permettent d’enchaîner les agents les uns après les autres.</li>
 </ol>
 <div class="cell" data-layout-align="default">
 <div class="cell-output-display">
@@ -5896,26 +5916,26 @@ Table 3: Champs d’un nœud du graphe.
 </colgroup>
 <thead>
 <tr class="header">
-<th>Champ</th>
+<th>Information</th>
 <th>Contenu</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>CODE</code>, <code>NAME</code>, <code>LEVEL</code></td>
-<td>Code, intitulé, niveau hiérarchique (0 = racine)</td>
+<td>Identification</td>
+<td>Code, intitulé, niveau hiérarchique</td>
 </tr>
 <tr class="even">
-<td><code>PARENT_CODE</code></td>
-<td>Poste parent, d’où la relation <code>HAS_PARENT</code></td>
+<td>Hiérarchie</td>
+<td>Poste parent, auquel le nœud est relié</td>
 </tr>
 <tr class="odd">
-<td><code>FINAL</code></td>
-<td>Le poste est-il terminal (feuille) ?</td>
+<td>Terminal</td>
+<td>Le poste est-il une feuille (sans subdivision) ?</td>
 </tr>
 <tr class="even">
-<td><code>Implementation_rule</code>, <code>Includes</code>, <code>IncludesAlso</code>, <code>Excludes</code></td>
-<td>Note explicative : règle d’affectation, contenu, contenu également, exclusions</td>
+<td>Note explicative</td>
+<td>Règle d’affectation, contenu, contenu également, exclusions</td>
 </tr>
 </tbody>
 </table>
@@ -5923,14 +5943,14 @@ Table 3: Champs d’un nœud du graphe.
 </figure>
 </div>
 <p>Un embedding est calculé sur la concaténation de l’intitulé, de la règle d’affectation et des inclusions, pour la recherche par similarité.</p>
-<p>Des <strong>profils de nomenclature</strong> (<code>NOMENCLATURE=naf2025</code>, <code>naf2008</code>, <code>coicop2018</code>) sélectionnent l’instance Neo4j et quelques paramètres propres à la nomenclature, notamment les <strong>règles de lecture</strong> données au <em>MatchVerifier</em> (par exemple en COICOP : une marque ou un conditionnement ne changent pas le poste). Le code des agents est identique d’une nomenclature à l’autre.</p>
+<p>Des <strong>profils de nomenclature</strong> (NAF 2025, NAF rév. 2, COICOP 2018) sélectionnent l’instance Neo4j et quelques paramètres propres à la nomenclature, notamment les <strong>règles de lecture</strong> données au <em>MatchVerifier</em> (par exemple en COICOP : une marque ou un conditionnement ne changent pas le poste). Le code des agents est identique d’une nomenclature à l’autre.</p>
 </section>
 <section id="les-outils" class="level2" data-number="3.3">
 <h2 data-number="3.3" class="anchored" data-anchor-id="les-outils"><span class="header-section-number">3.3</span> Les outils</h2>
 <p>Les agents interrogent le graphe par des fonctions génériques :</p>
 <ul>
-<li><strong>sans état</strong> : <code>get_code_information(code)</code>, <code>get_children(code)</code>, <code>get_siblings(code)</code>, <code>get_notices([codes])</code> ;</li>
-<li><strong>avec état</strong>, pour le <em>Navigator</em> qui garde une position courante : <code>get_current_children()</code>, <code>go_to_child(code)</code>, <code>go_to_parent()</code>, <code>navigate_to(code)</code>, <code>is_current_final()</code>.</li>
+<li><strong>de consultation</strong> : lire les informations d’un code, ses subdivisions, les postes de même niveau, ou les notices de plusieurs codes à la fois ;</li>
+<li><strong>de déplacement</strong>, pour le <em>Navigator</em> qui garde une position courante : voir les subdivisions du poste courant, descendre vers l’une d’elles, remonter au parent, aller directement à un code, savoir si le poste courant est terminal.</li>
 </ul>
 <p>Un déplacement invalide (aller vers un code qui n’est pas un enfant) échoue explicitement. Chaque appel est journalisé avec la position avant et après, ce qui donne une trace rejouable du raisonnement.</p>
 </section>
@@ -6009,23 +6029,23 @@ Table 5: Entrées et sorties du <em>MatchVerifier</em>.
 <tbody>
 <tr class="odd">
 <td>Le libellé</td>
-<td><code>match_score</code> : note du code jugé, de 0 à 100</td>
+<td>Une <strong>note de correspondance</strong> du code jugé, de 0 à 100</td>
 </tr>
 <tr class="even">
 <td>Le code et sa notice complète (lue dans le graphe)</td>
-<td><code>alternative_code</code> : le meilleur code concurrent qu’il trouve, à chaque appel</td>
+<td>Le <strong>meilleur code concurrent</strong> qu’il trouve, à chaque appel</td>
 </tr>
 <tr class="odd">
 <td>Le résumé de toute la nomenclature (niveaux 1 à 5, codes et intitulés, environ 21 000 tokens)</td>
-<td><code>alternative_score</code> : la note de ce concurrent</td>
+<td>La note de ce concurrent</td>
 </tr>
 <tr class="even">
-<td>Un outil, <code>get_notices</code>, pour lire en un appel les notices de plusieurs codes candidats</td>
-<td><code>explanation</code>, puis le verdict <code>is_match</code></td>
+<td>Un outil pour lire en un appel les notices de plusieurs codes candidats</td>
+<td>Une explication, puis le <strong>verdict</strong> : code correct ou non</td>
 </tr>
 <tr class="odd">
 <td>Optionnellement, l’explication fournie par un classifieur</td>
-<td><code>is_match_score</code> (netteté déclarée) et <code>p_match</code> (probabilité lue dans les logprobs)</td>
+<td>Le degré de certitude qu’il déclare, et une <strong>probabilité de verdict</strong>, lue dans les probabilités internes du modèle</td>
 </tr>
 </tbody>
 </table>
@@ -6038,7 +6058,7 @@ Table 5: Entrées et sorties du <em>MatchVerifier</em>.
 <h3 data-number="3.5.2" class="anchored" data-anchor-id="une-règle-de-décision-explicite"><span class="header-section-number">3.5.2</span> Une règle de décision explicite</h3>
 <p>« Ce code correspond-il ? » n’est pas un critère : les libellés sont tronqués, abrégés, plus vagues que la nomenclature, et sans règle le modèle s’en invente une, souvent trop stricte. Le prompt fixe donc :</p>
 <ul>
-<li>le code jugé <strong>garde le bénéfice du doute</strong> : il n’est rejeté que si sa notice le rend incompatible (<code>match_score</code> &lt; 40) <strong>ou</strong> si l’alternative le dépasse d’au moins 20 points ;</li>
+<li>le code jugé <strong>garde le bénéfice du doute</strong> : il n’est rejeté que si sa notice le rend incompatible (note inférieure à 40) <strong>ou</strong> si l’alternative le dépasse d’au moins 20 points ;</li>
 <li>pour un libellé à plusieurs activités : si elles s’excluent, <strong>la première citée</strong> décide ; sinon (énumération, métier décrit par ses tâches), on code <strong>l’impression d’ensemble</strong> ;</li>
 <li>des <strong>règles de lecture propres à chaque nomenclature</strong>, via le profil.</li>
 </ul>
@@ -6046,7 +6066,7 @@ Table 5: Entrées et sorties du <em>MatchVerifier</em>.
 </section>
 <section id="le-prix-du-raisonnement" class="level3" data-number="3.5.3">
 <h3 data-number="3.5.3" class="anchored" data-anchor-id="le-prix-du-raisonnement"><span class="header-section-number">3.5.3</span> Le prix du raisonnement</h3>
-<p>Chercher le meilleur concurrent parmi un millier de postes, puis comparer deux notices, demande de raisonner. Le mode <em>thinking</em> du modèle est donc activé. Le coût a été mesuré sur un même échantillon : <strong>13 à 15 s par paire avec raisonnement, contre 1,5 s sans</strong> (environ 2 400 tokens générés en médiane contre 150). Aucun réglage intermédiaire n’a fonctionné :</p>
+<p>Chercher le meilleur concurrent parmi un millier de postes, puis comparer deux notices, demande de raisonner. Le mode raisonnement du modèle est donc activé. Le coût a été mesuré sur un même échantillon : <strong>13 à 15 s par paire avec raisonnement, contre 1,5 s sans</strong> (environ 2 400 tokens générés en médiane contre 150). Aucun réglage intermédiaire n’a fonctionné :</p>
 <div id="tbl-thinking" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-thinking-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -6082,8 +6102,8 @@ Table 6: Tentatives pour réduire le coût du raisonnement.
 <td>Pire</td>
 </tr>
 <tr class="odd">
-<td>Paramètres <code>thinking_budget</code>, <code>reasoning_effort</code></td>
-<td>Ignorés par l’endpoint</td>
+<td>Paramètres censés limiter le raisonnement</td>
+<td>Ignorés par le serveur</td>
 </tr>
 </tbody>
 </table>
@@ -6091,7 +6111,7 @@ Table 6: Tentatives pour réduire le coût du raisonnement.
 </figure>
 </div>
 <p>La longueur du raisonnement est une propriété du couple (modèle, tâche), pas du prompt. En conditions réelles, avec cinq appels en parallèle sur un endpoint partagé, la durée moyenne observée est de <strong>20 s par paire en COICOP et 28 s en NAF</strong>.</p>
-<p>Le raisonnement a un second effet, moins attendu : il rend <code>p_match</code> <strong>quasi binaire</strong>. Le modèle tranche dans son bloc de réflexion, puis émet le verdict sans hésitation. La probabilité lue dans les logprobs, qui devait permettre de choisir un seuil après coup, ne prend en pratique que deux valeurs (voir chapitres <a href="#">5</a> et <a href="#">6</a>).</p>
+<p>Le raisonnement a un second effet, moins attendu : il rend la probabilité de verdict <strong>quasi binaire</strong>. Le modèle tranche dans son brouillon de réflexion, puis émet le verdict sans hésitation. Cette probabilité, qui devait permettre de choisir un seuil après coup, ne prend en pratique que deux valeurs (voir chapitres <a href="#">5</a> et <a href="#">6</a>).</p>
 </section>
 </section>
 <section id="le-codechooser" class="level2" data-number="3.6">
@@ -6102,14 +6122,17 @@ Table 6: Tentatives pour réduire le coût du raisonnement.
 <h2 data-number="3.7" class="anchored" data-anchor-id="outillage-dévaluation"><span class="header-section-number">3.7</span> Outillage d’évaluation</h2>
 <p>Pour que les chiffres soient reproductibles et comparables :</p>
 <ul>
-<li><strong>chaque résultat est épinglé</strong> au commit du prompt et au modèle qui a répondu (<code>&lt;commit&gt;/&lt;modèle&gt;</code>) ; le script refuse de démarrer si les fichiers qui définissent le prompt ont des modifications non commitées ;</li>
+<li><strong>chaque résultat est rattaché</strong> à la version exacte du prompt et au modèle qui a répondu ; l’évaluation refuse de démarrer si le prompt a été modifié sans que la modification soit enregistrée ;</li>
 <li>le module d’évaluation fournit l’exactitude par niveau hiérarchique, des <strong>intervalles de confiance par bootstrap</strong> stratifié et des <strong>tests appariés</strong> (bootstrap apparié, McNemar) pour comparer deux méthodes sur les mêmes libellés ;</li>
-<li>une <strong>application de revue humaine</strong> (Flask, déployée sur Kubernetes) montre à un annotateur le libellé, le code et sa notice, le verdict et l’alternative, et lui demande si le verdict est correct et quel code il aurait mis. Elle gère plusieurs annotateurs avec une part commune pour mesurer l’accord, et enregistre ce qui a été affiché pour mesurer l’influence des suggestions.</li>
+<li>une <strong>application de revue humaine</strong> montre à un annotateur le libellé, le code et sa notice, le verdict et l’alternative, et lui demande si le verdict est correct et quel code il aurait mis. Elle gère plusieurs annotateurs avec une part commune pour mesurer l’accord, et enregistre ce qui a été affiché pour mesurer l’influence des suggestions.</li>
 </ul>
 </section>
 </section>
 <section id="protocole-dévaluation" class="level1" data-number="4">
 <h1 data-number="4"><span class="header-section-number">4</span> Protocole d’évaluation</h1>
+<div class="chapter-lead">
+<p>Métriques communes aux cas d’usage, définitions de l’erreur, limites des références disponibles et jeu de référence à construire.</p>
+</div>
 <section id="ce-quon-évalue" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="ce-quon-évalue"><span class="header-section-number">4.1</span> Ce qu’on évalue</h2>
 <p>L’évaluation porte d’abord sur le <em>MatchVerifier</em> en situation d’<strong>audit d’une codification existante</strong> : on lui soumet les codes attribués par la chaîne de production et on compare son verdict à celui d’un annotateur humain sur les mêmes libellés. Le protocole est le même en COICOP et en NAF, ce qui rend les deux cas d’usage comparables.</p>
@@ -6235,8 +6258,8 @@ Table 8: Métriques d’évaluation du <em>MatchVerifier</em>.
 <td>Peut-il corriger, et pas seulement signaler ?</td>
 </tr>
 <tr class="odd">
-<td><strong>AUC de <code>p_match</code></strong></td>
-<td>aire sous la courbe ROC de la probabilité de verdict</td>
+<td><strong>AUC de la probabilité de verdict</strong></td>
+<td>aire sous la courbe ROC de cette probabilité</td>
 <td>Ses probabilités séparent-elles erreurs et codes justes ?</td>
 </tr>
 <tr class="even">
@@ -6304,7 +6327,7 @@ Table 9: Références utilisées dans cette note.
 </tr>
 <tr class="odd">
 <td>NAF 2025, jeu d’évaluation GRAAL</td>
-<td>Code <code>apet2025</code> du jeu de test du modèle de production (labels administratifs recodés)</td>
+<td>Code APE en NAF 2025 du jeu de test du modèle de production (labels administratifs recodés)</td>
 <td>Pas une annotation dédiée</td>
 <td>5 181 lignes, stratifié par code</td>
 </tr>
@@ -6341,7 +6364,7 @@ Table 9: Références utilisées dans cette note.
 <li>les exports Label Studio NAF 2008 utilisés par GRAAL contiennent environ 27 650 annotations, dont environ 19 000 hors du jeu de test : quel lien avec les 12 000 annotations du <em>gold standard</em> (tâches en cours, plusieurs vagues, train et test) ?</li>
 <li>la note APE indique que trois experts indépendants s’accordent sur la sous-classe NAF 2025 dans environ 62 % des cas, et au moins deux dans 96 % <span class="citation" data-cites="codifapedocs">(<a href="#ref-codifapedocs" role="doc-biblioref">Tayebjee 2026</a>)</span> : une partie de la campagne NAF 2025 a donc été annotée trois fois, ce qui nuance « annotation simple » ci-dessus. Sur combien de libellés, et ces annotations multiples sont-elles exploitables ?</li>
 <li>comment le jeu de test NAF 2008 a-t-il été tiré (aléatoire dans le flux, stratifié, sélectionné sur les reprises) ? Les annotateurs voyaient-ils le code de production ?</li>
-<li>l’indice de confiance <strong>réellement utilisé en production</strong> est-il conservé pour ces liasses ? Une première analyse utilise celui du tableau de bord de la campagne, issu d’une re-prédiction (<a href="#sec-naf-ic">chapitre 6</a>) ; que recouvre exactement le mode <code>FASTTEXT</code> ?</li>
+<li>l’indice de confiance <strong>réellement utilisé en production</strong> est-il conservé pour ces liasses ? Une première analyse utilise celui du tableau de bord de la campagne, issu d’une re-prédiction (<a href="#sec-naf-ic">chapitre 6</a>) ; que recouvre exactement le mode « modèle » ?</li>
 </ul>
 </section>
 <section id="principes-proposés" class="level3" data-number="4.7.3">
@@ -6446,6 +6469,9 @@ Table 11: Freins et leviers.
 </section>
 <section id="cas-dusage-matchverifier-sur-la-coicop" class="level1" data-number="5">
 <h1 data-number="5"><span class="header-section-number">5</span> Cas d’usage : MatchVerifier sur la COICOP</h1>
+<div class="chapter-lead">
+<p>Évaluation du MatchVerifier contre l’annotation humaine sur la vague 1 de Budget de famille (COICOP 2018).</p>
+</div>
 <p>Résultats interactifs : page MatchVerifier COICOP. Présentation à l’équipe métier : slides COICOP.</p>
 <section id="problématique" class="level2" data-number="5.1">
 <h2 data-number="5.1" class="anchored" data-anchor-id="problématique"><span class="header-section-number">5.1</span> Problématique</h2>
@@ -6476,7 +6502,7 @@ Table 12: Constitution du jeu COICOP.
 </thead>
 <tbody>
 <tr class="odd">
-<td>Sortie <code>reconcile-sirus</code> du workflow de codification (8 septembre 2026)</td>
+<td>Sortie de la chaîne de codification, rapprochée de Sirus (8 septembre 2026)</td>
 <td>14 695</td>
 <td></td>
 </tr>
@@ -6522,7 +6548,7 @@ Table 12: Constitution du jeu COICOP.
 <p>Le protocole commun est décrit au <a href="#">chapitre 4</a>. Spécificités :</p>
 <ul>
 <li><strong>vérité de branche</strong> retenue comme vérité principale : si l’annotateur a codé <code>03.1.2</code> (vêtements) et Sirus <code>03.1.2.1</code> (vêtements pour hommes), Sirus n’a fait que préciser ;</li>
-<li>profil <code>coicop2018</code>, avec des <strong>règles de lecture</strong> écrites par l’équipe : une marque, un conditionnement, une quantité ne changent pas le poste ; plusieurs articles sur une ligne : le premier cité décide ; un libellé ambigu (« café », qui peut être servi au comptoir ou acheté en paquet) est codé sur la lecture la plus plausible ;</li>
+<li>profil COICOP 2018, avec des <strong>règles de lecture</strong> écrites par l’équipe : une marque, un conditionnement, une quantité ne changent pas le poste ; plusieurs articles sur une ligne : le premier cité décide ; un libellé ambigu (« café », qui peut être servi au comptoir ou acheté en paquet) est codé sur la lecture la plus plausible ;</li>
 <li>modèle <code>qwen3-6-35b-moe</code>, prompt du commit <code>c3e01a2</code> ;</li>
 <li>run terminé le 13 octobre 2026 : 49 h de calcul cumulé, 10 h en temps réel avec 5 appels en parallèle, <strong>20 s par paire</strong> en moyenne.</li>
 </ul>
@@ -6558,7 +6584,7 @@ Table 13: Performances du <em>MatchVerifier</em> en COICOP, par paire distincte
 <th>Rejets à tort</th>
 <th>Précision (dans l’éval)</th>
 <th>Précision au taux réel</th>
-<th>AUC <code>p_match</code></th>
+<th>AUC de la probabilité de verdict</th>
 <th>Alternative = humain</th>
 </tr>
 </thead>
@@ -6667,9 +6693,9 @@ Table 14: Taux de rejet par type d’écart.
 <p>Le vérificateur repère mieux les <strong>erreurs grossières</strong> (environ 60 % de rejet quand la division ou le groupe diffèrent) que les <strong>confusions entre classes voisines</strong> (49 %). Il accepte Sirus quand Sirus est seulement moins précis que l’humain (6 % de rejet), ce qui est le comportement voulu.</p>
 <p>Deux divisions se démarquent négativement : la <strong>restauration</strong> (11 : 38 % d’erreurs détectées, 13 % de rejets à tort), qui bute sur l’ambiguïté consommé sur place / acheté en magasin, et la <strong>santé</strong> (06 : 18 % de rejets à tort).</p>
 </section>
-<section id="p_match-ne-permet-pas-de-choisir-un-seuil" class="level3" data-number="5.4.3">
-<h3 data-number="5.4.3" class="anchored" data-anchor-id="p_match-ne-permet-pas-de-choisir-un-seuil"><span class="header-section-number">5.4.3</span> <code>p_match</code> ne permet pas de choisir un seuil</h3>
-<p><code>p_match</code> est quasi binaire : 17 % des paires sous 0,1, 82 % au-dessus de 0,9. Passer le seuil de 0,1 à 0,9 ne fait varier le taux de rejet que de 17,2 % à 17,5 %. Le seul point de fonctionnement réel est le verdict. Les scores chiffrés discriminent un peu mieux : ne garder que les rejets où l’alternative dépasse le code jugé d’au moins 60 points porte la précision de 61 % à 66 %, pour 29 % de rejets en moins.</p>
+<section id="la-probabilité-de-verdict-ne-permet-pas-de-choisir-un-seuil" class="level3" data-number="5.4.3">
+<h3 data-number="5.4.3" class="anchored" data-anchor-id="la-probabilité-de-verdict-ne-permet-pas-de-choisir-un-seuil"><span class="header-section-number">5.4.3</span> La probabilité de verdict ne permet pas de choisir un seuil</h3>
+<p>La probabilité de verdict est quasi binaire : 17 % des paires sous 0,1, 82 % au-dessus de 0,9. Passer le seuil de 0,1 à 0,9 ne fait varier le taux de rejet que de 17,2 % à 17,5 %. Le seul point de fonctionnement réel est le verdict. Les scores chiffrés discriminent un peu mieux : ne garder que les rejets où l’alternative dépasse le code jugé d’au moins 60 points porte la précision de 61 % à 66 %, pour 29 % de rejets en moins.</p>
 </section>
 <section id="un-second-avis-le-summary-classifier" class="level3" data-number="5.4.4">
 <h3 data-number="5.4.4" class="anchored" data-anchor-id="un-second-avis-le-summary-classifier"><span class="header-section-number">5.4.4</span> Un second avis : le <em>Summary classifier</em></h3>
@@ -6796,10 +6822,13 @@ Table 16: Combiner le vérificateur et un second classifieur.
 </section>
 <section id="cas-dusage-matchverifier-sur-la-naf-rév.-2" class="level1" data-number="6">
 <h1 data-number="6"><span class="header-section-number">6</span> Cas d’usage : MatchVerifier sur la NAF rév. 2</h1>
+<div class="chapter-lead">
+<p>Évaluation du MatchVerifier contre l’annotation humaine de la campagne 2024 en NAF rév. 2.</p>
+</div>
 <p>Résultats interactifs : page MatchVerifier NAF 2008.</p>
 <section id="problématique-1" class="level2" data-number="6.1">
 <h2 data-number="6.1" class="anchored" data-anchor-id="problématique-1"><span class="header-section-number">6.1</span> Problématique</h2>
-<p>Le code APE de production est attribué soit <strong>par règles</strong> (mode <code>AUTO</code>), soit <strong>par le modèle fastText</strong> (mode <code>FASTTEXT</code>), le reste partant en reprise manuelle. Le cas COICOP a montré que le <em>MatchVerifier</em> détecte la moitié des erreurs de Sirus. <strong>La question est double :</strong></p>
+<p>Le code APE de production est attribué soit <strong>par règles</strong>, soit <strong>par le modèle fastText</strong>, le reste partant en reprise manuelle. Le cas COICOP a montré que le <em>MatchVerifier</em> détecte la moitié des erreurs de Sirus. <strong>La question est double :</strong></p>
 <ul>
 <li>ce résultat se transpose-t-il à la NAF, une nomenclature plus large et plus juridique, sur des libellés d’entreprises plutôt que de produits ?</li>
 <li>le <em>MatchVerifier</em> pourrait-il servir d’<strong>outil de monitoring du modèle de production</strong>, c’est-à-dire signaler sans annotation humaine les codes à revoir ?</li>
@@ -6808,8 +6837,8 @@ Table 16: Combiner le vérificateur et un second classifieur.
 <section id="données-1" class="level2" data-number="6.2">
 <h2 data-number="6.2" class="anchored" data-anchor-id="données-1"><span class="header-section-number">6.2</span> Données</h2>
 <ul>
-<li><strong>Source</strong> : le jeu de test de la campagne d’annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l’annotateur (<code>apet_manual</code>) est la <strong>référence</strong>.</li>
-<li><strong>Code jugé</strong> : le code attribué en production (<code>apet_finale</code>), retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d’attribution (<code>AUTO</code> ou <code>FASTTEXT</code>).</li>
+<li><strong>Source</strong> : le jeu de test de la campagne d’annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l’annotateur est la <strong>référence</strong>.</li>
+<li><strong>Code jugé</strong> : le code attribué en production, retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d’attribution (règles ou modèle).</li>
 <li>Les deux codes sont des sous-classes. Tous figurent dans le graphe NAF rév. 2, construit à partir des notes explicatives de l’Insee.</li>
 </ul>
 <div id="tbl-naf-donnees" class="quarto-float quarto-figure quarto-figure-center anchored">
@@ -6835,13 +6864,13 @@ Table 17: Le jeu NAF rév. 2. Taux d’erreur par mode en vérité exacte, par 
 <td>20,3 % (exact), 17,7 % (classe)</td>
 </tr>
 <tr class="even">
-<td>dont <code>AUTO</code> (règles)</td>
+<td>dont codés par règles</td>
 <td>5 653</td>
 <td>4 071</td>
 <td>10,3 %</td>
 </tr>
 <tr class="odd">
-<td>dont <code>FASTTEXT</code> (modèle)</td>
+<td>dont codés par le modèle</td>
 <td>2 778</td>
 <td>2 661</td>
 <td>40,7 %</td>
@@ -6856,7 +6885,7 @@ Table 17: Le jeu NAF rév. 2. Taux d’erreur par mode en vérité exacte, par 
 <section id="protocole-1" class="level2" data-number="6.3">
 <h2 data-number="6.3" class="anchored" data-anchor-id="protocole-1"><span class="header-section-number">6.3</span> Protocole</h2>
 <p>Identique à la COICOP (<a href="#">chapitre 4</a>), avec deux vérités : <strong>exacte</strong> (même sous-classe) et <strong>de classe</strong> (mêmes 4 premiers caractères). La vérité de branche n’a pas d’objet ici puisque les deux codes sont toujours des sous-classes.</p>
-<p>Profil <code>naf2008</code>, modèle <code>qwen3-6-35b-moe</code>, prompt du commit <code>b753427</code>. Run terminé le 17 novembre 2026 : 6 732 paires jugées sur 6 735 (3 abandonnées, réponse tronquée), <strong>28 s par paire</strong>, 52 h de calcul cumulé.</p>
+<p>Modèle <code>qwen3-6-35b-moe</code>, prompt du commit <code>b753427</code>. Run terminé le 17 novembre 2026 : 6 732 paires jugées sur 6 735 (3 abandonnées, réponse tronquée), <strong>28 s par paire</strong>, 52 h de calcul cumulé.</p>
 </section>
 <section id="résultats-1" class="level2" data-number="6.4">
 <h2 data-number="6.4" class="anchored" data-anchor-id="résultats-1"><span class="header-section-number">6.4</span> Résultats</h2>
@@ -6889,7 +6918,7 @@ Table 18: Performances du <em>MatchVerifier</em> en NAF rév. 2, par paire dist
 <th>Rejets à tort</th>
 <th>Précision (dans l’éval)</th>
 <th>Précision au taux réel</th>
-<th>AUC <code>p_match</code></th>
+<th>AUC de la probabilité de verdict</th>
 <th>Alternative = humain</th>
 </tr>
 </thead>
@@ -6960,7 +6989,7 @@ Table 19: Résultats par mode d’attribution du code de production (vérité e
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>AUTO</code> (règles)</td>
+<td>Règles</td>
 <td>4 071</td>
 <td>10,3 %</td>
 <td>13,5 %</td>
@@ -6970,7 +6999,7 @@ Table 19: Résultats par mode d’attribution du code de production (vérité e
 <td>0,69</td>
 </tr>
 <tr class="even">
-<td><code>FASTTEXT</code> (modèle)</td>
+<td>Modèle fastText</td>
 <td>2 661</td>
 <td>40,7 %</td>
 <td>41,9 %</td>
@@ -7040,9 +7069,9 @@ Table 20: Taux de rejet par type d’écart.
 </div>
 <p>Comme en COICOP, plus l’écart est grossier, plus il est repéré.</p>
 </section>
-<section id="p_match-est-binaire" class="level3" data-number="6.4.4">
-<h3 data-number="6.4.4" class="anchored" data-anchor-id="p_match-est-binaire"><span class="header-section-number">6.4.4</span> <code>p_match</code> est binaire</h3>
-<p>99,99 % des <code>p_match</code> sont sous 0,1 ou au-dessus de 0,9 : tous les seuils de 0,1 à 0,9 donnent exactement le même point (51,0 % d’erreurs détectées, 16,6 % de rejets à tort). Les rejets à tort se font avec <code>p_match</code> ≈ 0 : aucun seuil ne peut les écarter.</p>
+<section id="la-probabilité-de-verdict-est-binaire" class="level3" data-number="6.4.4">
+<h3 data-number="6.4.4" class="anchored" data-anchor-id="la-probabilité-de-verdict-est-binaire"><span class="header-section-number">6.4.4</span> La probabilité de verdict est binaire</h3>
+<p>99,99 % des probabilités de verdict sont sous 0,1 ou au-dessus de 0,9 : tous les seuils de 0,1 à 0,9 donnent exactement le même point (51,0 % d’erreurs détectées, 16,6 % de rejets à tort). Les rejets à tort se font avec une probabilité proche de 0 : aucun seuil ne peut les écarter.</p>
 </section>
 <section id="doù-viennent-les-rejets-à-tort" class="level3" data-number="6.4.5">
 <h3 data-number="6.4.5" class="anchored" data-anchor-id="doù-viennent-les-rejets-à-tort"><span class="header-section-number">6.4.5</span> D’où viennent les rejets à tort</h3>
@@ -7112,15 +7141,15 @@ Table 21: Les codes qui concentrent les rejets à tort.
 <p>Un monitoring du modèle de production dispose déjà d’un signal gratuit : son <strong>indice de confiance</strong> (IC). La question est donc moins « le vérificateur détecte-t-il des erreurs ? » que « <strong>apporte-t-il quelque chose que l’IC ne dit pas déjà ?</strong> », et en particulier : est-il meilleur là où le modèle est peu confiant ?</p>
 <p><strong>Source de l’IC.</strong> Le tableau de bord de la campagne d’annotation contient, pour chaque liasse du jeu de test, les cinq meilleures prédictions d’un modèle fastText et son IC. C’est une <strong>re-prédiction par le modèle courant au moment de la campagne</strong>, pas nécessairement l’IC qui a décidé du codage en production. Deux indices le montrent :</p>
 <ul>
-<li>sur les liasses <code>FASTTEXT</code>, le premier code de ce modèle ne coïncide avec le code de production que dans <strong>64 %</strong> des cas, de façon stable sur toute la période (février 2023 à mai 2024) ;</li>
+<li>sur les liasses codées par le modèle, le premier code de ce modèle ne coïncide avec le code de production que dans <strong>64 %</strong> des cas, de façon stable sur toute la période (février 2023 à mai 2024) ;</li>
 <li>l’IC médian de ces liasses n’est que de <strong>0,35</strong>, et 4 % seulement dépassent 0,8. Si ce sont bien les liasses codées automatiquement par le modèle, le seuil de production était bas, ou une partie de ces codes vient d’une reprise.</li>
 </ul>
-<p><em>[À valider avec Nathan : que recouvre exactement le mode <code>FASTTEXT</code> (code du modèle seul, ou code du modèle puis reprise) ? quel modèle et quel seuil étaient en production à la date des liasses ? l’IC réellement utilisé est-il conservé ?]</em> Les résultats ci-dessous se lisent donc comme « selon la confiance <strong>d’un</strong> modèle fastText », proche de celui de production.</p>
-<p>L’analyse est faite <strong>par liasse</strong>, puisque l’IC est propre à chaque liasse : chaque liasse reçoit le verdict du <em>MatchVerifier</em> sur sa paire (8 415 liasses sur 8 431). Le détail est dans <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/eval/match_verifier_naf2008_confidence.md"><code>docs/eval/match_verifier_naf2008_confidence.md</code></a>, produit par <code>src.evaluation.report_naf2008_confidence</code>.</p>
+<p><em>[À valider avec Nathan : que recouvre exactement le mode « modèle » (code du modèle seul, ou code du modèle puis reprise) ? quel modèle et quel seuil étaient en production à la date des liasses ? l’IC réellement utilisé est-il conservé ?]</em> Les résultats ci-dessous se lisent donc comme « selon la confiance <strong>d’un</strong> modèle fastText », proche de celui de production.</p>
+<p>L’analyse est faite <strong>par liasse</strong>, puisque l’IC est propre à chaque liasse : chaque liasse reçoit le verdict du <em>MatchVerifier</em> sur sa paire (8 415 liasses sur 8 431). Le détail est dans le <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/eval/match_verifier_naf2008_confidence.md">rapport d’analyse</a>.</p>
 <div id="tbl-naf-ic" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-naf-ic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liasses <code>FASTTEXT</code> (vérité exacte, par liasse, précision dans l’échantillon).
+Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liasses codées par le modèle (vérité exacte, par liasse, précision dans l’échantillon).
 </figcaption>
 <div aria-describedby="tbl-naf-ic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <table class="caption-top table">
@@ -7184,7 +7213,7 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 <td>54 %</td>
 </tr>
 <tr class="even">
-<td><strong>Ensemble <code>FASTTEXT</code></strong></td>
+<td><strong>Ensemble (codés par le modèle)</strong></td>
 <td><strong>2 777</strong></td>
 <td><strong>41 %</strong></td>
 <td><strong>55 %</strong></td>
@@ -7201,7 +7230,7 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 <li><strong>Sur ces liasses, l’IC est un mauvais détecteur d’erreurs, le vérificateur un peu moins mauvais.</strong> L’AUC de l’IC pour repérer une erreur de production est de <strong>0,59</strong> [0,56 ; 0,61], celle du score du vérificateur (écart entre le score de l’alternative et celui du code jugé) de <strong>0,66</strong> [0,64 ; 0,68]. L’écart (+0,07 [+0,04 ; +0,10], bootstrap apparié en grappes de paires) est significatif. À volume de relecture égal (41 % des liasses), relire les liasses de plus faible IC trouve 49 % des erreurs, relire celles que le vérificateur rejette en trouve 55 %, avec moins de codes justes signalés (32 % contre 36 %).</li>
 <li><strong>Les deux signaux sont presque indépendants</strong> (corrélation des rangs 0,13) mais <strong>leur combinaison n’apporte rien</strong> sur le classement (AUC 0,66, +0,003 [−0,012 ; +0,019]). Le croisement sert seulement à choisir un point de fonctionnement plus strict : n’alerter que si le vérificateur rejette <strong>et</strong> que l’IC est sous 0,4 signale un quart des liasses, garde 37 % des erreurs et ne rejette plus que 17 % des codes justes, pour une précision de 60 %.</li>
 </ul>
-<p>Sur les liasses <code>AUTO</code>, codées par règles, le même modèle est presque toujours très confiant (IC ≥ 0,8 pour 98 % d’entre elles) et coïncide avec la règle dans 99 % des cas. L’IC y repère les erreurs des règles avec une AUC de 0,71 [0,68 ; 0,75], le vérificateur de 0,75 [0,71 ; 0,79], et leur combinaison de 0,77 [0,74 ; 0,81]. Aucun de ces écarts n’est significatif.</p>
+<p>Sur les liasses codées par règles, le même modèle est presque toujours très confiant (IC ≥ 0,8 pour 98 % d’entre elles) et coïncide avec la règle dans 99 % des cas. L’IC y repère les erreurs des règles avec une AUC de 0,71 [0,68 ; 0,75], le vérificateur de 0,75 [0,71 ; 0,79], et leur combinaison de 0,77 [0,74 ; 0,81]. Aucun de ces écarts n’est significatif.</p>
 <p><strong>En résumé</strong> : sur la part que vise un monitoring, le vérificateur apporte un signal <strong>différent</strong> de l’IC et <strong>un peu meilleur</strong>, mais pas assez bon pour décider seul. Il ne change pas la conclusion du paragraphe suivant ; il indique en revanche où le placer : <strong>après</strong> le seuil, sur les liasses de faible confiance, pour ordonner la relecture.</p>
 </section>
 </section>
@@ -7218,8 +7247,8 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 <h2 data-number="6.6" class="anchored" data-anchor-id="limites-1"><span class="header-section-number">6.6</span> Limites</h2>
 <ul>
 <li>Une seule annotation par liasse ; on ne sait pas quelle part des « rejets à tort » est due à l’annotation.</li>
-<li>Les modes <code>AUTO</code> et <code>FASTTEXT</code> portent sur des populations différentes : leurs chiffres ne se comparent pas directement.</li>
-<li>L’<strong>indice de confiance</strong> utilisé vient d’une re-prédiction du tableau de bord de la campagne, pas nécessairement de celle qui a codé la liasse en production ; la signification exacte du mode <code>FASTTEXT</code> reste à confirmer.</li>
+<li>Les codes par règles et par le modèle portent sur des populations différentes : leurs chiffres ne se comparent pas directement.</li>
+<li>L’<strong>indice de confiance</strong> utilisé vient d’une re-prédiction du tableau de bord de la campagne, pas nécessairement de celle qui a codé la liasse en production ; la signification exacte du mode « modèle » reste à confirmer.</li>
 <li>Résultats en NAF rév. 2 : la production code désormais en NAF 2025, dont le graphe existe aussi mais sans jeu annoté équivalent.</li>
 </ul>
 </section>
@@ -7237,6 +7266,9 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 </section>
 <section id="travaux-exploratoires-sur-la-naf-2025" class="level1" data-number="7">
 <h1 data-number="7"><span class="header-section-number">7</span> Travaux exploratoires sur la NAF 2025</h1>
+<div class="chapter-lead">
+<p>Classification agentique comparée au modèle supervisé, diagnostic de l’espace d’embedding, vérification des labels d’entraînement.</p>
+</div>
 <div class="draft-banner">
 <p>Ces travaux sont <strong>exploratoires</strong> : petits échantillons ou référence non annotée. Ils orientent les choix de conception mais ne permettent pas de conclure sur les performances.</p>
 </div>
@@ -7247,7 +7279,7 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 </section>
 <section id="données-2" class="level2" data-number="7.2">
 <h2 data-number="7.2" class="anchored" data-anchor-id="données-2"><span class="header-section-number">7.2</span> Données</h2>
-<p>Le jeu d’évaluation GRAAL est tiré du jeu de test du modèle de production APE : <strong>5 181 libellés</strong>, stratifiés par sous-classe NAF 2025 (environ 10 par code), avec le code <code>apet2025</code> comme référence. Ce code est un <strong>label administratif</strong> (en partie recodé de la NAF rév. 2 vers la NAF 2025), pas une annotation dédiée : sa qualité est incertaine, ce que les résultats ci-dessous confirment.</p>
+<p>Le jeu d’évaluation GRAAL est tiré du jeu de test du modèle de production APE : <strong>5 181 libellés</strong>, stratifiés par sous-classe NAF 2025 (environ 10 par code), avec le code APE en NAF 2025 comme référence. Ce code est un <strong>label administratif</strong> (en partie recodé de la NAF rév. 2 vers la NAF 2025), pas une annotation dédiée : sa qualité est incertaine, ce que les résultats ci-dessous confirment.</p>
 </section>
 <section id="lespace-dembedding-comme-point-de-départ" class="level2" data-number="7.3">
 <h2 data-number="7.3" class="anchored" data-anchor-id="lespace-dembedding-comme-point-de-départ"><span class="header-section-number">7.3</span> L’espace d’embedding comme point de départ</h2>
@@ -7312,7 +7344,7 @@ Table 24: Exactitude et coût par méthode, sur 60 libellés.
 <thead>
 <tr class="header">
 <th>Méthode</th>
-<th>Exactitude vs <code>apet2025</code></th>
+<th>Exactitude (référence : code APE NAF 2025)</th>
 <th>Durée moyenne par libellé</th>
 <th>Échecs</th>
 </tr>
@@ -7379,8 +7411,37 @@ Table 24: Exactitude et coût par méthode, sur 60 libellés.
 </ul>
 </section>
 </section>
-<section id="glossaire" class="level1" data-number="8">
-<h1 data-number="8"><span class="header-section-number">8</span> Glossaire</h1>
+<section id="conclusion" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Conclusion</h1>
+<div class="chapter-lead">
+<p>Ce que GRAAL apporte, ce qui ne suffit pas encore, et les suites envisagées.</p>
+</div>
+<section id="ce-que-graal-apporte" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="ce-que-graal-apporte"><span class="header-section-number">8.1</span> Ce que GRAAL apporte</h2>
+<p>GRAAL montre qu’un agent LLM peut raisonner sur une nomenclature à partir de ses seules notes explicatives, sans données d’entraînement. Le même code tourne sur quatre nomenclatures ; seuls le graphe et quelques règles de lecture changent.</p>
+<p>Le <em>MatchVerifier</em>, l’agent le plus abouti, <strong>repère environ la moitié des erreurs</strong> de la codification de production, en COICOP comme en NAF (<a href="#">chapitres 5</a> et <a href="#">6</a>). Il justifie chaque verdict et, quand il rejette à raison, propose le bon code une fois sur deux en COICOP et une fois sur trois en NAF. Sur la part codée par le modèle fastText, il apporte un signal <strong>différent de l’indice de confiance du modèle et un peu meilleur</strong> que lui.</p>
+</section>
+<section id="ce-qui-ne-suffit-pas-encore" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="ce-qui-ne-suffit-pas-encore"><span class="header-section-number">8.2</span> Ce qui ne suffit pas encore</h2>
+<ul>
+<li><strong>Sa précision est insuffisante pour un monitoring automatique</strong> du modèle de production : il rejette 7,6 % des codes justes en COICOP et 16,6 % en NAF. Son verdict peut <strong>prioriser</strong> une relecture humaine, pas la remplacer.</li>
+<li><strong>Ses rejets à tort viennent surtout de conventions de codage</strong> que les notes explicatives n’écrivent pas, plus que d’un défaut de raisonnement.</li>
+<li><strong>Les classifieurs agentiques ne remplacent pas le modèle supervisé</strong> : ils ne sont pas plus exacts sur l’échantillon testé, et sont des centaines de fois plus lents (<a href="#">chapitre 7</a>).</li>
+<li><strong>Les références disponibles limitent toute conclusion</strong> : chaque libellé n’a été annoté qu’une fois, et une partie des désaccords vient de l’annotation elle-même (<a href="#">chapitre 4</a>).</li>
+</ul>
+</section>
+<section id="suites-envisagées" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="suites-envisagées"><span class="header-section-number">8.3</span> Suites envisagées</h2>
+<ol type="1">
+<li><strong>Construire un jeu de référence doublement annoté</strong>, avec les équipes métier, pour mesurer les performances sans ambiguïté (<a href="#sec-gold">chapitre 4</a>).</li>
+<li><strong>Faire entrer les conventions de codage dans le <em>MatchVerifier</em></strong>, par des exemples annotés ou une fiche de conventions, et mesurer l’effet sur les rejets à tort.</li>
+<li><strong>Placer le vérificateur après le seuil de confiance du modèle de production</strong>, sur les liasses incertaines, pour ordonner la relecture.</li>
+<li><strong>Définir avec le métier le niveau de performance qui le rendrait utile</strong>, en fonction du coût d’une relecture et de celui d’une erreur non détectée.</li>
+</ol>
+</section>
+</section>
+<section id="glossaire" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Glossaire</h1>
 <dl>
 <dt>Agent</dt>
 <dd>
@@ -7424,11 +7485,11 @@ Base Neo4j où chaque poste de la nomenclature est un nœud portant sa note expl
 </dd>
 <dt><em>MatchVerifier</em></dt>
 <dd>
-Agent qui juge si un code est correct pour un libellé, note ce code et le meilleur concurrent, et rend un verdict <code>is_match</code>.
+Agent qui juge si un code est correct pour un libellé, note ce code et le meilleur concurrent, et rend un verdict : code correct ou non.
 </dd>
-<dt><code>match_score</code>, <code>alternative_score</code></dt>
+<dt>Note de correspondance</dt>
 <dd>
-Notes de 0 à 100 attribuées par le <em>MatchVerifier</em> au code jugé et à son alternative.
+Note de 0 à 100 attribuée par le <em>MatchVerifier</em> au code jugé, et au meilleur code concurrent (<code>match_score</code>, <code>alternative_score</code> dans les résultats détaillés).
 </dd>
 <dt><em>Navigator</em></dt>
 <dd>
@@ -7442,9 +7503,9 @@ Texte officiel qui précise le contenu d’un poste : règle d’affectation, in
 <dd>
 Combinaison distincte (libellé, code de production, code humain), unité de compte des évaluations.
 </dd>
-<dt><code>p_match</code></dt>
+<dt>Probabilité de verdict</dt>
 <dd>
-Probabilité que le code soit correct, lue dans les logprobs du token <code>true</code>/<code>false</code> du verdict.
+Probabilité que le code soit correct, lue dans les probabilités internes du modèle (<em>logprobs</em>) au moment où il écrit son verdict (<code>p_match</code> dans les résultats détaillés).
 </dd>
 <dt>Précision du rejet</dt>
 <dd>
@@ -7452,7 +7513,7 @@ Part des rejets du <em>MatchVerifier</em> qui portent sur de vraies erreurs. Au 
 </dd>
 <dt>Profil de nomenclature</dt>
 <dd>
-Paramétrage (<code>naf2025</code>, <code>naf2008</code>, <code>coicop2018</code>) qui sélectionne le graphe et les règles de lecture d’une nomenclature.
+Paramétrage propre à une nomenclature (NAF 2025, NAF rév. 2, COICOP 2018) qui sélectionne le graphe et les règles de lecture d’une nomenclature.
 </dd>
 <dt>RAG</dt>
 <dd>
@@ -7476,10 +7537,10 @@ Définitions de l’erreur de production : code différent ; code différent et 
 </dd>
 </dl>
 </section>
-<section id="références" class="level1" data-number="9">
-<h1 data-number="9"><span class="header-section-number">9</span> Références</h1>
-<section id="code-et-documentation" class="level2" data-number="9.1">
-<h2 data-number="9.1" class="anchored" data-anchor-id="code-et-documentation"><span class="header-section-number">9.1</span> Code et documentation</h2>
+<section id="références" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Références</h1>
+<section id="code-et-documentation" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="code-et-documentation"><span class="header-section-number">10.1</span> Code et documentation</h2>
 <ul>
 <li>Dépôt GRAAL : <a href="https://github.com/InseeFrLab/GRAAL" class="uri">https://github.com/InseeFrLab/GRAAL</a></li>
 <li>Documentation technique du code : <a href="https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md"><code>docs/framework.md</code></a></li>
@@ -7487,8 +7548,8 @@ Définitions de l’erreur de production : code différent ; code différent et 
 <li>Rapports d’évaluation : <a href="https://github.com/InseeFrLab/GRAAL/tree/main/docs/eval"><code>docs/eval/</code></a></li>
 </ul>
 </section>
-<section id="bibliographie" class="level2" data-number="9.2">
-<h2 data-number="9.2" class="anchored" data-anchor-id="bibliographie"><span class="header-section-number">9.2</span> Bibliographie</h2>
+<section id="bibliographie" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="bibliographie"><span class="header-section-number">10.2</span> Bibliographie</h2>
 <div id="refs" class="references csl-bib-body hanging-indent" role="list">
 <div id="ref-angelopoulos2023gentle" class="csl-entry" role="listitem">
 Angelopoulos, Anastasios N., et Stephen Bates. 2023. <span>« Conformal Prediction: A Gentle Introduction »</span>. <em>Foundations and Trends in Machine Learning</em> 16 (4): 494‑591. <a href="https://doi.org/10.1561/2200000101">https://doi.org/10.1561/2200000101</a>.

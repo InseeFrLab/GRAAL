@@ -34,10 +34,10 @@ LLM
 : *Large Language Model*, grand modèle de langage.
 
 *MatchVerifier*
-: Agent qui juge si un code est correct pour un libellé, note ce code et le meilleur concurrent, et rend un verdict `is_match`.
+: Agent qui juge si un code est correct pour un libellé, note ce code et le meilleur concurrent, et rend un verdict : code correct ou non.
 
-`match_score`, `alternative_score`
-: Notes de 0 à 100 attribuées par le *MatchVerifier* au code jugé et à son alternative.
+Note de correspondance
+: Note de 0 à 100 attribuée par le *MatchVerifier* au code jugé, et au meilleur code concurrent (`match_score`, `alternative_score` dans les résultats détaillés).
 
 *Navigator*
 : Classifieur de GRAAL qui descend la hiérarchie depuis la racine, niveau par niveau, jusqu'à un poste terminal.
@@ -48,14 +48,14 @@ Note explicative (notice)
 Paire
 : Combinaison distincte (libellé, code de production, code humain), unité de compte des évaluations.
 
-`p_match`
-: Probabilité que le code soit correct, lue dans les logprobs du token `true`/`false` du verdict.
+Probabilité de verdict
+: Probabilité que le code soit correct, lue dans les probabilités internes du modèle (*logprobs*) au moment où il écrit son verdict (`p_match` dans les résultats détaillés).
 
 Précision du rejet
 : Part des rejets du *MatchVerifier* qui portent sur de vraies erreurs. Au taux réel : recalculée au taux d'erreur de la population.
 
 Profil de nomenclature
-: Paramétrage (`naf2025`, `naf2008`, `coicop2018`) qui sélectionne le graphe et les règles de lecture d'une nomenclature.
+: Paramétrage propre à une nomenclature (NAF 2025, NAF rév. 2, COICOP 2018) qui sélectionne le graphe et les règles de lecture d'une nomenclature.
 
 RAG
 : *Retrieval-Augmented Generation* : récupérer des documents pertinents et les donner au LLM pour qu'il réponde.

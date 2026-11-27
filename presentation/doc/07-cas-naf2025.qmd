@@ -15,7 +15,7 @@ Le cas d'usage **recodage** demande un classifieur : à partir d'un libellé seu
 
 ## Données
 
-Le jeu d'évaluation GRAAL est tiré du jeu de test du modèle de production APE : **5 181 libellés**, stratifiés par sous-classe NAF 2025 (environ 10 par code), avec le code `apet2025` comme référence. Ce code est un **label administratif** (en partie recodé de la NAF rév. 2 vers la NAF 2025), pas une annotation dédiée : sa qualité est incertaine, ce que les résultats ci-dessous confirment.
+Le jeu d'évaluation GRAAL est tiré du jeu de test du modèle de production APE : **5 181 libellés**, stratifiés par sous-classe NAF 2025 (environ 10 par code), avec le code APE en NAF 2025 comme référence. Ce code est un **label administratif** (en partie recodé de la NAF rév. 2 vers la NAF 2025), pas une annotation dédiée : sa qualité est incertaine, ce que les résultats ci-dessous confirment.
 
 ## L'espace d'embedding comme point de départ
 
@@ -37,7 +37,7 @@ L'exactitude croît régulièrement du code à la section : quand le premier voi
 
 Les quatre classifieurs ont été lancés sur **60 libellés** du jeu d'évaluation, avec un *MatchVerifier* sur la référence et un arbitrage *CodeChooser* quand les candidats divergent.
 
-| Méthode | Exactitude vs `apet2025` | Durée moyenne par libellé | Échecs |
+| Méthode | Exactitude (référence : code APE NAF 2025) | Durée moyenne par libellé | Échecs |
 |---|---|---|---|
 | Supervisé (production) | 50,0 % | 0,3 s | 0 |
 | *Navigator* | 46,7 % | 76 s | 0 |

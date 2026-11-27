@@ -1,0 +1,24 @@
+---
+title: "Conclusion"
+description: "Ce que GRAAL apporte, ce qui ne suffit pas encore, et les suites envisagées."
+---
+
+## Ce que GRAAL apporte
+
+GRAAL montre qu'un agent LLM peut raisonner sur une nomenclature à partir de ses seules notes explicatives, sans données d'entraînement. Le même code tourne sur quatre nomenclatures ; seuls le graphe et quelques règles de lecture changent.
+
+Le *MatchVerifier*, l'agent le plus abouti, **repère environ la moitié des erreurs** de la codification de production, en COICOP comme en NAF ([chapitres 5](05-cas-coicop.qmd) et [6](06-cas-naf2008.qmd)). Il justifie chaque verdict et, quand il rejette à raison, propose le bon code une fois sur deux en COICOP et une fois sur trois en NAF. Sur la part codée par le modèle fastText, il apporte un signal **différent de l'indice de confiance du modèle et un peu meilleur** que lui.
+
+## Ce qui ne suffit pas encore
+
+- **Sa précision est insuffisante pour un monitoring automatique** du modèle de production : il rejette 7,6 % des codes justes en COICOP et 16,6 % en NAF. Son verdict peut **prioriser** une relecture humaine, pas la remplacer.
+- **Ses rejets à tort viennent surtout de conventions de codage** que les notes explicatives n'écrivent pas, plus que d'un défaut de raisonnement.
+- **Les classifieurs agentiques ne remplacent pas le modèle supervisé** : ils ne sont pas plus exacts sur l'échantillon testé, et sont des centaines de fois plus lents ([chapitre 7](07-cas-naf2025.qmd)).
+- **Les références disponibles limitent toute conclusion** : chaque libellé n'a été annoté qu'une fois, et une partie des désaccords vient de l'annotation elle-même ([chapitre 4](04-evaluation.qmd)).
+
+## Suites envisagées
+
+1. **Construire un jeu de référence doublement annoté**, avec les équipes métier, pour mesurer les performances sans ambiguïté ([chapitre 4](04-evaluation.qmd#sec-gold)).
+2. **Faire entrer les conventions de codage dans le *MatchVerifier***, par des exemples annotés ou une fiche de conventions, et mesurer l'effet sur les rejets à tort.
+3. **Placer le vérificateur après le seuil de confiance du modèle de production**, sur les liasses incertaines, pour ordonner la relecture.
+4. **Définir avec le métier le niveau de performance qui le rendrait utile**, en fonction du coût d'une relecture et de celui d'une erreur non détectée.

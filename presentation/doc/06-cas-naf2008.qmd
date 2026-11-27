@@ -8,22 +8,22 @@ Résultats interactifs : [page MatchVerifier NAF 2008](../match_verifier_naf2008
 
 ## Problématique
 
-Le code APE de production est attribué soit **par règles** (mode `AUTO`), soit **par le modèle fastText** (mode `FASTTEXT`), le reste partant en reprise manuelle. Le cas COICOP a montré que le *MatchVerifier* détecte la moitié des erreurs de Sirus. **La question est double :**
+Le code APE de production est attribué soit **par règles**, soit **par le modèle fastText**, le reste partant en reprise manuelle. Le cas COICOP a montré que le *MatchVerifier* détecte la moitié des erreurs de Sirus. **La question est double :**
 
 - ce résultat se transpose-t-il à la NAF, une nomenclature plus large et plus juridique, sur des libellés d'entreprises plutôt que de produits ?
 - le *MatchVerifier* pourrait-il servir d'**outil de monitoring du modèle de production**, c'est-à-dire signaler sans annotation humaine les codes à revoir ?
 
 ## Données
 
-- **Source** : le jeu de test de la campagne d'annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l'annotateur (`apet_manual`) est la **référence**.
-- **Code jugé** : le code attribué en production (`apet_finale`), retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d'attribution (`AUTO` ou `FASTTEXT`).
+- **Source** : le jeu de test de la campagne d'annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l'annotateur est la **référence**.
+- **Code jugé** : le code attribué en production, retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d'attribution (règles ou modèle).
 - Les deux codes sont des sous-classes. Tous figurent dans le graphe NAF rév. 2, construit à partir des notes explicatives de l'Insee.
 
 | | Lignes | Paires distinctes | Taux d'erreur de la production |
 |---|---|---|---|
 | Ensemble | 8 431 | 6 735 | 20,3 % (exact), 17,7 % (classe) |
-| dont `AUTO` (règles) | 5 653 | 4 071 | 10,3 % |
-| dont `FASTTEXT` (modèle) | 2 778 | 2 661 | 40,7 % |
+| dont codés par règles | 5 653 | 4 071 | 10,3 % |
+| dont codés par le modèle | 2 778 | 2 661 | 40,7 % |
 
 : Le jeu NAF rév. 2. Taux d'erreur par mode en vérité exacte, par paire. {#tbl-naf-donnees}
 
@@ -33,13 +33,13 @@ Les deux modes n'ont ni la même difficulté ni le même taux d'erreur : les rè
 
 Identique à la COICOP ([chapitre 4](04-evaluation.qmd)), avec deux vérités : **exacte** (même sous-classe) et **de classe** (mêmes 4 premiers caractères). La vérité de branche n'a pas d'objet ici puisque les deux codes sont toujours des sous-classes.
 
-Profil `naf2008`, modèle `qwen3-6-35b-moe`, prompt du commit `b753427`. Run terminé le 17 novembre 2026 : 6 732 paires jugées sur 6 735 (3 abandonnées, réponse tronquée), **28 s par paire**, 52 h de calcul cumulé.
+Modèle `qwen3-6-35b-moe`, prompt du commit `b753427`. Run terminé le 17 novembre 2026 : 6 732 paires jugées sur 6 735 (3 abandonnées, réponse tronquée), **28 s par paire**, 52 h de calcul cumulé.
 
 ## Résultats
 
 ### Vue d'ensemble
 
-| Vérité | Paires | dont erreurs | Erreurs détectées | Rejets à tort | Précision (dans l'éval) | Précision au taux réel | AUC `p_match` | Alternative = humain |
+| Vérité | Paires | dont erreurs | Erreurs détectées | Rejets à tort | Précision (dans l'éval) | Précision au taux réel | AUC de la probabilité de verdict | Alternative = humain |
 |---|---|---|---|---|---|---|---|---|
 | **Exacte** | **6 732** | **1 595** | **51,0 %** | **16,6 %** | **48,8 %** | **43,9 %** | **0,70** | **35,8 %** |
 | Classe | 6 732 | 1 385 | 53,3 % | 17,4 % | 44,3 % | 39,8 % | 0,70 | 34,3 % |
@@ -54,8 +54,8 @@ Profil `naf2008`, modèle `qwen3-6-35b-moe`, prompt du commit `b753427`. Run ter
 
 | Mode | Paires | Erreurs de la production | Taux de rejet | Erreurs détectées | Rejets à tort | Précision au taux réel | AUC |
 |---|---|---|---|---|---|---|---|
-| `AUTO` (règles) | 4 071 | 10,3 % | 13,5 % | 41,1 % | 9,8 % | 32,4 % | 0,69 |
-| `FASTTEXT` (modèle) | 2 661 | 40,7 % | 41,9 % | 55,3 % | 32,3 % | 54,1 % | 0,63 |
+| Règles | 4 071 | 10,3 % | 13,5 % | 41,1 % | 9,8 % | 32,4 % | 0,69 |
+| Modèle fastText | 2 661 | 40,7 % | 41,9 % | 55,3 % | 32,3 % | 54,1 % | 0,63 |
 
 : Résultats par mode d'attribution du code de production (vérité exacte). {#tbl-naf-mode}
 
@@ -76,9 +76,9 @@ Sur les codes **par règles**, peu fautifs, deux rejets sur trois portent sur un
 
 Comme en COICOP, plus l'écart est grossier, plus il est repéré.
 
-### `p_match` est binaire
+### La probabilité de verdict est binaire
 
-99,99 % des `p_match` sont sous 0,1 ou au-dessus de 0,9 : tous les seuils de 0,1 à 0,9 donnent exactement le même point (51,0 % d'erreurs détectées, 16,6 % de rejets à tort). Les rejets à tort se font avec `p_match` ≈ 0 : aucun seuil ne peut les écarter.
+99,99 % des probabilités de verdict sont sous 0,1 ou au-dessus de 0,9 : tous les seuils de 0,1 à 0,9 donnent exactement le même point (51,0 % d'erreurs détectées, 16,6 % de rejets à tort). Les rejets à tort se font avec une probabilité proche de 0 : aucun seuil ne peut les écarter.
 
 ### D'où viennent les rejets à tort
 
@@ -104,12 +104,12 @@ Un monitoring du modèle de production dispose déjà d'un signal gratuit : son 
 
 **Source de l'IC.** Le tableau de bord de la campagne d'annotation contient, pour chaque liasse du jeu de test, les cinq meilleures prédictions d'un modèle fastText et son IC. C'est une **re-prédiction par le modèle courant au moment de la campagne**, pas nécessairement l'IC qui a décidé du codage en production. Deux indices le montrent :
 
-- sur les liasses `FASTTEXT`, le premier code de ce modèle ne coïncide avec le code de production que dans **64 %** des cas, de façon stable sur toute la période (février 2023 à mai 2024) ;
+- sur les liasses codées par le modèle, le premier code de ce modèle ne coïncide avec le code de production que dans **64 %** des cas, de façon stable sur toute la période (février 2023 à mai 2024) ;
 - l'IC médian de ces liasses n'est que de **0,35**, et 4 % seulement dépassent 0,8. Si ce sont bien les liasses codées automatiquement par le modèle, le seuil de production était bas, ou une partie de ces codes vient d'une reprise.
 
-*[À valider avec Nathan : que recouvre exactement le mode `FASTTEXT` (code du modèle seul, ou code du modèle puis reprise) ? quel modèle et quel seuil étaient en production à la date des liasses ? l'IC réellement utilisé est-il conservé ?]* Les résultats ci-dessous se lisent donc comme « selon la confiance **d'un** modèle fastText », proche de celui de production.
+*[À valider avec Nathan : que recouvre exactement le mode « modèle » (code du modèle seul, ou code du modèle puis reprise) ? quel modèle et quel seuil étaient en production à la date des liasses ? l'IC réellement utilisé est-il conservé ?]* Les résultats ci-dessous se lisent donc comme « selon la confiance **d'un** modèle fastText », proche de celui de production.
 
-L'analyse est faite **par liasse**, puisque l'IC est propre à chaque liasse : chaque liasse reçoit le verdict du *MatchVerifier* sur sa paire (8 415 liasses sur 8 431). Le détail est dans [`docs/eval/match_verifier_naf2008_confidence.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/eval/match_verifier_naf2008_confidence.md), produit par `src.evaluation.report_naf2008_confidence`.
+L'analyse est faite **par liasse**, puisque l'IC est propre à chaque liasse : chaque liasse reçoit le verdict du *MatchVerifier* sur sa paire (8 415 liasses sur 8 431). Le détail est dans le [rapport d'analyse](https://github.com/InseeFrLab/GRAAL/blob/main/docs/eval/match_verifier_naf2008_confidence.md).
 
 | IC du modèle | Liasses | Erreurs de production | Erreurs détectées | Rejets à tort | Précision du rejet |
 |---|---|---|---|---|---|
@@ -118,15 +118,15 @@ L'analyse est faite **par liasse**, puisque l'IC est propre à chaque liasse : c
 | [0,4 ; 0,6[ | 523 | 37 % | 52 % | 32 % | 49 % |
 | [0,6 ; 0,8[ | 625 | 31 % | 49 % | 29 % | 43 % |
 | [0,8 ; 1] | 118 | 30 % | 40 % | 15 % | 54 % |
-| **Ensemble `FASTTEXT`** | **2 777** | **41 %** | **55 %** | **32 %** | **55 %** |
+| **Ensemble (codés par le modèle)** | **2 777** | **41 %** | **55 %** | **32 %** | **55 %** |
 
-: Performances du *MatchVerifier* selon l'IC du modèle, liasses `FASTTEXT` (vérité exacte, par liasse, précision dans l'échantillon). {#tbl-naf-ic}
+: Performances du *MatchVerifier* selon l'IC du modèle, liasses codées par le modèle (vérité exacte, par liasse, précision dans l'échantillon). {#tbl-naf-ic}
 
 - **Le vérificateur est un peu meilleur là où le modèle doute.** Sous un IC de 0,4, il détecte 58 % des erreurs avec une précision de 60 % ; entre 0,6 et 0,8, 49 % avec une précision de 43 %. Mais les **rejets à tort restent autour d'un tiers dans toutes les tranches** sous 0,8 : aucune tranche d'IC ne fait du verdict un filtre fiable.
 - **Sur ces liasses, l'IC est un mauvais détecteur d'erreurs, le vérificateur un peu moins mauvais.** L'AUC de l'IC pour repérer une erreur de production est de **0,59** [0,56 ; 0,61], celle du score du vérificateur (écart entre le score de l'alternative et celui du code jugé) de **0,66** [0,64 ; 0,68]. L'écart (+0,07 [+0,04 ; +0,10], bootstrap apparié en grappes de paires) est significatif. À volume de relecture égal (41 % des liasses), relire les liasses de plus faible IC trouve 49 % des erreurs, relire celles que le vérificateur rejette en trouve 55 %, avec moins de codes justes signalés (32 % contre 36 %).
 - **Les deux signaux sont presque indépendants** (corrélation des rangs 0,13) mais **leur combinaison n'apporte rien** sur le classement (AUC 0,66, +0,003 [−0,012 ; +0,019]). Le croisement sert seulement à choisir un point de fonctionnement plus strict : n'alerter que si le vérificateur rejette **et** que l'IC est sous 0,4 signale un quart des liasses, garde 37 % des erreurs et ne rejette plus que 17 % des codes justes, pour une précision de 60 %.
 
-Sur les liasses `AUTO`, codées par règles, le même modèle est presque toujours très confiant (IC ≥ 0,8 pour 98 % d'entre elles) et coïncide avec la règle dans 99 % des cas. L'IC y repère les erreurs des règles avec une AUC de 0,71 [0,68 ; 0,75], le vérificateur de 0,75 [0,71 ; 0,79], et leur combinaison de 0,77 [0,74 ; 0,81]. Aucun de ces écarts n'est significatif.
+Sur les liasses codées par règles, le même modèle est presque toujours très confiant (IC ≥ 0,8 pour 98 % d'entre elles) et coïncide avec la règle dans 99 % des cas. L'IC y repère les erreurs des règles avec une AUC de 0,71 [0,68 ; 0,75], le vérificateur de 0,75 [0,71 ; 0,79], et leur combinaison de 0,77 [0,74 ; 0,81]. Aucun de ces écarts n'est significatif.
 
 **En résumé** : sur la part que vise un monitoring, le vérificateur apporte un signal **différent** de l'IC et **un peu meilleur**, mais pas assez bon pour décider seul. Il ne change pas la conclusion du paragraphe suivant ; il indique en revanche où le placer : **après** le seuil, sur les liasses de faible confiance, pour ordonner la relecture.
 
@@ -140,8 +140,8 @@ Sur les liasses `AUTO`, codées par règles, le même modèle est presque toujou
 ## Limites
 
 - Une seule annotation par liasse ; on ne sait pas quelle part des « rejets à tort » est due à l'annotation.
-- Les modes `AUTO` et `FASTTEXT` portent sur des populations différentes : leurs chiffres ne se comparent pas directement.
-- L'**indice de confiance** utilisé vient d'une re-prédiction du tableau de bord de la campagne, pas nécessairement de celle qui a codé la liasse en production ; la signification exacte du mode `FASTTEXT` reste à confirmer.
+- Les codes par règles et par le modèle portent sur des populations différentes : leurs chiffres ne se comparent pas directement.
+- L'**indice de confiance** utilisé vient d'une re-prédiction du tableau de bord de la campagne, pas nécessairement de celle qui a codé la liasse en production ; la signification exacte du mode « modèle » reste à confirmer.
 - Résultats en NAF rév. 2 : la production code désormais en NAF 2025, dont le graphe existe aussi mais sans jeu annoté équivalent.
 
 ## Perspectives

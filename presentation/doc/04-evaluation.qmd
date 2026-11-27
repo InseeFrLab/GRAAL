@@ -52,7 +52,7 @@ Le *MatchVerifier* **détecte** une erreur quand il rejette le code. On en tire 
 | **Rejets à tort** | rejets parmi les codes justes | Quelle part des codes justes signale-t-il à tort ? |
 | **Précision du rejet** | erreurs parmi les rejets | Quand il rejette, a-t-il raison ? |
 | **Alternative = humain** | parmi les erreurs détectées, part où l'alternative proposée est le code humain (ou sa branche) | Peut-il corriger, et pas seulement signaler ? |
-| **AUC de `p_match`** | aire sous la courbe ROC de la probabilité de verdict | Ses probabilités séparent-elles erreurs et codes justes ? |
+| **AUC de la probabilité de verdict** | aire sous la courbe ROC de cette probabilité | Ses probabilités séparent-elles erreurs et codes justes ? |
 | **Durée par paire** | temps de l'appel, retry compris | Combien coûte un verdict ? |
 
 : Métriques d'évaluation du *MatchVerifier*. {#tbl-metriques}
@@ -81,7 +81,7 @@ Avec plusieurs milliers de paires par jeu, l'incertitude d'échantillonnage sur 
 |---|---|---|---|
 | COICOP, Budget de famille vague 1 | Code retenu par les annotateurs dans le workflow de codification | Simple | 14 695 lignes, 8 981 paires |
 | NAF rév. 2, campagne d'annotation 2024 | Jeu de test de la campagne, annoté dans Label Studio | Simple | 8 431 lignes, 6 735 paires |
-| NAF 2025, jeu d'évaluation GRAAL | Code `apet2025` du jeu de test du modèle de production (labels administratifs recodés) | Pas une annotation dédiée | 5 181 lignes, stratifié par code |
+| NAF 2025, jeu d'évaluation GRAAL | Code APE en NAF 2025 du jeu de test du modèle de production (labels administratifs recodés) | Pas une annotation dédiée | 5 181 lignes, stratifié par code |
 
 : Références utilisées dans cette note. {#tbl-references}
 
@@ -113,7 +113,7 @@ Points à clarifier *[À valider avec Nathan et RIAS]* :
 - les exports Label Studio NAF 2008 utilisés par GRAAL contiennent environ 27 650 annotations, dont environ 19 000 hors du jeu de test : quel lien avec les 12 000 annotations du *gold standard* (tâches en cours, plusieurs vagues, train et test) ?
 - la note APE indique que trois experts indépendants s'accordent sur la sous-classe NAF 2025 dans environ 62 % des cas, et au moins deux dans 96 % [@codifapedocs] : une partie de la campagne NAF 2025 a donc été annotée trois fois, ce qui nuance « annotation simple » ci-dessus. Sur combien de libellés, et ces annotations multiples sont-elles exploitables ?
 - comment le jeu de test NAF 2008 a-t-il été tiré (aléatoire dans le flux, stratifié, sélectionné sur les reprises) ? Les annotateurs voyaient-ils le code de production ?
-- l'indice de confiance **réellement utilisé en production** est-il conservé pour ces liasses ? Une première analyse utilise celui du tableau de bord de la campagne, issu d'une re-prédiction ([chapitre 6](06-cas-naf2008.qmd#sec-naf-ic)) ; que recouvre exactement le mode `FASTTEXT` ?
+- l'indice de confiance **réellement utilisé en production** est-il conservé pour ces liasses ? Une première analyse utilise celui du tableau de bord de la campagne, issu d'une re-prédiction ([chapitre 6](06-cas-naf2008.qmd#sec-naf-ic)) ; que recouvre exactement le mode « modèle » ?
 
 ### Principes proposés
 
