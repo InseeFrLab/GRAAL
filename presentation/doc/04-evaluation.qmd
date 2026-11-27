@@ -101,7 +101,7 @@ Un jeu de référence (*gold standard*) est la condition pour :
 - connaître le **plafond** atteignable, donné par l'accord entre annotateurs ;
 - séparer, dans les désaccords, les fautes du modèle de celles de l'annotation, et **corriger** au passage les annotations fausses.
 
-### Ce qui existe déjà
+### Ce qui existe déjà {#sec-gold-existant}
 
 D'après les échanges avec la division RIAS :
 
@@ -134,7 +134,7 @@ Pour estimer un taux autour de 50 % à ±3 points (95 %), il faut environ 1 100 
 
 Une alternative moins coûteuse à court terme est de faire **arbitrer les désaccords** existants (vérificateur contre annotateur) par un expert, avec l'application de revue déjà déployée. Elle corrige la mesure sur les désaccords mais ne dit rien des cas où le vérificateur et l'annotateur se trompent ensemble.
 
-### Freins possibles et leviers
+### Freins possibles et leviers {#sec-gold-freins}
 
 *[Hypothèses à confirmer avec RIAS]*
 

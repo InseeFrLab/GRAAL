@@ -5520,17 +5520,17 @@ window.Quarto = {
   <li><a href="#cas-dusage-matchverifier-sur-la-naf-rév.-2" id="toc-cas-dusage-matchverifier-sur-la-naf-rév.-2" class="nav-link" data-scroll-target="#cas-dusage-matchverifier-sur-la-naf-rév.-2"><span class="header-section-number">6</span> Cas d’usage : MatchVerifier sur la NAF rév. 2</a>
   <ul class="collapse">
   <li><a href="#problématique-1" id="toc-problématique-1" class="nav-link" data-scroll-target="#problématique-1"><span class="header-section-number">6.1</span> Problématique</a></li>
-  <li><a href="#données-1" id="toc-données-1" class="nav-link" data-scroll-target="#données-1"><span class="header-section-number">6.2</span> Données</a></li>
+  <li><a href="#sec-naf-donnees" id="toc-sec-naf-donnees" class="nav-link" data-scroll-target="#sec-naf-donnees"><span class="header-section-number">6.2</span> Données</a></li>
   <li><a href="#protocole-1" id="toc-protocole-1" class="nav-link" data-scroll-target="#protocole-1"><span class="header-section-number">6.3</span> Protocole</a></li>
   <li><a href="#résultats-1" id="toc-résultats-1" class="nav-link" data-scroll-target="#résultats-1"><span class="header-section-number">6.4</span> Résultats</a></li>
   <li><a href="#enseignements-1" id="toc-enseignements-1" class="nav-link" data-scroll-target="#enseignements-1"><span class="header-section-number">6.5</span> Enseignements</a></li>
-  <li><a href="#limites-1" id="toc-limites-1" class="nav-link" data-scroll-target="#limites-1"><span class="header-section-number">6.6</span> Limites</a></li>
-  <li><a href="#perspectives-1" id="toc-perspectives-1" class="nav-link" data-scroll-target="#perspectives-1"><span class="header-section-number">6.7</span> Perspectives</a></li>
+  <li><a href="#sec-naf-limites" id="toc-sec-naf-limites" class="nav-link" data-scroll-target="#sec-naf-limites"><span class="header-section-number">6.6</span> Limites</a></li>
+  <li><a href="#sec-naf-perspectives" id="toc-sec-naf-perspectives" class="nav-link" data-scroll-target="#sec-naf-perspectives"><span class="header-section-number">6.7</span> Perspectives</a></li>
   </ul></li>
   <li><a href="#travaux-exploratoires-sur-la-naf-2025" id="toc-travaux-exploratoires-sur-la-naf-2025" class="nav-link" data-scroll-target="#travaux-exploratoires-sur-la-naf-2025"><span class="header-section-number">7</span> Travaux exploratoires sur la NAF 2025</a>
   <ul class="collapse">
   <li><a href="#problématique-2" id="toc-problématique-2" class="nav-link" data-scroll-target="#problématique-2"><span class="header-section-number">7.1</span> Problématique</a></li>
-  <li><a href="#données-2" id="toc-données-2" class="nav-link" data-scroll-target="#données-2"><span class="header-section-number">7.2</span> Données</a></li>
+  <li><a href="#données-1" id="toc-données-1" class="nav-link" data-scroll-target="#données-1"><span class="header-section-number">7.2</span> Données</a></li>
   <li><a href="#lespace-dembedding-comme-point-de-départ" id="toc-lespace-dembedding-comme-point-de-départ" class="nav-link" data-scroll-target="#lespace-dembedding-comme-point-de-départ"><span class="header-section-number">7.3</span> L’espace d’embedding comme point de départ</a></li>
   <li><a href="#comparaison-de-quatre-classifieurs-60-libellés" id="toc-comparaison-de-quatre-classifieurs-60-libellés" class="nav-link" data-scroll-target="#comparaison-de-quatre-classifieurs-60-libellés"><span class="header-section-number">7.4</span> Comparaison de quatre classifieurs (60 libellés)</a></li>
   <li><a href="#vérifier-les-labels-dentraînement" id="toc-vérifier-les-labels-dentraînement" class="nav-link" data-scroll-target="#vérifier-les-labels-dentraînement"><span class="header-section-number">7.5</span> Vérifier les labels d’entraînement</a></li>
@@ -5548,6 +5548,12 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#code-et-documentation" id="toc-code-et-documentation" class="nav-link" data-scroll-target="#code-et-documentation"><span class="header-section-number">10.1</span> Code et documentation</a></li>
   <li><a href="#bibliographie" id="toc-bibliographie" class="nav-link" data-scroll-target="#bibliographie"><span class="header-section-number">10.2</span> Bibliographie</a></li>
+  </ul></li>
+  <li><a href="#sec-points-a-valider" id="toc-sec-points-a-valider" class="nav-link" data-scroll-target="#sec-points-a-valider"><span class="header-section-number">11</span> Points à valider</a>
+  <ul class="collapse">
+  <li><a href="#jeux-annotés-et-campagnes-dannotation" id="toc-jeux-annotés-et-campagnes-dannotation" class="nav-link" data-scroll-target="#jeux-annotés-et-campagnes-dannotation"><span class="header-section-number">11.1</span> Jeux annotés et campagnes d’annotation</a></li>
+  <li><a href="#production-ape-et-indice-de-confiance" id="toc-production-ape-et-indice-de-confiance" class="nav-link" data-scroll-target="#production-ape-et-indice-de-confiance"><span class="header-section-number">11.2</span> Production APE et indice de confiance</a></li>
+  <li><a href="#jeu-de-référence-à-construire" id="toc-jeu-de-référence-à-construire" class="nav-link" data-scroll-target="#jeu-de-référence-à-construire"><span class="header-section-number">11.3</span> Jeu de référence à construire</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -5610,7 +5616,7 @@ window.Quarto = {
 
 
 <div class="draft-banner">
-<p><strong>Version de travail du 26 novembre 2026</strong>, à relire avant le point du 1<sup>er</sup> décembre. Les passages marqués <em>[À valider]</em> sont des hypothèses ou des points à confirmer avec les personnes concernées.</p>
+<p><strong>Version de travail du 26 novembre 2026</strong>, à relire avant le point du 1<sup>er</sup> décembre. Les passages marqués <em>[À valider]</em> sont des hypothèses ou des points à confirmer avec les personnes concernées ; ils sont récapitulés en fin de note, dans les <a href="#sec-points-a-valider">points à valider</a>.</p>
 </div>
 <p>Les nomenclatures statistiques (NAF, COICOP, PCS…) sont hiérarchiques, révisées périodiquement, et accompagnées de <strong>notes explicatives</strong> qui disent ce que chaque poste contient et exclut. À l’Insee, les libellés libres de Sirene et des enquêtes sont codés dans ces nomenclatures par des <strong>modèles supervisés</strong> : rapides et performants, mais entraînés sur des centaines de milliers de labels, dont la qualité n’est pas garantie.</p>
 <p><strong>GRAAL</strong> (<em>Graph-based Reasoning Agents for Automatic Labelling</em>) explore une voie complémentaire : des <strong>agents LLM</strong> qui raisonnent directement sur la nomenclature, mise sous forme de <strong>graphe</strong> (Neo4j). Ils lisent les notes explicatives au lieu d’apprendre sur des labels, ce qui leur permet de <strong>justifier</strong> leurs décisions. GRAAL ne vise pas à remplacer le modèle de production : il travaille <strong>en différé, hors de la chaîne de codification en temps réel</strong>, pour vérifier des codes et en proposer.</p>
@@ -5686,6 +5692,10 @@ window.Quarto = {
 <tr class="even">
 <td><a href="#">Références</a></td>
 <td>Articles, documentations, code</td>
+</tr>
+<tr class="odd">
+<td><a href="#sec-points-a-valider">Points à valider</a></td>
+<td>Hypothèses et questions ouvertes, avec leur statut</td>
 </tr>
 </tbody>
 </table>
@@ -6352,8 +6362,8 @@ Table 9: Références utilisées dans cette note.
 <li>séparer, dans les désaccords, les fautes du modèle de celles de l’annotation, et <strong>corriger</strong> au passage les annotations fausses.</li>
 </ul>
 </section>
-<section id="ce-qui-existe-déjà" class="level3" data-number="4.7.2">
-<h3 data-number="4.7.2" class="anchored" data-anchor-id="ce-qui-existe-déjà"><span class="header-section-number">4.7.2</span> Ce qui existe déjà</h3>
+<section id="sec-gold-existant" class="level3" data-number="4.7.2">
+<h3 data-number="4.7.2" class="anchored" data-anchor-id="sec-gold-existant"><span class="header-section-number">4.7.2</span> Ce qui existe déjà</h3>
 <p>D’après les échanges avec la division RIAS :</p>
 <ul>
 <li>une <strong>campagne d’annotation en NAF 2008</strong> avec des experts sur Label Studio a fourni environ <strong>12 000 annotations</strong> début 2024, qui ont servi à construire un <em>gold standard</em> ; c’est une <strong>annotation simple</strong> ;</li>
@@ -6418,8 +6428,8 @@ Table 10: Principes proposés pour le jeu de référence.
 <p>Pour estimer un taux autour de 50 % à ±3 points (95 %), il faut environ 1 100 items. Pour mesurer le <strong>rappel des erreurs</strong> du vérificateur à ±5 points, il faut environ 400 erreurs de production, soit environ 2 000 libellés tirés dans un flux où 20 % des codes sont faux. Une double annotation double la charge ; elle peut être limitée à une partie du jeu (par exemple 30 %) pour mesurer l’accord, le reste étant annoté une fois.</p>
 <p>Une alternative moins coûteuse à court terme est de faire <strong>arbitrer les désaccords</strong> existants (vérificateur contre annotateur) par un expert, avec l’application de revue déjà déployée. Elle corrige la mesure sur les désaccords mais ne dit rien des cas où le vérificateur et l’annotateur se trompent ensemble.</p>
 </section>
-<section id="freins-possibles-et-leviers" class="level3" data-number="4.7.5">
-<h3 data-number="4.7.5" class="anchored" data-anchor-id="freins-possibles-et-leviers"><span class="header-section-number">4.7.5</span> Freins possibles et leviers</h3>
+<section id="sec-gold-freins" class="level3" data-number="4.7.5">
+<h3 data-number="4.7.5" class="anchored" data-anchor-id="sec-gold-freins"><span class="header-section-number">4.7.5</span> Freins possibles et leviers</h3>
 <p><em>[Hypothèses à confirmer avec RIAS]</em></p>
 <div id="tbl-freins" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
@@ -6834,8 +6844,8 @@ Table 16: Combiner le vérificateur et un second classifieur.
 <li>le <em>MatchVerifier</em> pourrait-il servir d’<strong>outil de monitoring du modèle de production</strong>, c’est-à-dire signaler sans annotation humaine les codes à revoir ?</li>
 </ul>
 </section>
-<section id="données-1" class="level2" data-number="6.2">
-<h2 data-number="6.2" class="anchored" data-anchor-id="données-1"><span class="header-section-number">6.2</span> Données</h2>
+<section id="sec-naf-donnees" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="sec-naf-donnees"><span class="header-section-number">6.2</span> Données</h2>
 <ul>
 <li><strong>Source</strong> : le jeu de test de la campagne d’annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l’annotateur est la <strong>référence</strong>.</li>
 <li><strong>Code jugé</strong> : le code attribué en production, retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d’attribution (règles ou modèle).</li>
@@ -7243,8 +7253,8 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 <li><strong>Le levier principal est la connaissance des conventions de codage</strong>, pas la capacité de raisonnement : les rejets à tort sont concentrés sur quelques codes et portent sur des conventions que les notes explicatives ne disent pas.</li>
 </ul>
 </section>
-<section id="limites-1" class="level2" data-number="6.6">
-<h2 data-number="6.6" class="anchored" data-anchor-id="limites-1"><span class="header-section-number">6.6</span> Limites</h2>
+<section id="sec-naf-limites" class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="sec-naf-limites"><span class="header-section-number">6.6</span> Limites</h2>
 <ul>
 <li>Une seule annotation par liasse ; on ne sait pas quelle part des « rejets à tort » est due à l’annotation.</li>
 <li>Les codes par règles et par le modèle portent sur des populations différentes : leurs chiffres ne se comparent pas directement.</li>
@@ -7252,8 +7262,8 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 <li>Résultats en NAF rév. 2 : la production code désormais en NAF 2025, dont le graphe existe aussi mais sans jeu annoté équivalent.</li>
 </ul>
 </section>
-<section id="perspectives-1" class="level2" data-number="6.7">
-<h2 data-number="6.7" class="anchored" data-anchor-id="perspectives-1"><span class="header-section-number">6.7</span> Perspectives</h2>
+<section id="sec-naf-perspectives" class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="sec-naf-perspectives"><span class="header-section-number">6.7</span> Perspectives</h2>
 <ol type="1">
 <li><strong>Consolider l’analyse selon la confiance du modèle de production</strong> (<a href="#sec-naf-ic">section dédiée</a>) avec l’IC réellement utilisé en production et le seuil en vigueur, pour simuler le vérificateur placé après le seuil <em>[à voir avec Nathan]</em>.</li>
 <li><strong>Injecter des précédents annotés dans le prompt</strong> : les libellés annotés les plus proches avec leur code humain, pour faire entrer les conventions de codage. Les exports Label Studio NAF 2008 en contiennent environ 19 000 hors jeu de test. Mesurer l’effet sur les rejets à tort sans dégrader le rappel, en excluant les libellés du test pour éviter toute fuite.</li>
@@ -7277,8 +7287,8 @@ Table 22: Performances du <em>MatchVerifier</em> selon l’IC du modèle, liass
 <h2 data-number="7.1" class="anchored" data-anchor-id="problématique-2"><span class="header-section-number">7.1</span> Problématique</h2>
 <p>Le cas d’usage <strong>recodage</strong> demande un classifieur : à partir d’un libellé seul, trouver le bon code. GRAAL en propose trois, agentiques (<em>Navigator</em>, <em>Agentic RAG</em>, <em>Summary</em>, voir le <a href="#">chapitre 3</a>). La question est de savoir comment ils se situent par rapport au modèle supervisé de production, à quel coût, et sur quoi s’appuie leur point de départ.</p>
 </section>
-<section id="données-2" class="level2" data-number="7.2">
-<h2 data-number="7.2" class="anchored" data-anchor-id="données-2"><span class="header-section-number">7.2</span> Données</h2>
+<section id="données-1" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="données-1"><span class="header-section-number">7.2</span> Données</h2>
 <p>Le jeu d’évaluation GRAAL est tiré du jeu de test du modèle de production APE : <strong>5 181 libellés</strong>, stratifiés par sous-classe NAF 2025 (environ 10 par code), avec le code APE en NAF 2025 comme référence. Ce code est un <strong>label administratif</strong> (en partie recodé de la NAF rév. 2 vers la NAF 2025), pas une annotation dédiée : sa qualité est incertaine, ce que les résultats ci-dessous confirment.</p>
 </section>
 <section id="lespace-dembedding-comme-point-de-départ" class="level2" data-number="7.3">
@@ -7627,6 +7637,104 @@ Yao, Shunyu, Jeffrey Zhao, Dian Yu, et al. 2023. <span>« <span>ReAct</span>: S
 Zheng, Lianmin, Wei-Lin Chiang, Ying Sheng, et al. 2023. <span>« Judging <span>LLM</span>-as-a-Judge with <span>MT-Bench</span> and <span>Chatbot Arena</span> »</span>. <em>Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track</em>.
 </div>
 </div>
+</section>
+</section>
+<section id="sec-points-a-valider" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> Points à valider</h1>
+<div class="chapter-lead">
+<p>Récapitulatif des hypothèses et questions ouvertes signalées dans la note, avec leur statut.</p>
+</div>
+<p>Cette page garde la trace des passages marqués <em>[À valider]</em> dans la note. Chaque point renvoie à l’endroit où il est discuté. Quand un point est tranché, on note ici la réponse, sa source et sa date, puis on met à jour le passage concerné et on retire son marqueur.</p>
+<p>État au 27 novembre 2026 : <strong>6 points ouverts</strong>.</p>
+<section id="jeux-annotés-et-campagnes-dannotation" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="jeux-annotés-et-campagnes-dannotation"><span class="header-section-number">11.1</span> Jeux annotés et campagnes d’annotation</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Point à valider</th>
+<th>Où dans la note</th>
+<th>Avec qui</th>
+<th>Statut</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Lien entre les <strong>27 650 annotations</strong> des exports Label Studio NAF 2008 utilisés par GRAAL (dont 19 000 hors jeu de test) et les <strong>12 000 annotations</strong> du <em>gold standard</em> NAF 2008 : tâches en cours, plusieurs vagues, découpage entraînement / test ?</td>
+<td><a href="#sec-gold-existant">Chapitre 4, ce qui existe déjà</a></td>
+<td>Nathan, RIAS</td>
+<td>Ouvert</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Campagne NAF 2025 : la note APE fait état d’un accord à trois experts (62 %, et 96 % pour au moins deux), alors que la campagne est décrite comme une annotation simple. <strong>Combien de libellés ont été annotés trois fois</strong>, et ces annotations multiples sont-elles exploitables ?</td>
+<td><a href="#sec-gold-existant">Chapitre 4, ce qui existe déjà</a></td>
+<td>Nathan, RIAS</td>
+<td>Ouvert</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><strong>Jeu de test NAF 2008</strong> : périmètre exact, mode de tirage (aléatoire dans le flux, stratifié, sélectionné sur les reprises), et ce que voyaient les annotateurs (code de production affiché ou non).</td>
+<td><a href="#sec-gold-existant">Chapitre 4</a>, <a href="#sec-naf-donnees">chapitre 6, données</a></td>
+<td>Nathan</td>
+<td>Ouvert</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="production-ape-et-indice-de-confiance" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="production-ape-et-indice-de-confiance"><span class="header-section-number">11.2</span> Production APE et indice de confiance</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Point à valider</th>
+<th>Où dans la note</th>
+<th>Avec qui</th>
+<th>Statut</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4</td>
+<td>Que recouvre exactement le <strong>mode « modèle »</strong> du code de production : code du modèle fastText seul, ou code du modèle puis reprise manuelle ?</td>
+<td><a href="#sec-gold-existant">Chapitre 4</a>, <a href="#sec-naf-ic">chapitre 6, indice de confiance</a> et <a href="#sec-naf-limites">limites</a></td>
+<td>Nathan</td>
+<td>Ouvert</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td><strong>Quel modèle et quel seuil de confiance</strong> étaient en production à la date des liasses, et l’<strong>indice de confiance réellement utilisé</strong> est-il conservé ? L’analyse actuelle repose sur une re-prédiction du tableau de bord de la campagne. Conditionne la perspective 1 du chapitre 6.</td>
+<td><a href="#sec-gold-existant">Chapitre 4</a>, <a href="#sec-naf-ic">chapitre 6, indice de confiance</a> et <a href="#sec-naf-perspectives">perspectives</a></td>
+<td>Nathan</td>
+<td>Ouvert</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="jeu-de-référence-à-construire" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="jeu-de-référence-à-construire"><span class="header-section-number">11.3</span> Jeu de référence à construire</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Point à valider</th>
+<th>Où dans la note</th>
+<th>Avec qui</th>
+<th>Statut</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>6</td>
+<td><strong>Freins et leviers</strong> d’un jeu de référence doublement annoté (disponibilité des experts, coût, sentiment d’être évalué, conventions implicites, outillage) : ce sont des hypothèses, à confirmer avec la division.</td>
+<td><a href="#sec-gold-freins">Chapitre 4, freins et leviers</a></td>
+<td>RIAS</td>
+<td>Ouvert</td>
+</tr>
+</tbody>
+</table>
 </section>
 </section>
 

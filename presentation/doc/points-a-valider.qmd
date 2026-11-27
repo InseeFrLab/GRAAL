@@ -1,0 +1,30 @@
+---
+title: "Points à valider"
+description: "Récapitulatif des hypothèses et questions ouvertes signalées dans la note, avec leur statut."
+number-sections: false
+---
+
+Cette page garde la trace des passages marqués *[À valider]* dans la note. Chaque point renvoie à l'endroit où il est discuté. Quand un point est tranché, on note ici la réponse, sa source et sa date, puis on met à jour le passage concerné et on retire son marqueur.
+
+État au 27 novembre 2026 : **6 points ouverts**.
+
+## Jeux annotés et campagnes d'annotation
+
+| # | Point à valider | Où dans la note | Avec qui | Statut |
+|---|---|---|---|---|
+| 1 | Lien entre les **27 650 annotations** des exports Label Studio NAF 2008 utilisés par GRAAL (dont 19 000 hors jeu de test) et les **12 000 annotations** du *gold standard* NAF 2008 : tâches en cours, plusieurs vagues, découpage entraînement / test ? | [Chapitre 4, ce qui existe déjà](04-evaluation.qmd#sec-gold-existant) | Nathan, RIAS | Ouvert |
+| 2 | Campagne NAF 2025 : la note APE fait état d'un accord à trois experts (62 %, et 96 % pour au moins deux), alors que la campagne est décrite comme une annotation simple. **Combien de libellés ont été annotés trois fois**, et ces annotations multiples sont-elles exploitables ? | [Chapitre 4, ce qui existe déjà](04-evaluation.qmd#sec-gold-existant) | Nathan, RIAS | Ouvert |
+| 3 | **Jeu de test NAF 2008** : périmètre exact, mode de tirage (aléatoire dans le flux, stratifié, sélectionné sur les reprises), et ce que voyaient les annotateurs (code de production affiché ou non). | [Chapitre 4](04-evaluation.qmd#sec-gold-existant), [chapitre 6, données](06-cas-naf2008.qmd#sec-naf-donnees) | Nathan | Ouvert |
+
+## Production APE et indice de confiance
+
+| # | Point à valider | Où dans la note | Avec qui | Statut |
+|---|---|---|---|---|
+| 4 | Que recouvre exactement le **mode « modèle »** du code de production : code du modèle fastText seul, ou code du modèle puis reprise manuelle ? | [Chapitre 4](04-evaluation.qmd#sec-gold-existant), [chapitre 6, indice de confiance](06-cas-naf2008.qmd#sec-naf-ic) et [limites](06-cas-naf2008.qmd#sec-naf-limites) | Nathan | Ouvert |
+| 5 | **Quel modèle et quel seuil de confiance** étaient en production à la date des liasses, et l'**indice de confiance réellement utilisé** est-il conservé ? L'analyse actuelle repose sur une re-prédiction du tableau de bord de la campagne. Conditionne la perspective 1 du chapitre 6. | [Chapitre 4](04-evaluation.qmd#sec-gold-existant), [chapitre 6, indice de confiance](06-cas-naf2008.qmd#sec-naf-ic) et [perspectives](06-cas-naf2008.qmd#sec-naf-perspectives) | Nathan | Ouvert |
+
+## Jeu de référence à construire
+
+| # | Point à valider | Où dans la note | Avec qui | Statut |
+|---|---|---|---|---|
+| 6 | **Freins et leviers** d'un jeu de référence doublement annoté (disponibilité des experts, coût, sentiment d'être évalué, conventions implicites, outillage) : ce sont des hypothèses, à confirmer avec la division. | [Chapitre 4, freins et leviers](04-evaluation.qmd#sec-gold-freins) | RIAS | Ouvert |

@@ -56,3 +56,4 @@ website:
         - doc/08-conclusion.qmd
         - doc/glossaire.qmd
         - doc/references.qmd
+        - doc/points-a-valider.qmd

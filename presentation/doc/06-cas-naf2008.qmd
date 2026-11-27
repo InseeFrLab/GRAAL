@@ -13,7 +13,7 @@ Le code APE de production est attribué soit **par règles**, soit **par le mod�
 - ce résultat se transpose-t-il à la NAF, une nomenclature plus large et plus juridique, sur des libellés d'entreprises plutôt que de produits ?
 - le *MatchVerifier* pourrait-il servir d'**outil de monitoring du modèle de production**, c'est-à-dire signaler sans annotation humaine les codes à revoir ?
 
-## Données
+## Données {#sec-naf-donnees}
 
 - **Source** : le jeu de test de la campagne d'annotation 2024 en NAF rév. 2 (NAF 2008), annoté dans Label Studio. Le code retenu par l'annotateur est la **référence**.
 - **Code jugé** : le code attribué en production, retrouvé dans les exports Label Studio de la même campagne par numéro de liasse, avec son mode d'attribution (règles ou modèle).
@@ -137,14 +137,14 @@ Sur les liasses codées par règles, le même modèle est presque toujours très
 - **Il complète l'indice de confiance plus qu'il ne le double.** Sur la part fastText, il détecte mieux les erreurs que l'IC (AUC 0,66 contre 0,59), avec un signal presque indépendant, et il est un peu meilleur là où le modèle doute. Sa place naturelle est d'ordonner la relecture des liasses de faible confiance ([section précédente](#sec-naf-ic)).
 - **Le levier principal est la connaissance des conventions de codage**, pas la capacité de raisonnement : les rejets à tort sont concentrés sur quelques codes et portent sur des conventions que les notes explicatives ne disent pas.
 
-## Limites
+## Limites {#sec-naf-limites}
 
 - Une seule annotation par liasse ; on ne sait pas quelle part des « rejets à tort » est due à l'annotation.
 - Les codes par règles et par le modèle portent sur des populations différentes : leurs chiffres ne se comparent pas directement.
 - L'**indice de confiance** utilisé vient d'une re-prédiction du tableau de bord de la campagne, pas nécessairement de celle qui a codé la liasse en production ; la signification exacte du mode « modèle » reste à confirmer.
 - Résultats en NAF rév. 2 : la production code désormais en NAF 2025, dont le graphe existe aussi mais sans jeu annoté équivalent.
 
-## Perspectives
+## Perspectives {#sec-naf-perspectives}
 
 1. **Consolider l'analyse selon la confiance du modèle de production** ([section dédiée](#sec-naf-ic)) avec l'IC réellement utilisé en production et le seuil en vigueur, pour simuler le vérificateur placé après le seuil *[à voir avec Nathan]*.
 2. **Injecter des précédents annotés dans le prompt** : les libellés annotés les plus proches avec leur code humain, pour faire entrer les conventions de codage. Les exports Label Studio NAF 2008 en contiennent environ 19 000 hors jeu de test. Mesurer l'effet sur les rejets à tort sans dégrader le rappel, en excluant les libellés du test pour éviter toute fuite.

@@ -9,7 +9,7 @@ toc: false
 ---
 
 ::: {.draft-banner}
-**Version de travail du 26 novembre 2026**, à relire avant le point du 1^er^ décembre. Les passages marqués *[À valider]* sont des hypothèses ou des points à confirmer avec les personnes concernées.
+**Version de travail du 26 novembre 2026**, à relire avant le point du 1^er^ décembre. Les passages marqués *[À valider]* sont des hypothèses ou des points à confirmer avec les personnes concernées ; ils sont récapitulés en fin de note, dans les [points à valider](points-a-valider.qmd).
 :::
 
 Les nomenclatures statistiques (NAF, COICOP, PCS…) sont hiérarchiques, révisées périodiquement, et accompagnées de **notes explicatives** qui disent ce que chaque poste contient et exclut. À l'Insee, les libellés libres de Sirene et des enquêtes sont codés dans ces nomenclatures par des **modèles supervisés** : rapides et performants, mais entraînés sur des centaines de milliers de labels, dont la qualité n'est pas garantie.
@@ -57,6 +57,7 @@ Cette note documente le projet : pourquoi ces choix, comment fonctionnent les ag
 | 8. [Conclusion](08-conclusion.qmd) | Ce que GRAAL apporte, ce qui ne suffit pas encore, suites envisagées |
 | [Glossaire](glossaire.qmd) | Termes et métriques |
 | [Références](references.qmd) | Articles, documentations, code |
+| [Points à valider](points-a-valider.qmd) | Hypothèses et questions ouvertes, avec leur statut |
 
 Les résultats détaillés et interactifs restent sur les pages dédiées du site ([MatchVerifier COICOP](../match_verifier_coicop.qmd), [MatchVerifier NAF 2008](../match_verifier_naf2008.qmd), [évaluation multi-méthode](../multi_method_eval.qmd), [diagnostic embeddings](../embeddings.qmd)). La documentation technique du code (contrats des agents, CLI, configuration) est dans [`docs/framework.md`](https://github.com/InseeFrLab/GRAAL/blob/main/docs/framework.md).
 
