@@ -27,7 +27,7 @@ flowchart TB
   CC --> D["code retenu"]
 ```
 
-Les modèles sont servis par vLLM derrière une API compatible OpenAI, sur l'infrastructure de l'Insee. Les évaluations de cette note utilisent le modèle servi sous le nom `qwen3-6-35b-moe`, à température 0. Chaque appel est tracé dans Langfuse.
+Les modèles sont servis par vLLM derrière une API compatible OpenAI, sur l'infrastructure de l'Insee. Les évaluations de cette note utilisent le modèle servi sous le nom `qwen3-6-35b-moe`, à température 0 et avec le raisonnement activé : le modèle rédige un brouillon de réflexion avant de répondre, ce qui explique une partie du temps de calcul. La température 0 rend les réponses quasi déterministes, sans garantir des résultats strictement identiques d'un run à l'autre : le serveur traite plusieurs requêtes en parallèle, ce qui peut introduire de légères variations. Chaque appel est tracé dans Langfuse.
 
 ## Le graphe de nomenclature
 

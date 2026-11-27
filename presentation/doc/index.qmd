@@ -63,6 +63,6 @@ Les résultats détaillés et interactifs restent sur les pages dédiées du sit
 
 GRAAL est né des besoins de la codification APE et s'inscrit à côté de :
 
-- la [note technique du pipeline MLOps de codification APE](https://inseefrlab.github.io/codif-ape-docs/), qui situe GRAAL parmi les moteurs auxiliaires hors du chemin critique ;
+- la [note technique du pipeline MLOps de codification APE](https://inseefrlab.github.io/codif-ape-docs/), qui présente GRAAL comme un outil d'appui, en dehors de la chaîne de codification en production ;
 - [torchTextClassifiers](https://inseefrlab.github.io/torchTextClassifiers/), la librairie de classification supervisée du modèle de production ;
 - la [codification COICOP de Budget de famille](https://inseefrlab.github.io/codif-coicop-bdf/), dont la sortie Sirus sert de cas d'usage au chapitre 5.

@@ -34,7 +34,7 @@ Un principe de conception en découle : **le code ne connaît rien de la nomencl
 | **S'affranchir des données labellisées** | Coder à partir des notes explicatives seules (*zero-shot*), ou avec peu d'exemples |
 | **Introduire du raisonnement et de la traçabilité** | Des décisions justifiées étape par étape, exploitant la hiérarchie, rejouables |
 | **Rester générique** | Aucun code spécifique à une nomenclature ; des contrats d'entrée/sortie stricts entre agents |
-| **Mesurer honnêtement** | Une évaluation chiffrée, reproductible, avec intervalles de confiance, plutôt qu'une démonstration |
+| **Mesurer rigoureusement la performance** | Une évaluation chiffrée et reproductible, avec des marges d'incertitude, sur des milliers de cas plutôt que sur quelques exemples choisis |
 
 : Objectifs du projet. {#tbl-objectifs}
 

@@ -111,7 +111,7 @@ D'après les échanges avec la division RIAS :
 Points à clarifier *[À valider avec Nathan et RIAS]* :
 
 - les exports Label Studio NAF 2008 utilisés par GRAAL contiennent environ 27 650 annotations, dont environ 19 000 hors du jeu de test : quel lien avec les 12 000 annotations du *gold standard* (tâches en cours, plusieurs vagues, train et test) ?
-- la note APE mentionne un accord de 62 % entre trois experts sur la sous-classe NAF 2025 [@codifapedocs] : une partie de la campagne NAF 2025 a-t-elle été multi-annotée, et sur quel périmètre ?
+- la note APE indique que trois experts indépendants s'accordent sur la sous-classe NAF 2025 dans environ 62 % des cas, et au moins deux dans 96 % [@codifapedocs] : une partie de la campagne NAF 2025 a donc été annotée trois fois, ce qui nuance « annotation simple » ci-dessus. Sur combien de libellés, et ces annotations multiples sont-elles exploitables ?
 - comment le jeu de test NAF 2008 a-t-il été tiré (aléatoire dans le flux, stratifié, sélectionné sur les reprises) ? Les annotateurs voyaient-ils le code de production ?
 - l'indice de confiance **réellement utilisé en production** est-il conservé pour ces liasses ? Une première analyse utilise celui du tableau de bord de la campagne, issu d'une re-prédiction ([chapitre 6](06-cas-naf2008.qmd#sec-naf-ic)) ; que recouvre exactement le mode `FASTTEXT` ?
 

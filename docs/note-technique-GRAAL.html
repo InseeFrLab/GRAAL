@@ -5684,7 +5684,7 @@ window.Quarto = {
 <h2 class="unnumbered anchored" data-anchor-id="projets-liés">Projets liés</h2>
 <p>GRAAL est né des besoins de la codification APE et s’inscrit à côté de :</p>
 <ul>
-<li>la <a href="https://inseefrlab.github.io/codif-ape-docs/">note technique du pipeline MLOps de codification APE</a>, qui situe GRAAL parmi les moteurs auxiliaires hors du chemin critique ;</li>
+<li>la <a href="https://inseefrlab.github.io/codif-ape-docs/">note technique du pipeline MLOps de codification APE</a>, qui présente GRAAL comme un outil d’appui, en dehors de la chaîne de codification en production ;</li>
 <li><a href="https://inseefrlab.github.io/torchTextClassifiers/">torchTextClassifiers</a>, la librairie de classification supervisée du modèle de production ;</li>
 <li>la <a href="https://inseefrlab.github.io/codif-coicop-bdf/">codification COICOP de Budget de famille</a>, dont la sortie Sirus sert de cas d’usage au chapitre 5.</li>
 </ul>
@@ -5748,8 +5748,8 @@ Table 1: Objectifs du projet.
 <td>Aucun code spécifique à une nomenclature ; des contrats d’entrée/sortie stricts entre agents</td>
 </tr>
 <tr class="even">
-<td><strong>Mesurer honnêtement</strong></td>
-<td>Une évaluation chiffrée, reproductible, avec intervalles de confiance, plutôt qu’une démonstration</td>
+<td><strong>Mesurer rigoureusement la performance</strong></td>
+<td>Une évaluation chiffrée et reproductible, avec des marges d’incertitude, sur des milliers de cas plutôt que sur quelques exemples choisis</td>
 </tr>
 </tbody>
 </table>
@@ -5832,7 +5832,7 @@ Table 2: Les deux cas d’usage de GRAAL.
 <section id="bruit-détiquetage-et-jeu-de-référence" class="level2" data-number="2.6">
 <h2 data-number="2.6" class="anchored" data-anchor-id="bruit-détiquetage-et-jeu-de-référence"><span class="header-section-number">2.6</span> Bruit d’étiquetage et jeu de référence</h2>
 <p>Les labels humains sont bruités, y compris dans les jeux de test : sur des jeux de référence en apprentissage automatique, une part non négligeable des étiquettes de test est fausse, assez pour inverser le classement de modèles <span class="citation" data-cites="northcutt2021pervasive">(<a href="#ref-northcutt2021pervasive" role="doc-biblioref">Northcutt, Athalye, et al. 2021</a>)</span>. Des méthodes existent pour repérer les labels suspects à partir des prédictions d’un modèle <span class="citation" data-cites="northcutt2021confident">(<a href="#ref-northcutt2021confident" role="doc-biblioref">Northcutt, Jiang, et al. 2021</a>)</span>.</p>
-<p>Mesurer la fiabilité d’une annotation suppose de <strong>faire annoter les mêmes items par plusieurs personnes</strong> et de calculer un accord corrigé du hasard (kappa, alpha de Krippendorff) <span class="citation" data-cites="artstein2008">(<a href="#ref-artstein2008" role="doc-biblioref">Artstein et Poesio 2008</a>)</span>. Avec plusieurs annotations par item, on peut aussi estimer la vraie classe et le taux d’erreur de chaque annotateur <span class="citation" data-cites="dawid1979">(<a href="#ref-dawid1979" role="doc-biblioref">Dawid et Skene 1979</a>)</span>. Dans la codification APE, trois experts ne s’accordent sur la sous-classe NAF 2025 que dans environ 62 % des cas <span class="citation" data-cites="codifapedocs">(<a href="#ref-codifapedocs" role="doc-biblioref">Tayebjee 2026</a>)</span> : c’est un plafond pour toute métrique calculée contre un seul annotateur.</p>
+<p>Mesurer la fiabilité d’une annotation suppose de <strong>faire annoter les mêmes items par plusieurs personnes</strong> et de calculer un accord corrigé du hasard (kappa, alpha de Krippendorff) <span class="citation" data-cites="artstein2008">(<a href="#ref-artstein2008" role="doc-biblioref">Artstein et Poesio 2008</a>)</span>. Avec plusieurs annotations par item, on peut aussi estimer la vraie classe et le taux d’erreur de chaque annotateur <span class="citation" data-cites="dawid1979">(<a href="#ref-dawid1979" role="doc-biblioref">Dawid et Skene 1979</a>)</span>. Dans la codification APE, trois experts ne s’accordent sur la sous-classe NAF 2025 que dans environ 62 % des cas, et au moins deux d’entre eux dans 96 % <span class="citation" data-cites="codifapedocs">(<a href="#ref-codifapedocs" role="doc-biblioref">Tayebjee 2026</a>)</span> : la référence elle-même est donc incertaine, ce qui borne toute métrique calculée contre un seul annotateur.</p>
 <p><strong>Pour GRAAL</strong> : les chiffres des chapitres <a href="#">5</a> et <a href="#">6</a> sont calculés contre une annotation simple et doivent être lus comme des <strong>bornes</strong>. Le besoin d’un jeu de référence doublement annoté est détaillé au <a href="#sec-gold">chapitre 4</a>.</p>
 </section>
 <section id="incertitude-et-calibration" class="level2" data-number="2.7">
@@ -5878,7 +5878,7 @@ Figure 1: Architecture de GRAAL. Les classifieurs proposent un code, les agents
 </div>
 </div>
 </div>
-<p>Les modèles sont servis par vLLM derrière une API compatible OpenAI, sur l’infrastructure de l’Insee. Les évaluations de cette note utilisent le modèle servi sous le nom <code>qwen3-6-35b-moe</code>, à température 0. Chaque appel est tracé dans Langfuse.</p>
+<p>Les modèles sont servis par vLLM derrière une API compatible OpenAI, sur l’infrastructure de l’Insee. Les évaluations de cette note utilisent le modèle servi sous le nom <code>qwen3-6-35b-moe</code>, à température 0 et avec le raisonnement activé : le modèle rédige un brouillon de réflexion avant de répondre, ce qui explique une partie du temps de calcul. La température 0 rend les réponses quasi déterministes, sans garantir des résultats strictement identiques d’un run à l’autre : le serveur traite plusieurs requêtes en parallèle, ce qui peut introduire de légères variations. Chaque appel est tracé dans Langfuse.</p>
 </section>
 <section id="le-graphe-de-nomenclature" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="le-graphe-de-nomenclature"><span class="header-section-number">3.2</span> Le graphe de nomenclature</h2>
@@ -6339,7 +6339,7 @@ Table 9: Références utilisées dans cette note.
 <p>Points à clarifier <em>[À valider avec Nathan et RIAS]</em> :</p>
 <ul>
 <li>les exports Label Studio NAF 2008 utilisés par GRAAL contiennent environ 27 650 annotations, dont environ 19 000 hors du jeu de test : quel lien avec les 12 000 annotations du <em>gold standard</em> (tâches en cours, plusieurs vagues, train et test) ?</li>
-<li>la note APE mentionne un accord de 62 % entre trois experts sur la sous-classe NAF 2025 <span class="citation" data-cites="codifapedocs">(<a href="#ref-codifapedocs" role="doc-biblioref">Tayebjee 2026</a>)</span> : une partie de la campagne NAF 2025 a-t-elle été multi-annotée, et sur quel périmètre ?</li>
+<li>la note APE indique que trois experts indépendants s’accordent sur la sous-classe NAF 2025 dans environ 62 % des cas, et au moins deux dans 96 % <span class="citation" data-cites="codifapedocs">(<a href="#ref-codifapedocs" role="doc-biblioref">Tayebjee 2026</a>)</span> : une partie de la campagne NAF 2025 a donc été annotée trois fois, ce qui nuance « annotation simple » ci-dessus. Sur combien de libellés, et ces annotations multiples sont-elles exploitables ?</li>
 <li>comment le jeu de test NAF 2008 a-t-il été tiré (aléatoire dans le flux, stratifié, sélectionné sur les reprises) ? Les annotateurs voyaient-ils le code de production ?</li>
 <li>l’indice de confiance <strong>réellement utilisé en production</strong> est-il conservé pour ces liasses ? Une première analyse utilise celui du tableau de bord de la campagne, issu d’une re-prédiction (<a href="#sec-naf-ic">chapitre 6</a>) ; que recouvre exactement le mode <code>FASTTEXT</code> ?</li>
 </ul>
